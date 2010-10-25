@@ -1,10 +1,10 @@
-Structure and Instruction of Computer Programming Examples
+Structure and Interpertation of Computer Programming Examples
 =======================================
 
 
 Description
 ----------
-[Lisp을 좋아하는 사람들의 그룹][lispkorea]들에서 진행중인 [Structure and Instruction of
+[Lisp을 좋아하는 사람들의 그룹][lispkorea]들에서 진행중인 [Structure and Interpertation of
 Computer Programming][SICP](이하 SICP) 스터디의 연습문제 풀이를 공유하기 위한 저장소입니다.
 
 Requirements
