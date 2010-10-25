@@ -4,13 +4,13 @@ Structure and Interpertation of Computer Programming Examples
 
 Description
 ----------
-[Lisp을 좋아하는 사람들의 그룹][lispkorea]들에서 진행중인 [Structure and Interpertation of
+[Lisp을 좋아하는 사람들의 그룹][lispkorea]에서 진행중인 [Structure and Interpertation of
 Computer Programming][SICP](이하 SICP) 스터디의 연습문제 풀이를 공유하기 위한 저장소입니다.
 
 Requirements
 -----------
  * SICP 교재
- * 실습에 사용할 플랫폼(공식적으론 Scheme)
+ * 실습에 사용할 플랫폼(공식적으론 [Scheme][Racket])
  
 How to
 ------
@@ -43,3 +43,4 @@ How to
 [SICP]: http://mitpress.mit.edu/sicp/
 [lispkorea]: http://groups.google.com/group/lisp-korea
 [github]:http://github.com
+[Racket]:http://racket-lang.org/
