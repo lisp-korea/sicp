@@ -18,7 +18,7 @@ How to
     * 첫 화면에서 아래 Plans, Pricing and Signup 버튼 클릭
     * Plan & Pricing 화면에서 $0/mo Free for open source 란 Create a free account 버튼 클릭
     * user name, email, password를 등록합니다. 
- 2. lisp-korea/sicp repo 접근권한 요청
+ 2. lisp-korea/sicp [repo][lispkorea-sicp-repo] 접근권한 요청
     * 게시판에 등록한 github user name을 올려주세요.
     * 지난시간에 나오셔서 스터디 참석의사를 보여주신 분은 바로
       등록해드리겠습니다. (30분~1시간정도 소요 예정) 
@@ -28,7 +28,7 @@ How to
 	public key 생성방법이 나옵니다.
     * 생성된 key를 가신의 계정 Account Settings의 SSH Public Keys ->
        Add another public key에 등록합니다. 
- 4. lisp-korea/sicp repo 가져오기
+ 4. lisp-korea/sicp [repo][lispkorea-sicp-repo] 가져오기
           $ git clone git@github.com:lisp-korea/sicp.git
  5. git user 설정
           $ git config --global user.name "user name" (github등록한 거요)
@@ -44,3 +44,4 @@ How to
 [lispkorea]: http://groups.google.com/group/lisp-korea
 [github]:http://github.com
 [Racket]:http://racket-lang.org/
+[lispkorea-sicp-repo]:http://github.com/lisp-korea/sicp
