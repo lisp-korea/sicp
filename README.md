@@ -22,11 +22,7 @@ How to
     * 게시판에 등록한 github user name을 올려주세요.
     * 지난시간에 나오셔서 스터디 참석의사를 보여주신 분은 바로
       등록해드리겠습니다. (30분~1시간정도 소요 예정) 
-<<<<<<< HEAD
     * 지난시간에 못 나오셨지만 참여를 희망하시는 분은 일단 fork 하셔서 작업하시고 pull request 하시기 바랍니다.
-=======
-    * 지난시간에 못 나오셨지만 참여를 희망하시는 분은 일단 fork후 작업하시고 pull request 하시기 바랍니다.
->>>>>>> 27ac6f4cd4f3cb0550ac61dfdab2c0166aa59e9e
  3. SSH Public Key 등록
     * 각 OS별 public key를 생성하세요
     * [Help](http://help.github.com/) 에 가시면 오른쪽 column 링크에 각 OS
