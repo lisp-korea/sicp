@@ -24,26 +24,26 @@ How to
       등록해드리겠습니다. (30분~1시간정도 소요 예정) 
  3. SSH Public Key 등록
     * 각 OS별 public key를 생성하세요
-    * http://help.github.com/ 에 가시면 오른쪽 column 링크에 각 OS
+    * [Help](http://help.github.com/) 에 가시면 오른쪽 column 링크에 각 OS
 	public key 생성방법이 나옵니다.
     * 생성된 key를 가신의 계정 Account Settings의 SSH Public Keys ->
        Add another public key에 등록합니다. 
  4. lisp-korea/sicp repo 가져오기
-    * git clone git@github.com:lisp-korea/sicp.git
+	 $ git clone git@github.com:lisp-korea/sicp.git
  5. git user 설정
-    * git config --global user.name "user name" (github등록한 거요)
-    * git config --global user.email "email 주소"
+	 $ git config --global user.name "user name" (github등록한 거요)
+	 $ git config --global user.email "email 주소"
  6. 개인 소스 올리기
-    * cd ch01
-    * ex-1-1-<id>.lisp or ex-1-1-<id>.clj 식의 naming으로 소스 생성
-    * git add <filename>
-    * git commit -m "ex 1.1 by 누구누구"
-    * git push origin master6. 개인 소스 올리기
-    * cd ch01
-    * ex-1-1-<id>.lisp or ex-1-1-<id>.clj 식의 naming으로 소스 생성
-    * git add <filename>
-    * git commit -m "ex 1.1 by 누구누구"
-    * git push origin master       
+	 $ cd ch01
+	 ex-1-1-<id>.lisp or ex-1-1-<id>.clj 식의 naming으로 소스 생성
+	 $ git add <filename>
+	 $ git commit -m "ex 1.1 by 누구누구"
+	 $ git push origin master6. 개인 소스 올리기
+	 $ cd ch01
+	 $ ex-1-1-<id>.lisp or ex-1-1-<id>.clj 식의 naming으로 소스 생성
+	 $ git add <filename>
+	 $ git commit -m "ex 1.1 by 누구누구"
+	 $ git push origin master       
       
 [SICP]: http://mitpress.mit.edu/sicp/
 [lispkorea]: http://groups.google.com/group/lisp-korea
