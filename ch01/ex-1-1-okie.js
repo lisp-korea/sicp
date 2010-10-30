@@ -1,5 +1,5 @@
 // sicp solution ch 1.1 by okie
-// just translated from cl version. need to improve javascriptly.
+// just translated from cl version. need to be improved javascriptly.
 // tested with mozREPL on FireFox.
 
 // ex 1.2
