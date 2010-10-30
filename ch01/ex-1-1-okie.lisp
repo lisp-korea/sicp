@@ -63,17 +63,21 @@
 ;; Lisp nesting exceeds `max-lisp-eval-depth'
 
 (defun test (x y)
-  (if (= x 0)
+  (i(f (= x 0)
       0
-      y))
+      y)))
 
 (test 0 (p))
+
+;; TODO : find lazy evaluation package
+;; scheme : (require lazy)
 
 ;; ex 1.6
 (defun average (x y)
   (/ (+ x y) 2))
 
 (defun good-enough? (guess x)
+  (print guess)
   (< (abs (- (square guess) x)) 0.001))
 
 (defun improve (guess x)
@@ -91,6 +95,7 @@
 ;; ex 1.7
 ;; solution 1
 (defun guess-enough? (g prev-guess)
+  (print g)
   (< (abs (- g prev-guess)) (* g 0.001)))
 
 (defun sqrt-iter (g prev-guess x)
@@ -127,5 +132,3 @@
 
 (defun cbrt (x)
   (cbrt-iter 1.0 x))
-
-
