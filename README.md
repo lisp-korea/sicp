@@ -36,6 +36,7 @@ How to
           $ git config --global user.email "email 주소"
  6. 개인 소스 올리기
           $ cd ch01
+          $ cd 1.1
           ex-1-1-<id>.lisp or ex-1-1-<id>.clj 식의 naming으로 소스 생성
           $ git add <filename>
           $ git commit -m "ex 1.1 by 누구누구"
