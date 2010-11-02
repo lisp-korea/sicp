@@ -283,7 +283,7 @@
 			      base 
 			      1
 			      (- n count)))))
-
+ 
 (define (fast-expt-i base n)
   (cond ((= n 0) 1)
 	(else (fast-expt-iter base 1 base 1 n))))
