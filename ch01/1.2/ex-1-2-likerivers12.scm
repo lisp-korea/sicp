@@ -144,8 +144,27 @@
 ;;;        1   3   3   1
 ;;;      1   4   6   4   1
 ;;;             ...
-;;; to do
+(define (next-tri lst)
+  (cond ((null? lst) '())
+	((null? (cdr lst)) '())
+	(else (cons (+ (car lst) (cadr lst)) 
+		    (next-tri (cdr lst))))))
+;;(next-tri '(1 2 1)
+;;(next-tri '(1 3 3 1)
 
+(define (pascal-tri n)
+  (cond ((= n 1) '(1))
+	((= n 2) '(1 1))
+	(else (append (cons 1 (next-tri (pascal-tri (- n 1))))
+		      '(1)))))
+
+(pascal-tri 1)
+(pascal-tri 2)
+(pascal-tri 3)
+(pascal-tri 4)
+(pascal-tri 5)
+(pascal-tri 6)
+(pascal-tri 7)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -332,7 +351,7 @@
     (= (expmod a n n) a))
   (try-it (+ 1 (random (- n 1)))))
 
-(define (fast-prime? n times)o
+(define (fast-prime? n times)
   (cond ((= times 0) true)
 	((fermat-test n) (fast-prime? n (- times 1)))
 	(else false)))
@@ -343,7 +362,6 @@
 (fast-prime? 100 100) ;; not prim
 (fast-prime? 100 562) ;; not prime
 (fast-prime? 100000000 561) ;; prime
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
