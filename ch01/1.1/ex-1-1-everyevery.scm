@@ -173,6 +173,8 @@
 ;; note
 ;; substitution model
 ;; applicative order versus normal order
+;; 'fully expand and then reduce' => normal-order
+;; 'evaluate the arguments and then apply' => applicative-order
 ;; SICP Chapter 1.1
 
 ;; ex 1.1.
@@ -237,8 +239,6 @@
   (average guess (/ x guess)))
 
 (define (sqrt-iter guess x)
-  (display guess)
-  (newline)
   (if (good-enough? guess x)
       guess
       (sqrt-iter (improve guess x) x)))
@@ -249,3 +249,55 @@
 ;;(sqrt 100.0)
 
 ;; ex 1.6.
+(define (new-if predicate then-clause else-clause)
+  (cond (predicate then-clause)
+	(else else-clause)))
+(define (sqrt-iter-2 guess x)
+  (new-if (good-enough? guess x)
+	  guess
+	  (sqrt-iter2 (improve guess x) x)))
+;; (sqrt-iter2 1 314)
+
+;; ex 1.7.
+(define (good-enough-2? guess x)
+  (< (abs (- (/ (improve guess x) guess) 1)) 0.001))
+(define (sqrt-iter-3 guess x)
+  (if (good-enough-2? guess x)
+      guess
+      (sqrt-iter-3 (improve guess x) x)))
+(define (sqrt-new-2 x)
+  (sqrt-iter-3 1.0 x))
+;;(display "sqrt-new")
+;;(sqrt-new 0.00001)
+;;(display "sqrt-new-2")
+;;(sqrt-new-2 0.00001)
+;;(display "sqrt")
+;;(sqrt 0.00001)
+
+;; ex 1.8.
+(define (improve-cube guess x)
+  (/ (+ (/ x (* guess guess)) (* 2 guess)) 3))
+(define (good-enough-cube? guess x)
+  (< (abs (- (/ (improve-cube guess x) guess) 1)) 0.001))
+(define (cube-root-iter guess x)
+  (if (good-enough-cube? guess x)
+      guess
+      (cube-root-iter (improve-cube guess x) x)))
+(define (cube-root x)
+  (cube-root-iter 1.0 x))
+(cube-root 8)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
