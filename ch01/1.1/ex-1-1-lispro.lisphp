@@ -1,4 +1,4 @@
-(echo "ex 1.1<br />")
+(echo "You can test at 'http://archi.ssu.ac.kr/lisphp/'<br />")
 (echo 10)
 (echo "<br />")
 (echo (+ 5 3 4))
