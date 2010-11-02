@@ -1,3 +1,4 @@
+(echo "You can test at 'http://archi.ssu.ac.kr/lisphp/'")
 (echo "ex 1.9<br />")
 
 (define (p1inc x)
