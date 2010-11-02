@@ -149,8 +149,8 @@
 	((null? (cdr lst)) '())
 	(else (cons (+ (car lst) (cadr lst)) 
 		    (next-tri (cdr lst))))))
-;;(next-tri '(1 2 1)
-;;(next-tri '(1 3 3 1)
+;;(next-tri '(1 2 1))
+;;(next-tri '(1 3 3 1))
 
 (define (pascal-tri n)
   (cond ((= n 1) '(1))
@@ -238,8 +238,16 @@
 (define (even? n)
   (= (remainder n 2) 0))
 
-(expt 3 4)
 
+(define (square x)
+  (* x x))
+
+(expt 3 4)
+(fast-expt 3 4)
+(expt 4 2)
+(fast-expt 4 2)
+(expt 9 11)
+(fast-expt 9 11)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -247,6 +255,72 @@
 ;;; ex 1.16
 ;;; iterative fast-expt
 
+;;; just test : correct when n is powers of 2.
+(define (fast-expt-iter-1 acc count n)
+  (cond ((= count n) acc)
+	((<= (* count 2) n) (fast-expt-iter-1 (square acc) 
+					      (* count 2) 
+					      n))
+	(else (fast-expt-iter-1 acc b 1 (- n count)))))
+;;; (fast-expt-iter-1 2 1 8)
+;;; -> 2^8 = 256
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (square x)
+  (* x x))
+
+(define (fast-expt-iter base acc acc-tmp count n)
+  (cond ((= n 1) (* acc base))
+	((= count n) acc)
+	((= (* count 2) n) (* acc (square acc-tmp)))
+	((< (* count 2) n) (fast-expt-iter base
+					   acc
+					   (square acc-tmp)
+					   (* count 2)
+					   n))
+	(else (fast-expt-iter base
+			      (* acc acc-tmp)
+			      base 
+			      1
+			      (- n count)))))
+
+(define (fast-expt-i base n)
+  (cond ((= n 0) 1)
+	(else (fast-expt-iter base 1 base 1 n))))
+
+(fast-expt-iter-3 2 1 2 1 1)
+(fast-expt-iter-3 2 1 2 1 2)
+(fast-expt-iter-3 2 1 2 1 3)
+(fast-expt-iter-3 2 1 2 1 4)
+(fast-expt-iter-3 2 1 2 1 5)
+(fast-expt-iter-3 2 1 2 1 6)
+(fast-expt-iter-3 2 1 2 1 7)
+(fast-expt-iter-3 2 1 2 1 8)
+(fast-expt-iter-3 2 1 2 1 9)
+(fast-expt-iter-3 2 1 2 1 10)
+
+(fast-expt-i 2 0)
+(fast-expt-i 2 1)
+(fast-expt-i 2 2)
+(fast-expt-i 2 3)
+(fast-expt-i 2 4)
+(fast-expt-i 2 5)
+(fast-expt-i 2 6)
+(fast-expt-i 2 7)
+(fast-expt-i 2 8)
+(fast-expt-i 2 9)
+(fast-expt-i 2 10)
+
+
+(expt 3 4)
+(fast-expt 3 4)
+(fast-expt-i 3 4)
+(expt 4 2)
+(fast-expt 4 2)
+(fast-expt-i 4 2)
+(expt 9 11)
+(fast-expt 9 11)
+(fast-expt-i 9 11)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -254,6 +328,18 @@
 ;;; p59
 ;;; ex 1.17
 ;;; to do
+
+;;; recursive process
+(define (*-r a b)
+  (if (= b 0)
+      0
+      (+ a (*-r a (- b 1)))))
+
+(* 3 4)
+(*-r 3 4)
+
+;;; iterative process
+(define (*-i a b) '())
 
 
 
@@ -355,6 +441,10 @@
   (cond ((= times 0) true)
 	((fermat-test n) (fast-prime? n (- times 1)))
 	(else false)))
+
+
+(define (square x)
+  (* x x))
 
 (fast-prime? 10 562) ;; not prime
 (fast-prime? 10 561) ;; prime
