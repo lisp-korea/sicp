@@ -168,16 +168,13 @@
 ;;             (+  (f 5)    (* 2 (f 4))    (* 3 (f 3)))
 
 
-;;     2        1         0
-;;     3        2         1
-
-;;=.=
 (define (f-iter n)
   (define (f-inner-iter a b c count)
-    (cond ((= count 0) a)
+    (cond ((= count 0) c)
 	  (else (f-inner-iter (+ a (* b 2) (* c 3)) a b (- count 1)))))
-  (if (> 3 n) n
-      (f-inner-iter 2 1 0 (- n 2))))
+  (f-inner-iter 2 1 0 n))
+
+
 
 
 
