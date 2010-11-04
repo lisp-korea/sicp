@@ -20,7 +20,6 @@
 		 (+ counter 1)
 		 max-count)))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; p46
@@ -56,7 +55,6 @@
 (define (h n) (A 2 n))
 (define (k n) (* 5 n n))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; p48
 (define (fib n)
@@ -74,6 +72,17 @@
   (if (= count 0)
       b
       (fib-iter (+ a b) a (- count 1))))
+
+(fib 1)
+(fib 2)
+(fib 3)
+(fib 4)
+(fib 5)
+(fib 6)
+(fib 7)
+(fib 8)
+(fib 9)
+(fib 10)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; p52-53
@@ -166,13 +175,11 @@
 (pascal-tri 6)
 (pascal-tri 7)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; p54
 ;;; ex 1.13
-;;; to do
-
+;;; a proof-problem - skip
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -238,7 +245,6 @@
 (define (even? n)
   (= (remainder n 2) 0))
 
-
 (define (square x)
   (* x x))
 
@@ -255,17 +261,6 @@
 ;;; ex 1.16
 ;;; iterative fast-expt
 
-;;; just test : correct when n is powers of 2.
-(define (fast-expt-iter-1 acc count n)
-  (cond ((= count n) acc)
-	((<= (* count 2) n) (fast-expt-iter-1 (square acc) 
-					      (* count 2) 
-					      n))
-	(else (fast-expt-iter-1 acc b 1 (- n count)))))
-;;; (fast-expt-iter-1 2 1 8)
-;;; -> 2^8 = 256
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define (square x)
   (* x x))
 
@@ -311,7 +306,6 @@
 (fast-expt-i 2 9)
 (fast-expt-i 2 10)
 
-
 (expt 3 4)
 (fast-expt 3 4)
 (fast-expt-i 3 4)
@@ -322,56 +316,203 @@
 (fast-expt 9 11)
 (fast-expt-i 9 11)
 
+;;; just test : correct when n is powers of 2.
+(define (fast-expt-iter-1 acc count n)
+  (cond ((= count n) acc)
+	((<= (* count 2) n) (fast-expt-iter-1 (square acc) 
+					      (* count 2) 
+					      n))
+	(else (fast-expt-iter-1 acc b 1 (- n count)))))
+;;; (fast-expt-iter-1 2 1 8)
+;;; -> 2^8 = 256
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; p59
+;;; p60
 ;;; ex 1.17
-;;; to do
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; recursive process
 (define (*-r a b)
   (if (= b 0)
       0
       (+ a (*-r a (- b 1)))))
 
-(* 3 4)
-(*-r 3 4)
+(*-r 2 0)
+(*-r 2 1)
+(*-r 2 2)
+(*-r 2 3)
+(*-r 2 4)
+(*-r 2 5)
+(*-r 2 6)
+(*-r 2 7)
+(*-r 2 8)
+(*-r 2 9)
+(*-r 2 10)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; iterative process
-(define (*-i a b) '())
+(define (*-i a b) 
+  (define (*-iter count acc)
+    (if (= count b)
+	acc
+	(*-iter (+ count 1) (+ acc a))))
+  (if (= b 0)
+      0
+      (*-iter 0 0)))
 
+(*-i 2 0)
+(*-i 2 1)
+(*-i 2 2)
+(*-i 2 3)
+(*-i 2 4)
+(*-i 2 5)
+(*-i 2 6)
+(*-i 2 7)
+(*-i 2 8)
+(*-i 2 9)
+(*-i 2 10)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; fast-* : recursive process
+(define (even? n)
+  (= (remainder n 2) 0))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; p59
-;;; ex 1.18
-;;; to do
+(define (double x)
+  (* x 2))
 
+(define (halves x)
+  (/ x 2))
+
+(define (fast-*-r a b)
+  (cond ((= b 0) 0)
+	((even? b) (double (fast-*-r a (halves b))))
+	(else (+ a (fast-*-r a (- b 1))))))
+
+(fast-*-r 2 0)
+(fast-*-r 2 1)
+(fast-*-r 2 2)
+(fast-*-r 2 3)
+(fast-*-r 2 4)
+(fast-*-r 2 5)
+(fast-*-r 2 6)
+(fast-*-r 2 7)
+(fast-*-r 2 8)
+(fast-*-r 2 9)
+(fast-*-r 2 10)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; p60
+;;; ex 1.18
+;;; fast-* : iterative process
+(define (double x)
+  (* x 2))
+
+(define (halves x)
+  (/ x 2))
+
+(define (fast-*-iter base acc acc-tmp count n)
+  (cond ((= n 1) (+ acc base))
+	((= count n) acc)
+	((= (double count) n) (+ acc (double acc-tmp)))
+	((< (double count) n) (fast-*-iter base
+					   acc
+					   (double acc-tmp)
+					   (double count)
+					   n))
+	(else (fast-*-iter base
+			   (+ acc acc-tmp)
+			   base
+			   1
+			   (- n count)))))
+
+(define (fast-*-i a b)
+  (cond ((= b 0) 0)
+	(else (fast-*-iter a 0 a 1 b))))
+
+(fast-*-i 2 0)
+(fast-*-i 2 1)
+(fast-*-i 2 2)
+(fast-*-i 2 3)
+(fast-*-i 2 4)
+(fast-*-i 2 5)
+(fast-*-i 2 6)
+(fast-*-i 2 7)
+(fast-*-i 2 8)
+(fast-*-i 2 9)
+(fast-*-i 2 10)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; p61
 ;;; ex 1.19
 ;;; to do
+(define (even? n)
+  (= (remainder n 2) 0))
 
-(define (fib n)
-  (fib-iter 1 0 0 1 n))
+(define (fast-fib-i n)
+  (fast-fib-iter 1 0 0 1 n))
 
-(define (fib-iter a b p q count)
+;;  p  q
+;;---------------
+;;  0  1 - 1 step
+;;  1  2 - 2 step
+;;  2  3 - 4 step
+;; 13 21 - 8 step
+(define (fast-fib-iter a b p q count)
   (cond ((= count 0) b)
 	((even? count)
-	 (fib-iter a
-		   b
-		   < >
-		   < >
-		   (/ count 2)))
-	(else (fib-iter (+ (* b q) (* a q) (* a p))
-			(+ (* b p) (* a q))
-			p
-			q
-			(- count 1)))))
+	 (fast-fib-iter a
+			b
+			< > 
+			< > 
+			(/ count 2)))
+	(else (fast-fib-iter (+ (* b q) (* a q) (* a p))
+			     (+ (* b p) (* a q))
+			     p
+			     q
+			     (- count 1)))))
+
+
+(define (fib-iter2 a b p q count n)
+  (cond ((= count (+ n 1)) b)
+	(else (fib-iter2 (+ (* b q) (* a q) (* a p))
+			 (+ (* b p) (* a q))
+			 p
+			 q
+			 (+ count 1)
+			 n))))
+
+(define (fib-iter3 a b p q count)
+  (cond ((= count 0) b)
+	(else (fib-iter3 (+ (* b q) (* a q) (* a p))
+			 (+ (* b p) (* a q))
+			 p
+			 q
+			 (- count 1)))))
+
+(fib 1)
+(fib 2)
+(fib 3)
+(fib 4)
+(fib 5)
+(fib 6)
+(fib 7)
+(fib 8)
+(fib 9)
+(fib 10)
+
+(fast-fib-i 1)
+(fast-fib-i 2)
+(fast-fib-i 3)
+(fast-fib-i 4)
+(fast-fib-i 5)
+(fast-fib-i 6)
+(fast-fib-i 7)
+(fast-fib-i 8)
+(fast-fib-i 9)
+(fast-fib-i 10)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; p63
@@ -379,7 +520,6 @@
   (if (= b 0)
       a
       (gcd b (remainder a b))))
-
 
 (gcd 206 40)
 
@@ -442,7 +582,6 @@
 	((fermat-test n) (fast-prime? n (- times 1)))
 	(else false)))
 
-
 (define (square x)
   (* x x))
 
@@ -459,6 +598,13 @@
 ;;; ex 1.21
 ;;; to do
 
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; p68
+;;; ex 1.22
+;;; to do
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -512,16 +658,5 @@
 ;;; p71
 ;;; ex 1.28
 ;;; to do
-
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; p70
-;;; ex 1.24
-;;; to do
-
-
 
 
