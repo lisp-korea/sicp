@@ -94,3 +94,86 @@
 ;; 16
 ;; (h n) => ?
 
+;; ex.11
+;; f(0) => 0
+;; f(1) => 1
+;; f(2) => 2
+;; f(3) => f(2) + 2f(1) + 3f(0) => 2 + 2*1 + 3*0
+;; f(4) => f(3) + 2f(2) + 3f(1) => 4 + 2*2 + 3*1
+;; f(5) => f(4) + 2f(3) + 3f(2) => 11 + 2*3 + 3*2
+(defn f-recur [n]
+  (if (< n 3)
+    n
+    (+ (f-recur (- n 1))
+       (* 2 (f-recur (- n 2)))
+       (* 3 (f-recur (- n 3))))))
+
+;; count = 0: a, b, c = f(0), f(1), f(2) 
+;; count = 1: a, b, c = f(1), f(2), f(3)
+;; count = 2: a, b, c = f(2), f(3), f(4)
+;; count = 3: a, b, c = f(3), f(4), f(5)
+;; count = 4: a, b, c = f(4), f(5), f(6)
+(defn f-iter [n]
+  (letfn [(_iter [a b c count]
+		 (if (= count n)
+		   a
+		   (_iter
+		    b
+		    c
+		    (+ c (* 2 b) (* 3 a))
+		    (+ count 1)))
+		 )]
+    (_iter 0 1 2 0)))
+
+;; ex 1.15
+(defn cube [x]
+  (* x x x))
+(defn p [x]
+  (- (* 3 x)
+     (* 4 (cube x))))
+(defn abs [n]
+  (if (< n 0)
+    (* -1 n)
+    n))
+(defn sine [angle]
+  (if (not (> (abs angle) 0.1))
+    angle
+    (p (sine (/ angle 3.0)))))
+
+;; (sine 12.15)
+;; (p (sine (/ 12.15 3.0)))
+;; (p (sine 4.05))
+;; (p (p (sine (/ 4.05 3.0))))
+;; (p (p (sine 1.35)))
+;; (p (p (p (sine (/ 1.35 3.0)))))
+;; (p (p (p (p (sine 0.45)))))
+;; (p (p (p (p 0.45))))
+
+(defn expt [b n]
+  (letfn [(_iter [b counter product]
+		 (if (= counter 0)
+		   product
+		   (_iter
+		    b
+		    (- counter 1)
+		    (* b product))))]
+    (_iter b n 1)))
+
+(defn square [n]
+  (* n n))
+(defn fast-expt [b n]
+  (cond (= n 0) 1
+	(even? n) (square (fast-expt b (/ n 2)))
+	:else (* b (fast-expt b (- n 1)))))
+;; ex1.16
+(defn fast-expt-iter [b n]
+  (letfn [(_iter [b counter product]
+		 (cond
+		  (= counter 0) product
+		  (even? counter) (_iter (* b b)
+					 (/ counter 2)
+					 product)
+		  :else (_iter b
+			       (- counter 1)
+			       (* product b))))]
+    (_iter b n 1)))
