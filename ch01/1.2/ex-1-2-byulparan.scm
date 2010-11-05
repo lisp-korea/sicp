@@ -172,11 +172,198 @@
 	  (else (f-inner-iter (+ a (* b 2) (* c 3)) a b (- count 1)))))
   (f-inner-iter 2 1 0 n))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.12 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;   --------------------->  x              pascal(0,0)  = 1
+;;   |           1                          pascal(1,4)  = 4
+;;   |         1   1                        pascal(4,4)  = 1
+;;   |       1   2   1                      pascal(0,5)  = 1
+;;   |     1   3   3   1                    pascal(1,5)  = 5
+;;   |   1   4   6   4   1                  pascal(5,5)  = 1
+;;   | 1   5   10  10  5   1                x == 0 then 1   
+;;   y                                      x == y then 1
+
+;;   pascal(1,5)  = pascal(0,4) + pascal(1,4)
+;;   pascal(1,4)  = pascal(0,3) + pascal(1,3)
+;;   pascal(1,3)  = pascal(0,2) + pascal(1,2)
+;;   pascal(1,2)  = pascal(0,1) + pascal(1,1)
+
+;;   pascal(1,5)  = pascal(0,4) + pascal(0,3) + pascal(0,2) + pascal(0,1) + pascal(1,1) = 5
+
+
+;;   pascal(2,4) = pascal(1,3) + pascal(2,3)
+;;   pascal(2,4) = 3 + pascal(2,3)
+
+;;   pascal(2,3) = pascal(1,2), + pascal(2,2)
+;;                      2              1
+;;   pascal(2,4) = 3 + 2 + 1 = 6
+
+;;   pascal(x,y)  ->   x == 0 then 1, x == y then 1
+;;                ->   pascal(x-1,y-1) + pascal(x,y-1)
+
+(define (pascal x y)
+  (cond ((= x 0) 1)
+	((= x y) 1)
+	(else (+ (pascal (- x 1) (- y 1)) (pascal x (- y 1))))))
+
+
+(define (display-pascal n)
+  (define (pascal-inner n count)
+    (cond ((> count n) (display "\n"))
+	  (else (display (pascal count n))
+		(display "  ")
+		(pascal-inner n (+ 1 count)))))
+  (define (pascal-iter n count)
+    (cond ((= count n) (display "\n"))
+	  (else (pascal-inner count 0)
+		(pascal-iter n (+ count 1)))))
+  (pascal-iter n 0))
+	      
+  
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.13 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; ...-_-??
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.14 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (count-change amount)
+  (define (cc amount kinds-of-coins)
+    (cond ((= amount 0) 1)
+	  ((or (< amount 0) (= kinds-of-coins 0)) 0)
+	  (else (+ (cc amount (- kinds-of-coins 1))
+		   (cc (- amount (first-denomination kinds-of-coins))
+		       kinds-of-coins)))))
+  (define (first-denomination kinds-of-coins)
+    (cond ((= kinds-of-coins 1) 1)
+	  ((= kinds-of-coins 2) 5)
+	  ((= kinds-of-coins 3) 10)
+	  ((= kinds-of-coins 4) 25)
+	  ((= kinds-of-coins 5) 50)))
+  (cc amount 5))
+
+;; 각자 그려보자.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.15 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (cube x) (* x x x))
+(define (p x) (- (* 3 x) (* 4 (cube x))))
+(define (sine angle)
+  (if (not (> (abs angle) 0.1))
+      angle
+      (p (sine (/ angle 3.0)))))
+
+
+; (sine 12.15)
+; (p (sine 4.05))
+; (p (p (sine 1.3499999999999)))
+; (p (p (p (sine 0.449999999996))))
+; (p (p (p (p (sine 0.15)))))
+; (p (p (p (p (p (sine 0.04999999999996))))))
+
+(define (count-call-p n)
+  (define (count-call-p-inner n count)
+    (if (> 0.1 (abs n)) count
+	(count-call-p-inner (/ n 3.0) (+ count 1))))
+  (count-call-p-inner n 0))
+
+(count-call-p 12.15)
+; => 5
+
+(count-call-p 1000)
+; => 9
 
 
 
+;; 1.2.4 거듭제곱
+(define (expt b n)
+  (if (= n 0) 1
+      (* b (expt b (- n 1)))))
+
+;; (expt 2 4)
+;; (* 2 (expt 2 3))
+;; (* 2 (* 2 (expt 2 2)))
+;; (* 2 (* 2 (* 2 (expt 2 1))))
+;; (* 2 (* 2 (* 2 (* 2 (expt 2 0)))))
+;; (* 2 2 2 2 1)
+
+(define (expt b n)
+  (expt-iter b n 1))
+
+(define (expt-iter b counter product)
+  (if (= counter 0) product
+      (expt-iter b (- counter 1) (* b product))))
+
+; (expt 2 4)
+; (expt-iter 2 4 1)
+; (expt-iter 2 3 2)
+; (expt-iter 2 2 4)
+; (expt-iter 2 1 8)
+; (expt-iter 2 0 16)
+; 16
+
+(define (square n)
+  (* n n))
+
+(define (fast-expt b n)
+  (cond ((= n 0) 1)
+	((even? n) (square (fast-expt b (/ n 2))))
+	(else ( * b (fast-expt b (- n 1))))))
+
+;; (fast-expt 2 4)
+;; (square (fast-expt 2 2))
+;; (square (square (fast-expt 2 1)))
+;; (square (square (* 2 (fast-expt 2 0))))
+;; (square (square (* 2 1)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.16 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (fast-expt-iter b n)
+  (define (fast-expt-iter-inner b n product)
+    (cond ((= n 0) product)
+	  ((even? n) (fast-expt-iter-inner (square b) (/ n 2) product))
+	  (else (fast-expt-iter-inner b (- n 1) (* product b)))))
+  (fast-expt-iter-inner b n 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.17 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (my* a b)
+  (if (= b 0) 0
+      (+ a (my* a (- b 1)))))
+
+(define (double n)
+  (* n 2))
+
+(define (halve n)
+  (/ n 2))
+      
+
+(define (fast-* a b)
+  (cond ((= b 0) 0)
+	((even? b) (double (fast-* a (halve b))))
+	(else (+ a (fast-* a (- b 1))))))
 
 
+(fast-* 3 10)
+(fast-* 21 10)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.18 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (fast-iter-* a b)
+  (define (fast-iter-*-inner a b product)
+    (cond ((= b 0) product)
+	  ((even? b) (fast-iter-*-inner (double a) (halve b) product))
+	  (else (fast-iter-*-inner a (- b 1) (+ product a)))))
+  (fast-iter-*-inner a b 0))
+
+(if (and
+     (= (fast-iter-* 4 5) (* 4 5))
+     (= (fast-iter-* 12 7) (* 12 7))
+     (= (fast-iter-* 8 36) (* 8 36))
+     (= (fast-iter-* 51 36) (* 51 36)))
+    "OK"
+    "NO GOOD")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.19 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
