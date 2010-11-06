@@ -214,7 +214,7 @@ int sum_to_n_iter (int n)
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 반복 프로세스(iterative process)
 ;;; 반복 프로시저(iterative procedure)
-int fib_iter(int n)
+int fib_i(int n)
 {
    int fib_next = 1;
    int fib_cur = 0;
