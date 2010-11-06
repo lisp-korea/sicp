@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-int fib_iter(int n)
+int fib_i(int n)
 {
    int fib_next = 1;
    int fib_cur = 0;
@@ -25,7 +25,7 @@ int main(void)
   printf("n? ");
   scanf("%d", &n);
   
-  printf("Fibonacci n=%d\n", fib_iter(n));
+  printf("Fibonacci n=%d\n", fib_i(n));
 
   return 0;
 }
