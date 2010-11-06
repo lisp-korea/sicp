@@ -94,7 +94,7 @@
 ;; 16
 ;; (h n) => ?
 
-;; ex.11
+;; ex 1.11
 ;; f(0) => 0
 ;; f(1) => 1
 ;; f(2) => 2
@@ -125,7 +125,52 @@
 		 )]
     (_iter 0 1 2 0)))
 
-;; ex 1.15
+;; ex 1.12
+;; solve 1
+(defn pascal [x y]
+  (cond (= x y) 1
+	(= x 0) 1
+	:else (+ (pascal (dec x) (dec y))
+		 (pascal x (dec y)))))
+(defn pascal-triangle [n]
+  (letfn [(_iter-per-col [r c length line]
+			 (if (= c length)
+			   line
+			   (_iter-per-col r
+					  (inc c)
+					  length
+					  (conj line (pascal c r)))))
+	  (_iter-per-row [l result]
+			 (if (> l n)
+			     result
+			     (_iter-per-row
+			      (inc l)
+			      (conj result (_iter-per-col l 0 (inc l) [])))))]
+    (_iter-per-row 0 [])))
+
+;;solve 2
+(defn pascal-row[n]
+  (letfn [(next-row [row]
+		    (letfn [(_iter [c nrow]
+				   (if (= c (dec (count row)))
+				     nrow
+				     (_iter (inc c)
+					    (conj nrow
+						  (+ (nth row c)
+						     (nth row (inc c)))))))]
+		      (conj (vec (cons 1 (_iter 0 []))) 1)
+		      ))]
+    (cond (= n 0) [1]
+	  (= n 1) [1 1]
+	  :else (next-row (pascal-row (dec n))))))
+(defn pascal-triangle [n]
+  (letfn [(_iter-row [c result]
+		     (if (= c n)
+		       result
+		       (_iter-row (inc c) (conj result (pascal-row c)))))]
+    (_iter-row 0 [])))
+
+;; Ex 1.15
 (defn cube [x]
   (* x x x))
 (defn p [x]
