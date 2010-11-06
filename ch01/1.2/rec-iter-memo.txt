@@ -1,0 +1,247 @@
+사실 번역본 46 페이지에 나오는 내용입니다.
+함수형 프로그래밍과 루프와의 관계에 대한 생각을 정리해 보았습니다.
+
+p46
+"...
+ 보통 널리 쓰는 언어 번역기 내부에서 되도는 프로시저를 해석할 때,
+ 그 프로세스가 반복하는 것인지 따져보지 않고
+ 불러 쓰는 횟수에 비례하는 만큼 기억 공간을 쓰도록,
+ 곧 되도는 프로세스만 내놓게끔 처리하기 때문이다.
+ 그러므로 그런 언어에서는 do, repeat, until, for, while 따위의
+ 특별한 형태(special form)를 써야만 반복 프로세스를 나타낼 수 있다.
+ ...
+ 꼬리 되돌기(tail-recursive)라는 기법을 쓰면, 프로시저를 불러쓰는 문법만으로도
+ 반복할 일을 얼마든지 나타낼 수 있기 때문에, 특별한 형태가 굳이 필요없고
+ 따로 있다 하더라도 그저 달콤한 문법으로 쓰일 뿐이다."
+
+
+결국 프로시저 정의와 수행에 대해서 이렇게 말하는 것 같습니다.
+
+* 보통 언어 :
+  - 되도는 프로시저 정의(recursive call) -> 되도는 프로세스로 수행
+  - 반복하는 프로시저 정의(loop 사용) -> 반복하는 프로세스 수행
+
+* 스킴 언어 :
+  - 되도는 프로시저 정의 
+             -> 꼬리 되돌기하면(tail recursion) -> 반복하는 프로세스로 수행
+                       꼬리 되돌기가 아니면 -> 되도는 프로세스로 수행
+  - 반복하는 프로시저로 정의 : loop문법 없으니까 꼬리되돌기 프로시저로 만들어!!!!
+
+
+이리하여 우리는 1.2 절을 공부하면서 꼬리되돌기하는 프로시저를 만드느라 머리를 쥐어뜯게 되었습니다.
+OTL...
+
+---
+
+반복하는 프로세스로 정의할 때, for나 while을 쓰면 금방 할 것 같은데라는 생각을 했습니다.
+그런데 사실은 그게 아니었던 것 같습니다.
+정말로 꼬리되돌기와 반복프로세스는 동일한 것이기 때문입니다.
+
+factorial을 한 번 볼까요?
+
+되도는 프로세스로 정의하면 (p42)
+(define (fact-rec n)
+  (if (= n 1) 1
+      (* n (fact-rec (- n 1)))))
+
+이해하기가 쉽습니다.
+하지만, fact-rec가 되돌아와서 n을 곱해야하기 때문에,
+fact-rec를 되부를 때마다 n을 기억하고 있어야 됩니다.
+뿐만 아니라, *도 해야되니까 그 사실 또한 기억하고 있어야 됩니다.
+(되도는 호출에서 n값과 *할 차례 라는 사실을 스택에 저장해야 되는거죠.)
+
+----
+
+반복하는 프로세스로 정의하면 (p43,44)
+(define (fact-i n)
+  (define (fact-iter product counter max-count)
+    (if (> counter max-count)
+	product
+	(fact-iter (* counter product)
+		   (+ counter 1)
+		   max-count)))
+  (fact-iter 1 1 n))
+
+조금 복잡해졌습니다. 하지만, fact-iter가 돌아와서 하는 일은 
+앞서 가져온 값을 위로 돌려보내는 것 뿐이기 때문에 따로 기억할 건 없습니다.
+사실 이 정의도 여전히 되도는 프로시저(recursive call 이 있으므로)입니다.
+보통의 언어라면 매번 되도는 단계마다 어디로 값을 돌려보내줄지를 기억하는 형태로 번역합니다.
+똑똑하게도 스킴언어 번역기는 이 프로시저를 다음과 같은 되도는 프로시저로 해석할 줄 압니다.
+그런 다음에 최종 결과만 한 번 되돌려 보내는 형태로 번역하는 거지요.
+
+// C언어로 정의
+int fact_i(int n)
+{
+  int product = 1;
+  int counter = 1;
+  int max_count = n;
+
+  while ( !(counter > max_count) ) {
+    product = product * counter;
+    counter = counter + 1;
+    max_count = max_count;
+  }
+
+  return product;
+}
+
+----------------------------------------------------------
+여기서 꼼꼼히 살펴보면 정말로 꼬리되돌기 구조와 루프 구조가 동일하다는 것을 알 수 있습니다.
+
+---------------------------------------
+1) '최초의 fact-iter 호출'을 '변수 선언 및 값 할당'으로 나타냅니다.
+  
+          (fact-iter    1       1        n    )
+  (define (fact-iter product counter max-count) ...
+ 
+==>
+
+  int product = 1;
+  int counter = 1;
+  int max_count = n;
+
+
+---------------------------------------
+2) '되도는 조건'을 'while의 조건'으로 설정합니다.
+   
+   (if (> counter max-counter)
+       (.)
+       (fact-iter ...)
+
+==>
+ 
+   while ( !(counter > max counter) ) {
+      ...
+   }
+
+---------------------------------------
+3) '되돌때 인자 설정'을 '루프 내에서 변수값 할당'으로 표현합니다.
+
+           (fact-iter (* counter product)  (+ counter 1)   max-count)
+   (define (fact-iter        product           counter     max-count) ...
+
+===>
+
+    product = product * counter;
+    counter = counter + 1;
+    max_count = max_count;
+
+    
+---------------------------------------
+4) '종료조건에서 값을 돌려주는 것'을 '루프가 끝난 후 값을 돌려주는 것'으로 표현합니다.
+   
+   (if (> counter max-counter)
+       product
+       (...))
+
+==>
+   return product;
+
+----------------------------------------------------------
+  
+
+결국 꼬리되돌기는 변수에 값을 할당하는 것과 루프에 일대일 대응이 되는 구조였던 것입니다.
+그러고 보면 1.2의 문제를 풀때 꼬리되돌기가 어려운 것이 아니라,
+루프를 이용해서 정의하는 것 자체가 어려운 일인 것 같습니다.
+그래도 이렇게 대응시켜보니 꼬리되돌기를 만들기가 약간은 수월해질 것 같습니다.
+
+몇 가지 예제를 덧붙입니다.
+
+
+
+
+
+
+----------------------------------------------------------
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 1부터 n까지의 합을 구하는 함수
+
+;;; 되도는 프로세스(recursive process)
+;;; 되도는 프로시저(recursive procedure)
+(define (sum-to-n-rec n)
+  (if (= n 1) 1
+      (+ n (sum-to-n-rec (- n 1)))))
+
+(sum-to-n-rec 10)
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 반복 프로세스(iterative process)
+;;; 반복 프로시저(iterative procedure)
+int sum_to_n_iter (int n)
+{
+   int sum = 0;
+   int i = n;
+
+   while ( i > 0) { 
+      sum = sum + i;
+      i = i - 1;
+   }
+   return sum;
+}
+
+;;; 반복 프로세스(iterative process)
+;;; 되도는 프로시저(recursive procedure)
+(define (sum-to-n-iter n)
+  (define (sum-to-n-inner sum i)
+    (if (> i 0)	
+	(sum-to-n-inner (+ sum i) (- i 1))
+	sum))  
+  (sum-to-n-inner 0 n))
+
+(sum-to-n-iter 10)
+
+----------------------------------------------------------
+
+
+
+
+
+
+----------------------------------------------------------
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; fibonacci 수 구하기
+
+;;; 되도는 프로세스(recursive process)
+;;; 되도는 프로시저(recursive procedure)
+(define (fib-rec n)
+  (cond ((= n 0) 0)
+	((= n 1) 1)
+	(else (+ (fib-rec (- n 1)) 
+		 (fib-rec (- n 2))))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 반복 프로세스(iterative process)
+;;; 반복 프로시저(iterative procedure)
+int fib_iter(int n)
+{
+   int fib_next = 1;
+   int fib_cur = 0;
+   int count = n;
+
+   int tmp;
+   while ( count > 0) { 
+     tmp = fib_next;
+
+     fib_next = fib_cur + fib_next;
+     fib_cur = tmp;
+     count--;
+   }
+
+   return fib_cur;
+}
+
+;;; 반복 프로세스(iterative process)
+;;; 되도는 프로시저(recursive procedure)
+;;;;;;;;;;;;;;;;;;;;;;;;
+;;; cur 를 현재 피보나치 수 
+;;; next 를 다음 피보나치 수 
+(define (fib-i n)
+  (define (fib-iter fib_next fib_cur count)
+    (if (> count 0)
+	(fib-iter (+  fib_next fib_cur) fib_next (- count 1))
+	fib_cur))
+  (fib-iter 1 0 n))  ; 다음(1번째) 피보나치 수 : 1, 현재(0번째) 피보나치 수 : 0, 현재는 N-n번째(0번째)
+
+----------------------------------------------------------
