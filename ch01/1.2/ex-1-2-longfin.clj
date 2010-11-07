@@ -222,3 +222,32 @@
 			       (- counter 1)
 			       (* product b))))]
     (_iter b n 1)))
+
+;; ex1.17
+
+(defn my* [a b]
+  (if (= b 0)
+    0
+    (+ a (my* a (- b 1)))))
+(defn twice [n]
+  (* 2 n))
+(defn halve [n]
+  (/ n 2))
+
+(defn fast-my* [a b]
+  (cond
+   (= b 0) 0
+   (even? b) (fast-my* (twice a) (halve b)) 
+   :else (+ a (fast-my* a (- b 1)))))
+
+;; ex1.18
+
+(defn fast-my*-iter [a b]
+  (letfn [(_iter[a b result]
+		(cond
+		 (= b 0) result
+		 (even? b) (_iter (twice a) (halve b) result)
+		 :else (_iter a (dec b) (+ result a))
+		 ))]
+    (_iter a b 0)
+    ))
