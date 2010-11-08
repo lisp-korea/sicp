@@ -251,3 +251,41 @@
 		 ))]
     (_iter a b 0)
     ))
+
+;; ex1.19
+
+;; Tpq
+;; a = bq + aq + ap
+;; b = bp + aq
+
+;; Tpq^2
+;; a = (bp+aq)q + (bq + aq + ap)q + (bq + aq + ap)p
+;;   = bpq + aqq + bqq + aqq + apq + bpq + apq + app
+;;   = 2bpq + bqq + 2apq + app + aqq + aqq
+;;   = b(2pq + qq) + a(2pq + qq) + a(pp + qq)
+;; b = (bp+aq)p + (bq + aq + ap)q
+;;   = bpp + apq + bqq + aqq + apq
+;;   = 2apq + aqq + bpp + bqq
+;;   = b(pp + qq) + a(2pq + qq)
+
+;; p' = (pp + qq)
+;; q' = (2pq + qq)
+(defn fib [n]
+  (letfn [(_iter [a b p q count]
+		 (cond (= count 0) b
+		       (even? count) (_iter a
+					    b
+					    (+
+					     (* p p)
+					     (* q q))
+					    (+
+					     (* 2 p q)
+					     (* q q))
+					    (/ count 2))
+		       :else (_iter (+ (* b q) (* a q) (* a p))
+				    (+ (* b p) (* a q))
+				    p
+				    q
+				    (- count 1))))]
+    (_iter 1 0 0 1 n)))
+		       
