@@ -49,3 +49,45 @@
 ;; n>1 => 2^(h(n-1)) 
 (define (k n) (* 5 n n))
 ;; 5 * n^2
+
+;; ex 1.11.
+(define (func-f-recur n)
+  (cond
+   ((< n 3) n)
+   (else (+
+	  (func-f-recur (- n 1))
+	  (* 2 (func-f-recur (- n 2)) )
+	  (* 3 (func-f-recur (- n 3)))))))
+;; (func-f-recur 4)
+(define (func-f-iter n)
+  (define (func-f-iter-r a b c d n)
+    (cond
+     ((= a n) (+ b (* 2 c) (* 3 d)))
+     (else (func-f-iter-r (+ a 1) (+ b (* 2 c) (* 3 d)) b c n))))
+  (cond
+   ((< n 3) n)
+   (else (func-f-iter-r 3 2 1 0 n))))
+;;(func-f-iter 4)
+
+;; ex 1.12.
+(define (pascal-num x y)
+  (cond
+   ((= x 1) 1)
+   ((= x y) 1)
+   (else (+ (pascal-num (- x 1) (- y 1)) (pascal-num x (- y 1))))))
+;;(pascal-num 1 1)
+;;(pascal-num 1 2)
+;;(pascal-num 2 2)
+;;(pascal-num 1 3)
+;;(pascal-num 2 3)
+;;(pascal-num 3 3)
+(define (pascal-num-row i n)
+  (cond
+   ((= i n) (cons (pascal-num i n) '()))
+   (else (cons (pascal-num i n) (pascal-num-row (+ i 1) n)))))
+(define (pascal-triangle n)
+  (pascal-num-row 1 n))
+;; (pascal-triangle 6)
+
+;; ex 1.13.
+;; skip
