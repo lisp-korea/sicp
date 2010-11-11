@@ -144,28 +144,46 @@
 ;; n < 3 == f(n) = n
 ;; n >= 3 == f(n) = f(n-1) + 2f(n - 2) + 3f(n - 3)
 
+(define (fibo n)
+  (cond ((= n 0) 0)
+	((= n 1) 1)
+	(else (+ (fibo (- n 1))
+		 (fibo (- n 2))))))
+
+
+(define (fibo-iter a b count)
+  (cond ((= count 0) b)
+	(else (fibo-iter (+ a b) a (- count 1)))))
+
+
+       (fibo 4)
+  (fibo 3)  (fibo 2)
+
+       (fibo 5)
+(+ (fibo 4) (fibo 3))
+
+
 
 (define (f n)
   (cond ((> 3 n) n)
 	(else (+ (f (- n 1)) (* 2 (f (- n 2))) (* 3 (f (- n 3)))))))
 
-
-
+;;
+;;
 ;;                              f(3)
 ;;                 (+ (f 2)  (* 2 (f 1))  (* 3 (f 0))) 
 ;;                  
-
-
+;;
 ;;                              f(4)
 ;;              (+ (f 3) (* 2 (f 2)) (* 3 (f 1)))                    
-
+;;
 ;;                              f(5)
 ;;           (+ (f 4)       (* 2 (f 3))       (* 3 (f 2))
-
+;;
 ;;                              f(6)
 ;;             (+  (f 5)    (* 2 (f 4))    (* 3 (f 3)))
-
-
+;;
+;;
 (define (f-iter n)
   (define (f-inner-iter a b c count)
     (cond ((= count 0) c)
@@ -173,7 +191,7 @@
   (f-inner-iter 2 1 0 n))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.12 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;
 ;;   --------------------->  x              pascal(0,0)  = 1
 ;;   |           1                          pascal(1,4)  = 4
 ;;   |         1   1                        pascal(4,4)  = 1
@@ -182,22 +200,22 @@
 ;;   |   1   4   6   4   1                  pascal(5,5)  = 1
 ;;   | 1   5   10  10  5   1                x == 0 then 1   
 ;;   y                                      x == y then 1
-
+;;
 ;;   pascal(1,5)  = pascal(0,4) + pascal(1,4)
 ;;   pascal(1,4)  = pascal(0,3) + pascal(1,3)
 ;;   pascal(1,3)  = pascal(0,2) + pascal(1,2)
 ;;   pascal(1,2)  = pascal(0,1) + pascal(1,1)
-
+;;
 ;;   pascal(1,5)  = pascal(0,4) + pascal(0,3) + pascal(0,2) + pascal(0,1) + pascal(1,1) = 5
-
-
+;;
+;;
 ;;   pascal(2,4) = pascal(1,3) + pascal(2,3)
 ;;   pascal(2,4) = 3 + pascal(2,3)
-
+;;
 ;;   pascal(2,3) = pascal(1,2), + pascal(2,2)
 ;;                      2              1
 ;;   pascal(2,4) = 3 + 2 + 1 = 6
-
+;;
 ;;   pascal(x,y)  ->   x == 0 then 1, x == y then 1
 ;;                ->   pascal(x-1,y-1) + pascal(x,y-1)
 
