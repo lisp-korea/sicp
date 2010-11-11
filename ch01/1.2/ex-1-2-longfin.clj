@@ -94,7 +94,7 @@
 ;; 16
 ;; (h n) => ?
 
-;; ex.11
+;; ex 1.11
 ;; f(0) => 0
 ;; f(1) => 1
 ;; f(2) => 2
@@ -125,7 +125,52 @@
 		 )]
     (_iter 0 1 2 0)))
 
-;; ex 1.15
+;; ex 1.12
+;; solve 1
+(defn pascal [x y]
+  (cond (= x y) 1
+	(= x 0) 1
+	:else (+ (pascal (dec x) (dec y))
+		 (pascal x (dec y)))))
+(defn pascal-triangle [n]
+  (letfn [(_iter-per-col [r c length line]
+			 (if (= c length)
+			   line
+			   (_iter-per-col r
+					  (inc c)
+					  length
+					  (conj line (pascal c r)))))
+	  (_iter-per-row [l result]
+			 (if (> l n)
+			     result
+			     (_iter-per-row
+			      (inc l)
+			      (conj result (_iter-per-col l 0 (inc l) [])))))]
+    (_iter-per-row 0 [])))
+
+;;solve 2
+(defn pascal-row[n]
+  (letfn [(next-row [row]
+		    (letfn [(_iter [c nrow]
+				   (if (= c (dec (count row)))
+				     nrow
+				     (_iter (inc c)
+					    (conj nrow
+						  (+ (nth row c)
+						     (nth row (inc c)))))))]
+		      (conj (vec (cons 1 (_iter 0 []))) 1)
+		      ))]
+    (cond (= n 0) [1]
+	  (= n 1) [1 1]
+	  :else (next-row (pascal-row (dec n))))))
+(defn pascal-triangle [n]
+  (letfn [(_iter-row [c result]
+		     (if (= c n)
+		       result
+		       (_iter-row (inc c) (conj result (pascal-row c)))))]
+    (_iter-row 0 [])))
+
+;; Ex 1.15
 (defn cube [x]
   (* x x x))
 (defn p [x]
@@ -177,3 +222,70 @@
 			       (- counter 1)
 			       (* product b))))]
     (_iter b n 1)))
+
+;; ex1.17
+
+(defn my* [a b]
+  (if (= b 0)
+    0
+    (+ a (my* a (- b 1)))))
+(defn twice [n]
+  (* 2 n))
+(defn halve [n]
+  (/ n 2))
+
+(defn fast-my* [a b]
+  (cond
+   (= b 0) 0
+   (even? b) (fast-my* (twice a) (halve b)) 
+   :else (+ a (fast-my* a (- b 1)))))
+
+;; ex1.18
+
+(defn fast-my*-iter [a b]
+  (letfn [(_iter[a b result]
+		(cond
+		 (= b 0) result
+		 (even? b) (_iter (twice a) (halve b) result)
+		 :else (_iter a (dec b) (+ result a))
+		 ))]
+    (_iter a b 0)
+    ))
+
+;; ex1.19
+
+;; Tpq
+;; a = bq + aq + ap
+;; b = bp + aq
+
+;; Tpq^2
+;; a = (bp+aq)q + (bq + aq + ap)q + (bq + aq + ap)p
+;;   = bpq + aqq + bqq + aqq + apq + bpq + apq + app
+;;   = 2bpq + bqq + 2apq + app + aqq + aqq
+;;   = b(2pq + qq) + a(2pq + qq) + a(pp + qq)
+;; b = (bp+aq)p + (bq + aq + ap)q
+;;   = bpp + apq + bqq + aqq + apq
+;;   = 2apq + aqq + bpp + bqq
+;;   = b(pp + qq) + a(2pq + qq)
+
+;; p' = (pp + qq)
+;; q' = (2pq + qq)
+(defn fib [n]
+  (letfn [(_iter [a b p q count]
+		 (cond (= count 0) b
+		       (even? count) (_iter a
+					    b
+					    (+
+					     (* p p)
+					     (* q q))
+					    (+
+					     (* 2 p q)
+					     (* q q))
+					    (/ count 2))
+		       :else (_iter (+ (* b q) (* a q) (* a p))
+				    (+ (* b p) (* a q))
+				    p
+				    q
+				    (- count 1))))]
+    (_iter 1 0 0 1 n)))
+		       

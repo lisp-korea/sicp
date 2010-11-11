@@ -112,3 +112,332 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 1.13
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.14 ???
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.15 ???
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.16
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.17 ???
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.18 ???
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.19
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.20
+
+;; if is special-form
+;;
+;; ;;  normal-order evailation
+
+; remainder count: 0
+(gcd 206 40)
+
+; rc: 0
+(if (= 40 0)
+    206
+    (gcd 40 (remainder 206 40))) 
+
+; rc: 0
+(gcd 40 (remainder 206 40)) 
+
+; rc: 0
+(if (= (remainder 206 40) 0)
+    40
+    (gcd (remainder 206 40)
+         (remainder 40 (remainder 206 40))))
+
+; rc: 1
+(if (= 6 0)
+    40
+    (gcd (remainder 206 40)
+         (remainder 40 (remainder 206 40))))
+
+; rc: 1
+(gcd (remainder 206 40)
+     (remainder 40 (remainder 206 40)))
+
+; rc: 1
+(if (= (remainder 40 (remainder 206 40)) 0)
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+         (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))))
+
+; rc: 2
+(if (= (remainder 40 6) 0)
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+         (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))))
+
+; rc: 3
+(if (= 4 0)
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+         (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))))
+
+; rc: 3
+(gcd (remainder 40 (remainder 206 40))
+     (remainder (remainder 206 40)
+                (remainder 40
+                           (remainder 206 40))))
+
+; rc: 3
+(if (= (remainder (remainder 206 40)
+                  (remainder 40
+                             (remainder 206 40)))
+       0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40))))))
+
+; rc: 4
+(if (= (remainder 6
+                  (remainder 40
+                             (remainder 206 40)))
+       0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40))))))
+
+; rc: 5
+(if (= (remainder 6
+                  (remainder 40
+                             6))
+       0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40))))))
+
+; rc: 6
+(if (= (remainder 6 4) 0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40))))))
+
+; rc: 7
+(if (= 2 0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40)
+                    (remainder 40
+                               (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40))))))
+
+; rc: 7
+(gcd (remainder (remainder 206 40)
+                (remainder 40
+                           (remainder 206 40)))
+     (remainder (remainder 40
+                           (remainder 206 40))
+                (remainder (remainder 206 40)
+                           (remainder 40
+                                      (remainder 206 40)))))
+
+; rc: 7
+(if (= (remainder (remainder 40
+                             (remainder 206 40))
+                  (remainder (remainder 206 40)
+                             (remainder 40
+                                        (remainder 206 40))))
+       0)
+    (remainder (remainder 206 40)
+               (remainder 40
+                          (remainder 206 40)))
+    (gcd (remainder (remainder 40
+                               (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40))))
+         (remainder (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40)))
+                    (remainder (remainder 40
+                                          (remainder 206 40))
+                               (remainder (remainder 206 40)
+                                          (remainder 40
+                                                     (remainder 206 40)))))))
+
+; rc: 14 (there were 7 calls to remainder in the = form above)
+(if (= 0 0)
+    (remainder (remainder 206 40)
+               (remainder 40
+                          (remainder 206 40)))
+    (gcd (remainder (remainder 40
+                               (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40))))
+         (remainder (remainder (remainder 206 40)
+                               (remainder 40
+                                          (remainder 206 40)))
+                    (remainder (remainder 40
+                                          (remainder 206 40))
+                               (remainder (remainder 206 40)
+                                          (remainder 40
+                                                     (remainder 206 40)))))))
+
+; rc: 14
+(remainder (remainder 206 40)
+           (remainder 40
+                      (remainder 206 40)))
+
+; rc: 15
+(remainder 6
+           (remainder 40
+                      (remainder 206 40)))
+
+; rc: 16
+(remainder 6 (remainder 40 6))
+
+; rc: 17
+(remainder 6 4)
+
+; rc: 18
+2
+
+;; ;;  applicative-order evailation
+
+
+; rc: 0
+(gcd 206 40)
+
+; rc: 0
+(if (= 40 0)
+    206
+    (gcd 40 (remainder 206 40))) 
+
+; rc: 0
+(gcd 40 (remainder 206 40))
+
+; rc: 1
+(gcd 40 6)
+
+; rc: 1
+(if (= 6 0)
+    40
+    (gcd 6 (remainder 40 6))) 
+
+; rc: 1
+(gcd 6 (remainder 40 6))
+
+; rc: 2
+(gcd 6 4)
+
+; rc: 2
+(if (= 4 0)
+    6
+    (gcd 4 (remainder 6 4))) 
+
+; rc: 2
+(gcd 4 (remainder 6 4))
+
+; rc: 3
+(gcd 4 2)
+
+; rc: 3
+(if (= 2 0)
+    4
+    (gcd 2 (remainder 4 2))) 
+
+; rc: 3
+(gcd 2 (remainder 4 2))
+
+; rc: 4
+(gcd 2 0)
+
+; rc: 4
+(if (= 0 0)
+    2
+    (gcd 0 (remainder 2 0))) 
+
+; rc: 4
+2
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.21
+(define (square x)
+  x * x)
+(define (smallest-divisor n)
+  (find-divisor n 2))
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (+ test-divisor 1)))))
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+
+;; > > (smallest-divisor 199)
+;; 199
+;; > (smallest-divisor 1999)
+;; 1999
+;; > (smallest-divisor 19999)
+;; 7
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 1.22
+
+(define (runtime)
+  (display "runtime..."))
+
+(define (square x)
+  x * x)
+(define (smallest-divisor n)
+  (find-divisor n 2))
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (+ test-divisor 1)))))
+(define (divides? a b)
+  (= (remainder b a) 0))
+(define (prime? n)
+    (= n (smallest-divisor n)))
+
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+(define (start-prime-test n start-time)
+  (if (prime? n)
+      (report-prime (- (runtime) start-time))
+      (newline)))
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
