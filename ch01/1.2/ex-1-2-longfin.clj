@@ -290,12 +290,7 @@
     (_iter 1 0 0 1 n)))
 
 (defn % [a b]
-  (loop [a a
-	 b b]
-    (cond
-     (= a b) 0
-     (< a b) a
-     (> a b) (recur (- a b) b))))
+  (mod a b))
     
 (defn gcd [a b]
   (if (= b 0)
