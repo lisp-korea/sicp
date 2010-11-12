@@ -383,5 +383,162 @@
     "OK"
     "NO GOOD")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.19 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.19 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.20 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+
+(define (% a b)
+  (remainder a b))
+
+(gcd 206 40)
+
+
+;; 정의대로 계산 시 
+(if (= 40 0)                      ;; 정의대로 계산하더라도 if 는 더 이상 미룰 수 없고 즉시 계산되어야 한다.
+    206
+    (gcd 40 (remainder 206 40)))
+
+
+(if (= (% 206 40) 0) 		; 6
+    40
+    (gcd (remainder 206 40) (remainder 40 (remainder 206 40))))
+
+(if (= (% 40 (% 206 40)) 0)  ; 4
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))
+
+
+(if (= (% (% 206 40) (% 40 (% 206 40))) 0)  ; 2
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+	 (remainder (remainder 40 (remainder 206 40))
+		    (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))))
+
+          
+(if (= (% (% 40 (% 206 40))
+		  (% (% 206 40) (% 40 (% 206 40)))) 0) ; 0
+    (% (% 206 40) (% 40 (% 206 40))) ;;=> 2
+    (gcd (remainder (remainder 40 (remainder 206 40))
+		    (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))
+	 (remainder (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+		    (remainder (remainder 40 (remainder 206 40))
+			       (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))
+
+
+;; remainder 는 if 문이 평가될때, 그리고 평가결과가 참일때 리턴되면서 계산된다.
+;; 18 번 호출
+
+
+;; 인자 먼저 계산 시
+(gcd 206 40)
+
+(if (= 40 0)
+    206
+    (gcd 40 (% 206 40)))
+
+(if (= 6 0)
+    40
+    (gcd 6 (% 40 6)))
+
+(if (= 4 0)
+    6
+    (gcd 4 (% 6 4)))
+
+(if (= 2 0)
+    4
+    (gcd 2 (% 4 2)))
+
+(if (= 0 0)
+    2
+    (gcd 0 (remainder 2 0)))
+
+;; 4 번 호출
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.21 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (square n)
+  (* n n))
+
+(define (smallest-divisor n)
+  (define (divides? a b)
+    (= (remainder b a) 0))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+	  ((divides? test-divisor n) test-divisor)
+	  (else (find-divisor n (+ test-divisor 1)))))
+  (find-divisor n 2))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(smallest-divisor 199)
+;=> 199
+(smallest-divisor 1999)
+;=> 1999
+(smallest-divisor 19999)
+;=> 7
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.22 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (runtime)
+  (current-milliseconds))
+
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+
+(define (start-prime-test n start-time)
+  (if (prime? n)
+      (report-prime (- (runtime) start-time))
+      (void)))
+
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+(define (search-for-primes start end)
+  (if (even? start) (search-for-primes (+ start 1) end)
+      (cond ((> end start) (timed-prime-test start)
+	                   (search-for-primes (+ start 2) end)))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.23 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (next n)
+  (if (= n 2) 3 (+ n 2)))
+
+
+(define (smallest-divisor n)
+  (define (divides? a b)
+    (= (remainder b a) 0))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+	  ((divides? test-divisor n) test-divisor)
+	  (else (find-divisor n (next test-divisor)))))
+  (find-divisor n 2))
+
+
+;; old-version
+;1000000000039 *** 681
+;1000000000061 *** 624
+;1000000000063 *** 624
+
+;; new-viersion
+;1000000000039 *** 331
+;1000000000061 *** 321
+;1000000000063 *** 320
+
+
+;; 음..대략 두배는 빨라지는데..=_=??
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 연습문제 1.24 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
