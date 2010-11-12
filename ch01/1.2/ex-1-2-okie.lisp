@@ -158,3 +158,146 @@
 ; ex 1.12
 
 ; ex 1.13
+
+;; 1.2.5
+
+(defun gcd-recur (a b) 
+;  (print a b)
+  (format t "GCD : ~$ ~$~%" a b)
+  (if (= b 0)
+      a
+      (gcd-recur b (mod a b))))
+
+;; ex 1.20
+
+; applicative-order
+(gcd-recur 206 40)
+(gcd-recur 40 (mod 206 40))
+(gcd-recur 40 6)
+(gcd-recur 6 (mod 40 6))
+(gcd-recur 6 4)
+(gcd-recur 4 (mod 6 4)) 
+(gcd-recur 4 2)
+(gcd-recur 2 (mod 4 2)) 
+(gcd-recur 2 0)
+2
+
+;; text 1.2.6
+(defun even? (n)
+  (if (= 0 (mod n 2))
+      t
+      nil))
+
+(defun square (x)
+  (* x x))
+
+(defun expmod (base exponent m)
+  (declare (NOTINLINE EXPMOD))
+  (cond ((= exponent 0) 1)
+        ((even? exponent)
+          (mod  (square (expmod base (/ exponent 2) m))
+                m))
+        (t
+          (mod  (* base (expmod base (- exponent 1) m))
+                m))))
+
+;; ex 1.21
+(defun divides? (a b)
+  (= (mod b a) 0))
+
+(defun find-divisor (n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+    ((divides? test-divisor n) test-divisor)
+    (t (find-divisor n (+ test-divisor 1)))))
+
+(defun smallest-divisor (n)
+  (find-divisor n 2))
+
+(defun prime? (n)
+  (= n (smallest-divisor n)))
+
+(dolist (num '(199 1999 19999))
+  (format t
+    "The smallest divisor of ~d is ~d~%"
+    num (smallest-divisor num)))
+
+;; ex 1.22
+(defun search-for-primes (start end)
+  (let ((start (if (evenp start) (1+ start) start)))
+    (do ((i start (+ i 2)))
+        ((> i end))
+      (when (prime? i)
+        (format t "~d is prime~%" i)))))
+
+(time (dotimes (i 1000 t) (search-for-primes 1000 1019)))
+
+;; ex 1.23
+(defun next-divisor (n)
+  (if (= n 2)
+    3
+    (+ n 2)))
+
+(defun find-divisor (n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+    ((divides? test-divisor n) test-divisor)
+    (t (find-divisor n (next-divisor test-divisor)))))
+
+;; ex 1.24
+;; O(log(n))
+
+;; ex 1.25
+;; fast-expt will make huge numbers
+
+;; ex 1.26
+(trace expmod)
+(expmod 15 10 10)
+
+(defun louis-expmod (base exponent m)
+  (declare (NOTINLINE LOUIS-EXPMOD))
+  (cond ((= exponent 0) 1)
+        ((evenp exponent)
+          (rem  (*  (louis-expmod base (/ exponent 2) m)
+                    (louis-expmod base (/ exponent 2) m))
+                m))
+        (t
+          (rem  (* base (louis-expmod base (- exponent 1) m))
+                m))))
+
+(trace louis-expmod)
+(louis-expmod 15 10 10)
+
+
+;; ex 1.27
+;; basic
+(defun full-fermat-test (n)
+  (defun aux-test (a)
+    (cond ((= a 1) t)
+          ((/= (expmod a n n) a) nil)
+          (t (aux-test (1- a)))))
+  (aux-test (1- n)))
+
+;; tail recursion by compiling aux-test in cl
+(defun full-fermat-test (n)
+  (defun aux-test (a)
+    (cond ((= a 1) t)
+          ((/= (expmod a n n) a) nil)
+          (t (aux-test (1- a)))))
+  (compile 'aux-test)
+  (aux-test (1- n)))
+
+;; ex 1.28
+(defun expmod (base exponent m)
+  (cond ((= exponent 0) 1)
+        ((evenp exponent)
+          (let* ( (candidate (expmod base (/ exponent 2) m))
+                  (root (rem (square candidate) m)))
+                (if (and (/= candidate 1) (/= candidate (1- m)) (= root 1))
+                  0
+                  root)))
+        (t
+          (rem  (* base (expmod base (- exponent 1) m))
+                m))))
+
+(defun miller-rabin-test (n)
+  (let ((testnum (1+ (random (1- n)))))
+    (= (expmod testnum (1- n) n) 1)))
