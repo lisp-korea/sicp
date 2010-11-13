@@ -288,4 +288,142 @@
 				    q
 				    (- count 1))))]
     (_iter 1 0 0 1 n)))
-		       
+
+(defn % [a b]
+  (mod a b))
+    
+(defn gcd [a b]
+  (if (= b 0)
+    a
+    (gcd b (% a b))))
+
+;; ex 1.20
+;;
+;; a. normal order
+;; (gcd 206 40)
+;; a = 206
+;; b = 40
+;; (if (= (% 206 40) 0)
+;;   206
+;;   ;; a = 40
+;;   ;; b = (% 206 40) = 6
+;;   (if (= (% 206 40) 0)
+;;     40
+;;     ;; a = (% 206 40) = 6
+;;     ;; b = (% 40 (% 206 40)) = 4
+;;     (if (= (% 40 (% 206 40)) 0)
+;;       (% 206 40)
+;;       ;; a = (% 40 (% 206 40)) = 4
+;;       ;; b = (% (% 206 40) (% 40 (% 206 40))) = 2
+;;       (if (= (% (% 206 40) (% 40 (% 206 40))) 0) 
+;; 	(% 40 (% 206 40))
+;; 	;; a = (% (% (206 40) (% 40 (% 206 40)))) = 2
+;; 	;; b = (% (% 40 (% 206 40)) (% (% (206 40) (% 40 (% 206 40))))) = 0
+;; 	(if (= (% (% 40 (% 206 40)) (% (% (206 40) (% 40 (% 206 40))))) 0)
+;; 	  (% (% (206 40) (% 40 (% 206 40))))
+;; 	  (gcd ...))))))
+;; 19 times?
+
+;; b. applicative order
+;; (gcd 206 40)
+;; (gcd (gcd 40 (% 206 40)))
+;; (gcd (gcd 40 6))
+;; (gcd (gcd (gcd 6 (% 40 6))))
+;; (gcd (gcd (gcd 6 4)))
+;; (gcd (gcd (gcd 4 (% 6 4))))
+;; (gcd (gcd (gcd 4 2)))
+;; (gcd (gcd (gcd 2 (% 2 4))))
+;; (gcd (gcd (gcd 2 0)))
+;; 2
+;; 4times
+
+(defn divides? [a b]
+  (= (% b a) 0))
+(defn find-divisor [n test-divisor]
+  (loop [n n
+	 test-divisor test-divisor]
+    (cond (> (square test-divisor) n) n
+	  (divides? test-divisor n) test-divisor
+	  :else (recur n (+ test-divisor 1)))))
+(defn smallest-divisor [n]
+  (find-divisor n 2))
+
+(defn prime? [n]
+  (= n (smallest-divisor n)))
+
+(defn expmod [base exp m]
+  (cond (= exp 0) 1
+	(even? exp) (% (square (expmod base (/ exp 2) m))
+		       m)
+	:else (% (* base (expmod base (- exp 1) m))
+		 m)))
+
+;; ex 1.21
+(smallest-divisor 199) ;199
+(smallest-divisor 1999) ;1999
+(smallest-divisor 19999) ;7
+
+
+;; ex 1.22
+(defn report-prime [elapsed-time]
+  (print "***")
+  (print elapsed-time)
+  (newline))
+(defn start-prime-test [n start-time]
+  (if (prime? n)
+    (report-prime (- (System/currentTimeMillis) start-time))))
+(defn timed-prime-test [n]
+  (newline)
+  (print n)
+  (start-prime-test n (System/currentTimeMillis)))
+
+(defn search-primes [min count]
+  (loop [m min
+	 c count]
+    (cond (= c 0) (newline)
+	  (prime? m) (do
+		       (timed-prime-test m)
+		       (recur (+ 2 m) (dec c)))
+	  :else (recur (+ 2 m) c))))
+
+;; ex 1.23
+(defn next-divisor [n]
+  (if (= n 2)
+    3
+    (+ 2 n)))
+
+;; ex 1.24
+(defn fermat-test [n]
+  (letfn [(try-it [a]
+		  (= (expmod a n n) a))]
+    (try-it (inc (rand-int (dec n))))))
+
+(defn fast-prime? [n count]
+  (loop [n n count count]
+    (cond (= count 0) true
+	  (fermat-test n) (recur n (dec count))
+	  :else false)))
+
+;; ex 1.27
+
+(defn carmichael? [n]
+  (loop [a 1]
+    (cond (= n a) true
+	  (= (expmod a n n) (% a n)) (recur (inc a))
+	  :else false)))
+
+;; ex 1.28
+(defn expmod [base exp n]
+  (cond (= exp 0) 1
+	(even? exp)
+	(let
+	    [root (expmod base (/ exp 2) n)
+	     next (% (square root) n)]
+	  (if (and
+	       (not (= root 1))
+	       (not (= root (dec n)))
+	       (= next 1))
+	    0
+	    next))
+	:else (% (* base (expmod base (dec exp) n))
+		 n)))
