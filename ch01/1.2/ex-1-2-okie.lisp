@@ -163,12 +163,32 @@
 
 (defun gcd-recur (a b) 
 ;  (print a b)
-  (format t "GCD : ~$ ~$~%" a b)
+;  (format t "GCD : ~$ ~$~%" a b)
+  (declare (NOTINLINE gcd-recur))
   (if (= b 0)
       a
       (gcd-recur b (mod a b))))
 
+(trace gcd-recur)
+(gcd-recur 206 40)
+
 ;; ex 1.20
+
+;; if (= 40 0) ? no
+;;  (gcd 40 (mod 206 40))
+
+;; if (= (mod 206 40) 0) ? 6  => 1 time
+;;  (gcd (mod 206 40) (mod 40 (mod 206 40)))
+
+;; if (= (mod 40 (mod 206 40) 0) ? 4 ==> 2 times
+;;  (gcd (mod 40 (mod 206 40)) | (mod (mod 206 40) (mod 40 (mod 206 40))))
+
+;; if (= (mod (mod 206 40) (mod 40 (mod 206 40))) 0) ? 2 ==> 4 times
+;;  (gcd (mod (mod 206 40) (mod 40 (mod 206 40))) | (mod (mod 40 (mod 206 40)) (mod (mod 206 40) (mod 40 (mod 206 40)))))
+
+;; if (= (mod (mod 40 (mod 206 40)) (mod (mod 206 40) (mod 40 (mod 206 40)))) 0) ? 0 ==> 7 times
+;; (mod (mod 206 40) (mod 40 (mod 206 40))) ==> 4 times
+;; total 18 times
 
 ; applicative-order
 (gcd-recur 206 40)
@@ -181,6 +201,8 @@
 (gcd-recur 2 (mod 4 2)) 
 (gcd-recur 2 0)
 2
+
+4 times
 
 ;; text 1.2.6
 (defun even? (n)
