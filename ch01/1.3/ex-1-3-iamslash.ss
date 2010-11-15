@@ -26,5 +26,19 @@
   (* (sum f (+ a (/ dx 2.0)) add-dx b) dx))
 
 ;; 1.29 sol
-(define (integral-simpson f a b n)
-)
+
+(define (integral-simposon f a b n)
+  (define (sum-simpson term a next b k n)
+    (cond ((or (= k 0) (= k n))
+           (+ (term a) (sum term (next a) next b)))
+          ((% k 1)
+           ((+ (* (term a) 2)
+               (sum term (next a) next b))))
+          (else
+           ((+ (* (term a) 4)
+               (sum term (next a) next b))))))
+  (define (get-h a b n)
+    (/ (- b a) n))
+  (define (add-dx x)
+  )
+  
