@@ -183,7 +183,7 @@
 (integral-simpson gaussian-f -100 100 1000)
 (integral-simpson gaussian-f -100 100 10000)
 (integral-simpson gaussian-f -100 100 100000)
-;; 원래 1 임
+;; 원래 거의 1임
 
 
 
