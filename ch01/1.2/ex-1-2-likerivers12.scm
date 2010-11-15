@@ -667,7 +667,7 @@
 	 (remainder 40 
 		    (remainder (206 40)))))
 ;;->
-;;여기서 처음오르 remainder가 사용됨.
+;;여기서 처음으로 remainder가 사용됨.
 (if (= 6 0)
     40
     (gcd (remainder 206 40)
@@ -685,7 +685,7 @@
     206
     (gcd 40 (remainder 206 40)))
 ;;->
-;;여기서 처음오르 remainder가 사용됨.
+;;여기서 처음으로 remainder가 사용됨.
 (if (= 40 0)
     206
     (gcd 40 6))
