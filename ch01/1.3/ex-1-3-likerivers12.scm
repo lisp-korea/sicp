@@ -170,7 +170,7 @@
 (integral-simpson cube 0 1.0 10000)
 (integral-simpson cube 0 1.0 100000)
 (integral-simpson cube 0 1.0 1000000)
-;; 원래 0.5 임 
+;; 원래 0.25 임 
 
 (integral cube 0 1 0.01)
 (integral cube 0 1 0.001)
