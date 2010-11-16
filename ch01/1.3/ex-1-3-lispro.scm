@@ -152,3 +152,24 @@
        (newline)
        (sum-of-prime-squares 1 5)
        
+       ;ex 1.33 b
+(define (filtered-accumulate-iter combiner null-value term a next b filter)
+  (define (iter a result)
+    (if (> a b)
+       result
+       (if (filter a b)
+          (iter (next a) (combiner (term a) result))
+          (iter (next a) result))))
+  (iter a null-value))
+       
+(define (gcd a b)
+  (if (= b 0)
+     a
+     (gcd b (remainder a b))))
+(define (gcd1? i n) (= (gcd i n) 1))
+
+;test
+(print "ex 1.33 b")
+(newline)
+(filtered-accumulate + 0 sq 2 inc 10 prime?)
+(filtered-accumulate-iter * 1 identity 1 inc 10 gcd1?)
