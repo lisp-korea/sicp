@@ -841,7 +841,6 @@
 ;;        ^
 ;;        | : (j + 1) / 3 * 2
 
-;;; 뭔가 문제가 있다. cont-frac 수정 필요한 듯...
 (define (cont-frac-euler k)
   (define (d-euler j)
     (let ((rem (remainder j 3)))
