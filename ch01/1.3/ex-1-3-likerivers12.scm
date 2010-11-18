@@ -805,8 +805,8 @@
       (frac-inner k (/ (n k) (d k)))))
 
 (/ 1. (+ 1 (/ 1 (+ 1 (/ 1 1)))))  ; k:3
-(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 1)   ; 0.6666666666666666
-(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 2)   ; 0.6666666666666666
+(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 1)   ; 1.0
+(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 2)   ; 0.5
 (cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 3)   ; 0.6666666666666666
 (cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 4)   ; 0.6000000000000001
 (cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 5)   ; 0.625
@@ -856,10 +856,9 @@
 (cont-frac-euler 1) ; 1.0                  ; (/ 1. 1)
 (cont-frac-euler 2) ; 0.6666666666666666   ; (/ 1. (+ 1 (/ 1 2)))
 (cont-frac-euler 3) ; 0.75                 ; (/ 1. (+ 1 (/ 1 (+ 2 (/ 1 1)))))
-(cont-frac-euler 4) ; 
-(cont-frac-euler 5) ;
-(cont-frac-euler 6) 
-; 0.71875 ; (/ 1. (+ 1 (/ 1 (+ 2 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 4)))))))))
+(cont-frac-euler 4) ; 0.7142857142857143
+(cont-frac-euler 5) ; 0.71875 ; (/ 1. (+ 1 (/ 1 (+ 2 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 4)))))))))
+(cont-frac-euler 6) ; 0.717948717948718
 (cont-frac-euler 10)
 (cont-frac-euler 20) ; 0.7182818284590452
 (cont-frac-euler 30) ; 0.7182818284590453
