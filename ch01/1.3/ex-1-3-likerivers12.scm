@@ -770,12 +770,16 @@
   (define (jth-frac j)
     (if (= j k)
 	(/ (n j) (d j))
-	(/ (n j) (+ (d (- j 1)) (jth-frac (+ j 1))))))
+	(/ (n j) (+ (d j) (jth-frac (+ j 1))))))
   (jth-frac 1))
-
 
 ;;; phi =~ (1 + (sqrt 5)) / 2 =~ 1.618033988749989
 ;;; 1/phi =~ 0.6180339887498588
+
+(cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 1)  ; 1.0
+(cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 2)  ; 0.5
+(cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 3)  ; 0.6666666666666666
+(cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 4)  ; 0.6000000000000001
 (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 5)  ; 0.625
 (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 10)  ; 0.6179775280898876
 (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 15)  ; 0.6180344478216819
@@ -783,19 +787,29 @@
 (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 30)  ; 0.6180339887496482
 (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 50)  ; 0.6180339887498948
 
+;;; test 
+(cont-frac (lambda (i) 1.0) (lambda (i) 2.0) 3)  ; (/ 1. (+ 2 (/ 1 (+ 2 (/ 1 2)))))
+
 
 
 ;;; 반복 프로세스(iterative process)
 (define (cont-frac-iter n d k)
   (define (frac-inner j acc-frac)
-    (if (= j 2)
-	(/ (n 1) (+ (d 1) acc-frac))
+    (if (> j 2)
 	(frac-inner (- j 1)
 		     (/ (n (- j 1))
-			(+ (d (- j 1)) acc-frac)))))
-  (frac-inner k (/ (n k) (d k))))
+			(+ (d (- j 1)) acc-frac)))
+	(/ (n 1) (+ (d 1) acc-frac))))
+  (if (= k 1)
+      (/ (n 1) (d 1))
+      (frac-inner k (/ (n k) (d k)))))
 
-(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 5)  ; 0.625
+(/ 1. (+ 1 (/ 1 (+ 1 (/ 1 1)))))  ; k:3
+(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 1)   ; 1.0
+(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 2)   ; 0.5
+(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 3)   ; 0.6666666666666666
+(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 4)   ; 0.6000000000000001
+(cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 5)   ; 0.625
 (cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 10)  ; 0.6179775280898876
 (cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 15)  ; 0.6180344478216819
 (cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 20)  ; 0.6180339850173578
@@ -807,12 +821,186 @@
 ;;;--------------------------< ex 1.38 >--------------------------
 ;;; p91,92
 
+;; 1/
+;;   (1 + 1/
+;;     (2 + 1/
+;;       (1 + 1/
+;;         (1 + 1/
+;;           (4 + 1/
+;;             (1 + 1/
+;;                ...
+;;                       ))))))
+
+;; j mod 3
+;; ->   1 2 0
+;; -----------
+;; dj : 1 2 1     (j: 1  2  3)
+;;      1 4 1     (   4  5  6)
+;;      1 6 1     (   7  8  9)
+;;      1 8 1 ... (  10 11 12)
+;;        ^
+;;        | : (j + 1) / 3 * 2
+
+(define (cont-frac-euler k)
+  (define (d-euler j)
+    (let ((rem (remainder j 3)))
+      (cond ((= rem 0) 1.0)
+	    ((= rem 1) 1.0)
+	    (else (* (/ (+ j 1.) 3.) 2.0)))))
+  (cont-frac-iter (lambda (i) 1.0) d-euler k))
 
 
+;; e =~ 2.718281828459045
+;; <- (exp 1)
+;; e-2 =~ 0.718281828459045
+(cont-frac-euler 1) ; 1.0                  ; (/ 1. 1)
+(cont-frac-euler 2) ; 0.6666666666666666   ; (/ 1. (+ 1 (/ 1 2)))
+(cont-frac-euler 3) ; 0.75                 ; (/ 1. (+ 1 (/ 1 (+ 2 (/ 1 1)))))
+(cont-frac-euler 4) ; 0.7142857142857143
+(cont-frac-euler 5) ; 0.71875 ; (/ 1. (+ 1 (/ 1 (+ 2 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 4)))))))))
+(cont-frac-euler 6) ; 0.717948717948718
+(cont-frac-euler 10)
+(cont-frac-euler 20) ; 0.7182818284590452
+(cont-frac-euler 30) ; 0.7182818284590453
+(cont-frac-euler 40) ; 0.7182818284590453
+(cont-frac-euler 50) ; 0.7182818284590453
+
+;(/ 1. (+ 1 (/ 1 (+ 2 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 (+ 4 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 (+ 6 (/ 1 (+ 1 (/ 1 (+ 1 (/ 1 (+ 8 (/ 1 1)))))))))))))))))))))))
+;-> 0.7182818229439497
 
 
 ;;;--------------------------< ex 1.39 >--------------------------
 ;;; p92
+
+;;; 되돌기 프로세스(recursive process)
+(define (tan-cf x k)
+  (define (n i)
+    (square i))
+  (define (d i)
+    (+ (* (- i 1) 2) 1))
+  (define (tan-cf-rec n d k)
+    (define (jth-frac j)
+      (if (= j k)
+	  (/ (n x) (d j))
+	  (/ (n x) (- (d j) (jth-frac (+ j 1))))))
+    (jth-frac 2))
+  (if (= k 1)
+      (/ x (d 1))
+      (/ x (- (d 1) (tan-cf-rec n d k)))))
+
+(tan 1) ; 1.5574077246549023
+
+(tan-cf 1. 1)  ; 1.0
+(tan-cf 1. 2)  ; 1.4999999999999998
+(tan-cf 1. 3)  ; 1.5555555555555558
+(tan-cf 1. 4)  ; 1.5573770491803278
+(tan-cf 1. 5)  ; 1.5574074074074076
+(tan-cf 1. 10) ; 1.557407724654902
+(tan-cf 1. 15) ; 1.557407724654902
+(tan-cf 1. 20) ; 1.557407724654902
+
+;;; 반복 프로세스
+(define (tan-cf x k)
+  (define (tan-cf-iter n1 n d k)
+    (define (jth-tan-cf-inner j acc-frac)
+      (if (> j 2)
+	  (jth-tan-cf-inner (- j 1)
+			    (/ (n x)
+			       (- (d (- j 1)) acc-frac)))
+	  (/ (n1 x) (- (d 1) acc-frac))))
+    (if (= k 1)
+	(/ (n x) (d 1))
+	(jth-tan-cf-inner k (/ (n x) (d k)))))
+  (tan-cf-iter (lambda (i) i) 
+	       (lambda (i) (square i))
+	       (lambda (i) (+ (* (- i 1) 2) 1))
+	       k))
+
+(tan 1) ; 1.5574077246549023
+
+(tan-cf 1. 1)  ; 1.0
+(tan-cf 1. 2)  ; 1.4999999999999998
+(tan-cf 1. 3)  ; 1.5555555555555558
+(tan-cf 1. 4)  ; 1.5573770491803278
+(tan-cf 1. 5)  ; 1.5574074074074076
+(tan-cf 1. 10) ; 1.557407724654902
+(tan-cf 1. 15) ; 1.557407724654902
+(tan-cf 1. 20) ; 1.557407724654902
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;;; 반복 프로세스
+(define (tan-cf x k)
+  (define (tan-cf-iter n1 n d k)
+    (define (tan-cf-inner j acc-frac)
+      (if (> j 2)
+	  (tan-cf-inner (- j 1)
+			(/ (n x)
+			   (- (d (- j 1)) acc-frac)))
+	  (/ (n1 x) (- (d (- j 1)) acc-frac))))
+    (if (= k 1)
+	(/ (n x) (d 1))
+	(tan-cf-inner k (/ (n x) (d k)))))
+  (tan-cf-iter (lambda (i) i) 
+	       (lambda (i) (square i))
+	       (lambda (i) (+ (* (- i 1) 2) 1))
+	       k))
+
+(tan 1) ; 1.5574077246549023
+
+(tan-cf 1. 1)  ; 1.0
+(tan-cf 1. 2)  ; 1.4999999999999998
+(tan-cf 1. 3)  ; 1.5555555555555558
+(tan-cf 1. 4)  ; 1.5573770491803278
+(tan-cf 1. 5)  ; 1.5574074074074076
+(tan-cf 1. 10) ; 1.557407724654902
+(tan-cf 1. 15) ; 1.557407724654902
+(tan-cf 1. 20) ; 1.557407724654902
+
+
+
+
+;;; 아래와 같은 형태를 갖는 연속분수 계산함수를 만들어내는 함수
+; n1(x) /
+;        C( d(1) , n(x) /
+;                         C( d(2) , n(x) / 
+;                                         ...
+;                                         C( d(k-1) , n(x) / d(k)
+
+;;; 반복 프로세스(iterative process)
+(define (cf-general-iter combiner n1 n d)
+  (lambda (x k)
+    (define (frac-inner j acc-frac)
+      (if (> j 2)
+	  (frac-inner (- j 1)
+		      (/ (n x)
+			 (combiner (d (- j 1)) acc-frac)))
+	  (/ (n1 x) (combiner (d (- j 1)) acc-frac))))
+    (if (= k 1)
+	(/ (n x) (d 1))
+	(frac-inner k (/ (n x) (d k))))))
+
+(define tan-cf
+  (cf-general-iter -
+		   (lambda (i) i) 
+		   (lambda (i) (square i))
+		   (lambda (i) (+ (* (- i 1) 2) 1))))
+
+
+(tan 1) ; 1.5574077246549023
+
+(tan-cf 1. 1)  ; 1.0
+(tan-cf 1. 2)  ; 1.4999999999999998
+(tan-cf 1. 3)  ; 1.5555555555555558
+(tan-cf 1. 4)  ; 1.5573770491803278
+(tan-cf 1. 5)  ; 1.5574074074074076
+(tan-cf 1. 10) ; 1.557407724654902
+(tan-cf 1. 15) ; 1.557407724654902
+(tan-cf 1. 20) ; 1.557407724654902
+
+
 
 
 
@@ -881,7 +1069,6 @@
 (define (cube x) (* x x x))
 
 ((deriv cube) 5)
-
 
 
 
