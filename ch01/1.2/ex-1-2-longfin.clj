@@ -338,7 +338,7 @@
 ;; 4times
 
 (defn divides? [a b]
-  (= (% b a) 0))
+  (= (mod b a) 0))
 (defn find-divisor [n test-divisor]
   (loop [n n
 	 test-divisor test-divisor]
