@@ -282,12 +282,101 @@
 ;=> 1.6182212829589844
 
 
+;; 연습문제 1.36
+
+(define (fixed-point2 f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (display guess)
+    (newline)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+	  next
+	  (try next))))
+  (try first-guess))
+
+; x |-> log(1000) / log(x)
+
+(fixed-point2 (lambda (x) (/ (log 1000) (log x))) 10.0)
+; 약 34단계
+;=> 4.555532257016376
+(expt 4.555532257016376 4.555532257016376)
+;=> 999.991323238027
+
+(define (average a b)
+  (/ (+ a b) 2.0))
+
+(fixed-point2 (lambda (x) (average x (/ (log 1000) (log x))))
+	      10.0)
+;=> 11단계
+;=> 4.555536206185039
+
+
+;; 연습문제 1.37
+;; a.
+
+;; (/ (n 1) (+ (d 1) (/ (n 2) (+ (d 2) (/ (n 3) (+ (d 3) (/ (n 4) ... (+ (/ (n k) (d k))))))))))
+
+(define golden-ratio 1.6180)
+
+(define (cont-frac n d k)
+  (define (cont-frac-inner i)
+    (if (> i k)
+	(/ (n i) (d i))
+	(/ (n 1) (+ (d i) (cont-frac-inner (+ i 1))))))
+  (cont-frac-inner 1))
+
+(define (cont-frac-count)
+  (define (cont-frac-count-inner count)
+    (if (> tolerance (abs (- (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) count) (/ 1 golden-ratio))))
+	count
+	(cont-frac-count-inner (+ count 1))))
+  (cont-frac-count-inner 1))
+
+(cont-frac-count)
+;=> 10
+
+(abs
+ (- (/ 1 golden-ratio)
+    (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 10)))
+;=> 8.58398571634833e-06
+
+;; b.
+
+(define (cont-frac-iter n d k)
+  (define (cont-frac-iter-inner i result)
+    (if (= i 0)			
+	result
+	(cont-frac-iter-inner (- i 1) (/ (n i) (+ (d i) result)))))
+  (cont-frac-iter-inner k (/ (n k) (d k))))
+
+(= 
+ (cont-frac-iter (lambda (i) 1.0) (lambda (i) 1.0) 10)
+ (cont-frac (lambda (i) 1.0) (lambda (i) 1.0) 10))
+
+;; 연습문제 1.38
 
 
 
+;; 연습문제 1.39
 
+;; tan x = (/ x (- 1 (/ (* x x) (- 3 (/ (* x x) (- 5 (/ (* x x) (- 7 (/ (* x x)   .....  (/ (* x x) (+ (- k 1) k))
 
+(define (tan-cf x k)
+  (let ((n (lambda (i) (if (= i 1) x (- (* x x)))))
+	(d (lambda (i) (- (* 2 i) 1))))
+    (cont-frac-iter n d k)))
 
+(define (between a b)
+  (> tolerance (abs (- a b))))
 
+(between
+ (tan pi)
+ (tan-cf pi 20))
+;=> #t
 
-
+(between
+ (tan 10.0)
+ (tan-cf 10.0 20))
+;=> #t
