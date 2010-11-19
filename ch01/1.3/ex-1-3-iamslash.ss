@@ -124,5 +124,42 @@
 (f f) ;; wrong argument...
       ;; procedure application: expected procedure, given: 2; arguments were: 2
 
-;; 1.34.5
-  
+;; 1.35
+(define tolerance 0.00001)  
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+(define (sqrt x)
+  (fixed-point (lambda (y) (/ x y)) 1.0))
+
+(fixed-point (lambda (y) (+ 1 (/ 1 y))) 1.0) ;; 1.6180327868852458
+
+;; 1.36
+
+(define (fixed-point f first-guess)
+  (define tolerance 0.00001)  
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (display guess)
+      (newline)
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+(fixed-point (lambda (x) (/ (log 1000) (log x))) 2)
+(fixed-point (lambda (x)
+               (/ (+ x (/ (log 1000) (log x)))) 2) 2)
+
+;; 1.37
+
+;; 1.38
+
+;; 1.39
