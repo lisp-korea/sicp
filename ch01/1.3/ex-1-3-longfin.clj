@@ -227,3 +227,126 @@
 ;; => (f 2)
 ;; => (2 2)
 ;; => error(2 isn't function!)
+
+(defn average [ & args]
+  (let [length (count args)]
+    (double (/ (apply + args) length))))
+
+(defn positive? [x]
+  (> x 0))
+(defn negative? [x]
+  (> 0 x))
+(defn abs [x]
+  (if (negative? x)
+    (* x -1)
+    x))
+(defn close-enough? [x y]
+  (< (abs (- x y)) 0.001))
+(defn search [f neg-point pos-point]
+  (loop [neg-point neg-point
+	 pos-point pos-point]
+    (let [mid-point (average neg-point pos-point)]
+      (if (close-enough? neg-point pos-point)
+	mid-point
+	(let [test-value (f mid-point)]
+	  (cond (positive? test-value) (recur neg-point mid-point)
+		(negative? test-value) (recur mid-point pos-point)
+		:else mid-point))))))
+
+(defn half-interval-method [f a b]
+  (let [a-value (f a)
+	b-value (f b)]
+    (cond (and
+	   (negative? a-value)
+	   (positive? b-value))
+	  (search f a b)
+	  (and
+	   (negative? b-value)
+	   (positive? a-value))
+	  (search f b a)
+	  :else
+	  (println "Value are not of opposite sign" a b))))
+
+
+(def tolerance 0.00001)
+(defn fixed-point [f first-guess]
+  (defn close-enough? [v1 v2]
+    (< (abs (- v1 v2)) tolerance))
+  (defn _try [guess]
+    (let [next (f guess)]
+      (if (close-enough? guess next)
+	next
+	(_try next))))
+  (_try first-guess))
+
+(defn sqrt [x]
+  (fixed-point #(/ x %) 1.0))
+(defn sqrt [x]
+  (fixed-point #(average % (/ x %))
+	       1.0))
+
+
+;; ex 1.35
+(defn golden-ratio [n]
+  (fixed-point #(+ 1 (/ 1.0 %)) n))
+;; ex 1.36
+(defn fixed-point [f first-guess]
+  (defn close-enough? [v1 v2]
+    (< (abs (- v1 v2)) tolerance))
+  (defn _try [guess]
+    (println guess)
+    (newline)
+    (let [next (f guess)]
+      (if (close-enough? guess next)
+	next
+	(_try next))))
+  (_try first-guess))
+(fixed-point #(/ (Math/log 1000) (Math/log %)) 2)
+;; ex 1.37
+(defn cont-frac [n d k]
+  (defn _inner [c]
+    (if (= c k)
+      (/ (n c) (d c))
+      (/ (n c)
+	 (+ (d c) (_inner (inc c))))))
+  (_inner 1))
+     
+;; user> (cont-frac (fn [n] 1.0) (fn [n] 1.0) 11)
+;; 0.6180555555555556
+
+(defn cont-frac [n d k]
+  (loop [c k
+	 result 0]
+    (cond
+     (= c 1)
+     (/ (n c)
+	(double (+ (d c) result)))
+     (= c k)
+     (recur (dec c)
+	    (+ result (/
+		       (n c)
+		       (d c))))
+     :else
+     (recur (dec c)
+	    (/ (n c)
+	       (+ result (d c)))))))
+;; ex 1.38
+(defn guess-e [k]
+  (+ 2 (cont-frac (fn [n] 1.0)
+	     (fn [n]
+	       (cond (= n 1) 1
+		     (= n 2) 2
+		     (= (mod (+ n 1) 3) 0) (* (/ (+ n 1) 3) 2)
+		     :else 1))
+	     k)))
+;; ex 1.39
+
+(defn tan-cf [x k]
+  (cont-frac
+   (fn [n]
+     (if (= n 1)
+       x
+       (* -1 (* x x))))
+   (fn [n]
+     (+ (* (- n 1) 2) 1))
+   k))
