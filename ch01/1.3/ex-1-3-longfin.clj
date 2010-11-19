@@ -173,3 +173,57 @@
   (defn coprime?[i]
     (= 1 (gcd i n)))
   (filtered-accumualte * 1 coprime? identity 1 inc n))
+
+
+(defn pi-sum [a b]
+  (sum #(/ 1.0 (* % (+ % 2)))
+       a
+       #(+ % 4)
+       b))
+
+(defn integral [f a b dx]
+  (* (sum f
+	  (+ a (/ dx 2.0))
+	  #(+ % dx)
+	  b)
+     dx))
+
+(defn f [x y]
+  (defn f-helper [a b]
+    (+ (* x (square a))
+       (* y b)
+       (* a b)))
+  (f-helper (+ 1 (* x y))
+	    (- 1 y)))
+
+(defn f [x y]
+  (#(+ (* x (square %1))
+       (* y %2)
+       (* %1 %2))
+   (+ 1 (* x y))
+   (- 1 y)))
+
+(defn f [x y]
+  (let [a (+ 1 (* x y))
+	b (- 1 y)]
+    (+ (* x (square a))
+       (* y b)
+       (* a b))))
+
+;; ex 1.34
+(defn f [g]
+  (g 2))
+
+;; (f square)
+;; => (squre 2)
+;; => 4
+
+;; (f #(* % (+ % 1)))
+;; => (#(* % (+ % 1)) 2)
+;; => (* 2 (+ 2 1))
+;; => 6
+
+;; (f f)
+;; => (f 2)
+;; => (2 2)
+;; => error(2 isn't function!)
