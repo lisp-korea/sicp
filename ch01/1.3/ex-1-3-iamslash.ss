@@ -56,4 +56,110 @@
   (iter a 0))
 
 ;; 1.31
-        
+
+;; linear recursion
+(define (product term a next b)
+  (if (> a b)
+      1
+      (* (term a)
+         (product term (next a) next b))))
+
+;; iterative recursion
+(define (product-iter term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (* (term a) result))))
+  (iter a 1))
+
+
+;; 1.32.a
+
+(define (accumulate combiner null-value term a next b)
+  (if (> a b)
+      null-value
+      (combiner (term a)
+                (accumulate combiner null-value term (next a) next b))))
+(define (sum term a next b)
+  (define (add x y)
+    (+ x y))
+  (accumulate add 0 term a next b))
+(define (product term a next b)
+  (define (mult x y) (* x y))
+  (accumulate mult 1 term a next b))  
+
+;; 1.32.b
+(define (accumulate combiner null-value term a next b)
+  (define (iter a result)
+    (if (> a b)
+        result
+        (iter (next a) (combiner (term a) result))))
+  (iter a null-value))    
+(define (sum term a next b)
+  (define (add x y)
+    (+ x y))
+  (accumulate add 0 term a next b))
+(define (product term a next b)
+  (define (mult x y) (* x y))
+  (accumulate mult 1 term a next b))  
+
+
+;; 1.33
+(define (filtered-accumulate combiner null-value term a next b predicate?)
+  (cond ((> a b) null-value)
+        ((predicate? a)
+         (combiner (term a)
+                   (accumulate combiner null-value term (next a) next b)))
+        (accumulate combiner null-value term (next a) next b)))
+;; 1.33.a
+(filtered-accumulate add 0 square a inc b prime?)
+ 
+;; 1.33.b ???
+
+;; 1.34
+(define (f g)
+  (g 2))
+(f square)
+(f (lambda (z) (* z (+ z 1))))
+(f f) ;; wrong argument...
+      ;; procedure application: expected procedure, given: 2; arguments were: 2
+
+;; 1.35
+(define tolerance 0.00001)  
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+(define (sqrt x)
+  (fixed-point (lambda (y) (/ x y)) 1.0))
+
+(fixed-point (lambda (y) (+ 1 (/ 1 y))) 1.0) ;; 1.6180327868852458
+
+;; 1.36
+
+(define (fixed-point f first-guess)
+  (define tolerance 0.00001)  
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (display guess)
+      (newline)
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+(fixed-point (lambda (x) (/ (log 1000) (log x))) 2)
+(fixed-point (lambda (x)
+               (/ (+ x (/ (log 1000) (log x)))) 2) 2)
+
+;; 1.37
+
+;; 1.38
+
+;; 1.39

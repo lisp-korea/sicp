@@ -173,3 +173,137 @@
 (newline)
 (filtered-accumulate + 0 sq 2 inc 10 prime?)
 (filtered-accumulate-iter * 1 identity 1 inc 10 gcd1?)
+
+;ex 1.34
+(define (f g)
+  (g 2))
+(print "ex 1.34")
+(newline)
+(f sq)
+(f (lambda (z) (* z (+ z 1))))
+;(f f) is error ; argument must be procedure (e. g. + - * or sq, etc)
+
+;ex 1.35
+; funtion fixed point of f(x) is x at f(x) =x .
+; Thus, x is fixed point at '1 + 1/x = x' 
+; 1 + 1/x = x ====> x^2 = x + 1
+; At this, x^2 = x + 1 is fomular for golden ratio(We can check 1.2.2(50p)
+;Therefore, golden ratio is fixed point of 'x |-> 1 + 1/x'
+
+; fixed-point procedure calculation
+(define tolerance 0.0001)
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2) ) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+         next
+         (try next))))
+  (try first-guess)
+  )
+;result
+(print "ex 1.35")
+(newline)
+(fixed-point (lambda (x) (+ 1 (/ 1 x))) 1.0)
+
+;ex 1.36
+(define (fixed-point36 f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2) ) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (display guess)
+      (newline)
+      (if (close-enough? guess next)
+         next
+         (try next))))
+  (try first-guess)
+  )
+;non-average
+(print "ex 1.36 non")
+(newline)
+(fixed-point36 (lambda (x) (/ (log 1000) (log x))) 2.0)
+;average
+(define (average x y) (/ (+ x y) 2))
+(print "ex 1.36 avg")
+(newline)
+(fixed-point36 (lambda (x) (average x (/ (log 1000) (log x)))) 2.0)
+
+;ex 1.37
+ (define (cont-frac n d k) 
+   (define (loop result term) 
+     (if (= term 0) 
+         result 
+         (loop (/ (n term) 
+                  (+ (d term) result)) 
+               (- term 1)))) 
+  
+   (loop 0 k)) 
+; ex 1.37 a
+ (print "ex 1.37 a")
+ (newline)
+ (cont-frac (lambda (i) 1.0)
+                (lambda (i) 1.0)
+                5)
+ (cont-frac (lambda (i) 1.0)
+                (lambda (i) 1.0)
+                11)
+ (cont-frac (lambda (i) 1.0)
+                (lambda (i) 1.0)
+                15)
+ ;ex 1.37 b
+  (define (cont-frac n d k) 
+    (cond ((= k 0) 0) 
+          (else (/ (n k) (+ (d k) (cont-frac n d (- k 1))))))) 
+
+ (print "ex 1.37 b")
+ (newline)
+ (cont-frac (lambda (i) 1.0)
+                (lambda (i) 1.0)
+                5)
+ (cont-frac (lambda (i) 1.0)
+                (lambda (i) 1.0)
+                11)
+ (cont-frac (lambda (i) 1.0)
+                (lambda (i) 1.0)
+                15)
+ 
+ ;ex 1.38
+  (define (e-euler k) 
+   (+ 2.0 (cont-frac (lambda (i) 1) 
+                     (lambda (i) 
+                       (if (= (remainder i 3) 2) 
+                           (/ (+ i 1) 1.5) 
+                           1)) 
+                     k))) 
+
+(print "ex 1.38")
+(newline)
+(e-euler 3)
+
+;ex 1.39
+ (define (tan-cf x k) 
+   (cont-frac (lambda (i) 
+                (if (= i 1) x (- (* x x)))) 
+              (lambda (i) 
+                (- (* i 2) 1)) 
+              k)) 
+
+ (define (tan-cf2 x k) 
+   (define (n i)
+     (if (= i 1)
+        x
+        (* x x)))
+   (define (d i) (- (* 2 i) 1))
+   (define (cont-frac-recr i)
+     (if (= i k)
+        (/ (n k) (d k))
+        (/ (n i) (- (d i) (cont-frac-recr (+ i 1))))))
+     (cont-frac-recr 1)
+     )
+
+(print "ex 1.39")
+(newline)
+(tan-cf2 0.7854 100000)
+(tan-cf2 0.4636 100000)
