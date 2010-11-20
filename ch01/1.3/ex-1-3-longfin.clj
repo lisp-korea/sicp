@@ -317,19 +317,12 @@
 (defn cont-frac [n d k]
   (loop [c k
 	 result 0]
-    (cond
-     (= c 1)
-     (/ (n c)
-	(double (+ (d c) result)))
-     (= c k)
-     (recur (dec c)
-	    (+ result (/
-		       (n c)
-		       (d c))))
-     :else
-     (recur (dec c)
-	    (/ (n c)
-	       (+ result (d c)))))))
+    (if (= c 1)
+      (/ (n c)
+	 (double (+ (d c) result)))
+      (recur (dec c)
+	     (/ (n c)
+		(+ result (d c)))))))
 ;; ex 1.38
 (defn guess-e [k]
   (+ 2 (cont-frac (fn [n] 1.0)
