@@ -160,6 +160,17 @@
 
 ;; 1.37
 
+(define (cont-frac n d k)
+  (define (cont-frac-inter n d k i)
+    (if (> i k)
+        0
+        (/ (n i) (+ (d i) (cont-frac-inter n d k (+ 1 i))))))        
+  (cont-frac-inter n d k 0))
+
+(cont-frac (lambda (i) 1.0)
+           (lambda (i) 1.0)
+           100)
 ;; 1.38
+
 
 ;; 1.39
