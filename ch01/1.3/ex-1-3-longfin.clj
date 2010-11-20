@@ -162,6 +162,12 @@
      (> a b) result
      (filter a) (recur (next a) (combiner result a))
      :else (recur (next a) result))))
+(defn filtered-accumualte-recur [combiner null-value filter term a next b]
+  (cond (> a b) null-value
+	(filter a) (combiner (term a)
+			     (filtered-accumualte-recur combiner null-value filter term (next a) next b))
+	:else (combiner null-value
+			(filtered-accumualte-recur combiner null-value filter term (next a) next b))))
 
 (defn sum-primes [a b]
   (filtered-accumualte + 0 prime? identity a inc b))
