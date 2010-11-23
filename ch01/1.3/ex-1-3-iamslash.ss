@@ -231,8 +231,8 @@
   (lambda (x)
     (f (g x))))
 (define (repeated f n)
-  (if (= n 0) (lambda (x) (f x))
-      (repeated (compose f f) (- n 1))))
+  (if (= n 0) f
+      (repeated (lambda (x) (f (f x))) (- n 1))))
 (define (square x)
   (* x x))
 ((repeated square 2) 5)
