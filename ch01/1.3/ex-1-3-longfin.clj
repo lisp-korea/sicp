@@ -162,6 +162,12 @@
      (> a b) result
      (filter a) (recur (next a) (combiner result a))
      :else (recur (next a) result))))
+(defn filtered-accumualte-recur [combiner null-value filter term a next b]
+  (cond (> a b) null-value
+	(filter a) (combiner (term a)
+			     (filtered-accumualte-recur combiner null-value filter term (next a) next b))
+	:else (combiner null-value
+			(filtered-accumualte-recur combiner null-value filter term (next a) next b))))
 
 (defn sum-primes [a b]
   (filtered-accumualte + 0 prime? identity a inc b))
@@ -317,19 +323,12 @@
 (defn cont-frac [n d k]
   (loop [c k
 	 result 0]
-    (cond
-     (= c 1)
-     (/ (n c)
-	(double (+ (d c) result)))
-     (= c k)
-     (recur (dec c)
-	    (+ result (/
-		       (n c)
-		       (d c))))
-     :else
-     (recur (dec c)
-	    (/ (n c)
-	       (+ result (d c)))))))
+    (if (= c 1)
+      (/ (n c)
+	 (double (+ (d c) result)))
+      (recur (dec c)
+	     (/ (n c)
+		(+ result (d c)))))))
 ;; ex 1.38
 (defn guess-e [k]
   (+ 2 (cont-frac (fn [n] 1.0)
