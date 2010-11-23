@@ -216,3 +216,23 @@
 (((double double) inc) 5)  ;; 9
 (((double (double double)) inc) 5) ;; 21
 
+;; 1.42
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+(define (square x)
+  (* x x))
+(define (inc x)
+  (+ x 1))
+((compose square inc) 6)
+
+;; 1.43
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+(define (repeated f n)
+  (if (= n 0) (lambda (x) (f x))
+      (repeated (compose f f) (- n 1))))
+(define (square x)
+  (* x x))
+((repeated square 2) 5)
