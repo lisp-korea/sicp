@@ -44,7 +44,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; p75~76
+
+;;;----
 (define (cube x) (* x x x))
+;;;----
 
 (define (sum term a next b)
   (if (> a b)
@@ -95,6 +98,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 가우시안 함수 적분 테스트
 
+;;;----
 (define (sum term a next b)
   (if (> a b)
       0
@@ -105,6 +109,7 @@
   (define (add-dx x) (+ x dx))
   (* (sum f (+ a (/ dx 2.0)) add-dx b)
      dx))
+;;;----
 
 (define (gaussian m sigma x)
   (define PI 3.14159)
@@ -131,6 +136,7 @@
 ;;; p77
 
 ;;; 앞의 방식으로 cube 정적분
+;;;----
 (define (cube x) (* x x x))
 
 (define (sum term a next b)
@@ -145,6 +151,7 @@
      dx))
 
 (integral cube 0 1 0.01)
+;;;----
 
 
 
@@ -210,8 +217,10 @@
 	(iter (next a) (+ result (term a)))))
   (iter a 0))
 
+;;;----
 (define (inc n)
   (+ n 1))
+;;;----
 
 (sum-iter identity 1 inc 10)
 
@@ -258,7 +267,6 @@
 	(iter (next a) (* result (term a)))))
   (iter a 1))
 
-
 ;;;-----
 (define (inc2 n)
   (+ n 2))
@@ -283,7 +291,7 @@
 (find-pi 100)
 (find-pi 1000)
 (find-pi 10000)
-(find-pi 100000)
+(find-pi 100000) ; 시간 너무 많이 걸림.
 
 ;;;----------------------------
 ;;; 반복 product 이용
@@ -403,9 +411,10 @@
 	    (iter (next a) result))))
   (iter a null-value))
 
-
+;;;----
 (define (square x)
   (* x x))
+;;;----
 
 (define (sum-of-prime a b)
   (filtered-accumulate prime? + 0 identity a inc b))
@@ -929,39 +938,6 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-;;; 반복 프로세스
-(define (tan-cf x k)
-  (define (tan-cf-iter n1 n d k)
-    (define (tan-cf-inner j acc-frac)
-      (if (> j 2)
-	  (tan-cf-inner (- j 1)
-			(/ (n x)
-			   (- (d (- j 1)) acc-frac)))
-	  (/ (n1 x) (- (d (- j 1)) acc-frac))))
-    (if (= k 1)
-	(/ (n x) (d 1))
-	(tan-cf-inner k (/ (n x) (d k)))))
-  (tan-cf-iter (lambda (i) i) 
-	       (lambda (i) (square i))
-	       (lambda (i) (+ (* (- i 1) 2) 1))
-	       k))
-
-(tan 1) ; 1.5574077246549023
-
-(tan-cf 1. 1)  ; 1.0
-(tan-cf 1. 2)  ; 1.4999999999999998
-(tan-cf 1. 3)  ; 1.5555555555555558
-(tan-cf 1. 4)  ; 1.5573770491803278
-(tan-cf 1. 5)  ; 1.5574074074074076
-(tan-cf 1. 10) ; 1.557407724654902
-(tan-cf 1. 15) ; 1.557407724654902
-(tan-cf 1. 20) ; 1.557407724654902
-
-
-
-
 ;;; 아래와 같은 형태를 갖는 연속분수 계산함수를 만들어내는 함수
 ; n1(x) /
 ;        C( d(1) , n(x) /
@@ -1134,22 +1110,113 @@
 
 ;;;--------------------------< ex 1.40 >--------------------------
 ;;; p98
+(define (cubic a b c)
+  (lambda (x)
+    (+ (expt x 3)
+       (* a (expt x 2))
+       (* b x)
+       c)))
+
+;;; x^3 - 3x^2 + 3x -1 = (x - 1)^3 =0 
+;;; => x = 1
+(newtons-method (cubic -3 3 -1) 1)
+;; => 1
+
+;;; x^3 - 3x^2 + 2x + 0 = x(x - 1)(x - 2) = 0
+;;; => x = 0, 1, 2
+(newtons-method (cubic -3 2 0) 0.1) ;-> 6.373186586624513e-12
+(newtons-method (cubic -3 2 0) 0.9) ;-> 0.9999999999999999
+(newtons-method (cubic -3 2 0) 1.7) ;-> 2.000000000023838
 
 
 ;;;--------------------------< ex 1.41 >--------------------------
 ;;; p98
+(define (double f)
+  (lambda (x)
+    (f (f x))))
+
+;;;---
+(define (inc x)
+  (+ x 1))
+;;;---
+
+((double inc) 3) ;-> 5
+
+(((double (double double)) inc) 5)  ;-> 21
+;; double -> 2 번
+;; (double double) -> 2 * 2 -> 4 번
+;; (double (double double)) -> 4 * 4 -> 16 번
+;; => inc를 16 번 수행 : +16
 
 
 ;;;--------------------------< ex 1.42 >--------------------------
 ;;; p99
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
 
+;;;---
+(define (square x)
+  (* x x))
+;;;---
+
+((compose square inc) 6)
+;; (square (inc 6)) -> (square 7) -> 49
 
 ;;;--------------------------< ex 1.43 >--------------------------
 ;;; p99
+(define (repeated f n)
+  (if (= n 1)
+      f
+      (repeated (compose f f) (- n 1))))
+
+((repeated square 2) 5)
+;;; -> 625
 
 
 ;;;--------------------------< ex 1.44 >--------------------------
 ;;; p99
+(define dx 0.1)
+
+(define (smooth f)
+  (lambda (x)
+    (/ (+ (f (- x dx))
+	  (f x)
+	  (f (+ x dx)))
+       3)))
+
+;;; f :
+;;;  ^
+;;;1 | -----
+;;;  | |   |
+;;;---------------> x
+;;;  0 1 2 3
+(define (f x)
+  (cond ((< x 1) 0)
+	((> x 3) 0)
+	(else 1)))
+(f 0)   ; 0
+(f 0.9) ; 0
+(f 1)   ; 1
+(f 1.1) ; 1
+(f 2)   ; 1
+(f 3)   ; 1
+
+((smooth (lambda (x) (* x x))) 1)
+;;; smooth f :
+;;;  ^
+;;;1 |  ---
+;;;  | /   \
+;;;---------------> x
+;;;  0 1 2 3
+
+;;; dx=0.1 일때
+((smooth f) 0)   ; 0
+((smooth f) 0.9) ; 1/3
+((smooth f) 1)   ; 2/3
+((smooth f) 1.1) ; 1
+((smooth f) 2)   ; 1
+((smooth f) 3)   ; 2/3
 
 
 ;;;--------------------------< ex 1.45 >--------------------------
