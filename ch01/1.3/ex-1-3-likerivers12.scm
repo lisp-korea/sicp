@@ -1219,10 +1219,167 @@
 ((smooth f) 3)   ; 2/3
 
 
+;;; n번 다듬는 함수
+(define (n-fold-smooth n)
+  (repeated smooth n))
+
+(((n-fold-smooth 3) f ) 0)   ; 0
+(((n-fold-smooth 3) f ) 0.9) ; 31/81
+(((n-fold-smooth 3) f ) 1)   ; 50/81
+(((n-fold-smooth 3) f ) 1.1) ; 22/27
+(((n-fold-smooth 3) f ) 2)   ; 1
+(((n-fold-smooth 3) f ) 3)   ; 50/81
+
+
 ;;;--------------------------< ex 1.45 >--------------------------
 ;;; p100
 
+;; y^3 = x
+;; => y |-> x / y^2
+((lambda (x)
+  (fixed-point (average-damp (lambda (y) (/ x (square y)))) 0.1))
+ 1)
+; 0.9999979647655368
+
+;; y^4 = x
+;; => y |-> x / y^3
+((lambda (x)
+  (fixed-point (average-damp (lambda (y) (/ x (cube y)))) 0.1))
+ 1) ; 평균내어잠재우기 1번 -> 답 안나옴
+
+((lambda (x)
+  (fixed-point ((repeated average-damp 2) (lambda (y) (/ x (cube y)))) 0.1))
+ 1) ; 평균내어잠재우기 2번 
+; 1.0000000000394822
+
+;; y^5 = x
+((lambda (x)
+  (fixed-point ((repeated average-damp 2) (lambda (y) (/ x (* y y y y)))) 0.1))
+ 1) 
+ ; 평균내어잠재우기 2번 -> 1.0000000000394822
+
+;;;-----------------------------
+;; n sqrt를 m번 평균잠재워서 구하는 함수를 만드는 함수
+(define (gen-fp-nsqrt m-damp n-pow)
+  (lambda (x)
+    (fixed-point ((repeated average-damp m-damp) (lambda (y) 
+						   (/ x (expt y (- n-pow 1)))))
+		 0.1)))
+
+;; y^3 = x
+((gen-fp-nsqrt 1 3) 1) ; 0.9999979647655368
+
+;; y^4 = x
+((gen-fp-nsqrt 1 4) 1) ; x
+((gen-fp-nsqrt 2 4) 1) ; 1.0000000000394822
+
+;; y^5 = x
+((gen-fp-nsqrt 1 5) 1) ; x
+((gen-fp-nsqrt 2 5) 1) ; 1.0000005231525688
+
+;; y^6 = x
+((gen-fp-nsqrt 1 6) 1) ; x
+((gen-fp-nsqrt 2 6) 1) ; 1.0000025135159185
+
+;; y^7 = x
+((gen-fp-nsqrt 1 7) 1) ; 0.9999982817926396
+((gen-fp-nsqrt 2 7) 1) ; 0.9999964281410385
+
+;; y^8 = x
+((gen-fp-nsqrt 2 8) 1) ; x
+((gen-fp-nsqrt 3 8) 1) ; 1.0000070713124947
+
+;; y^9 = x
+((gen-fp-nsqrt 2 9) 1) ; x
+((gen-fp-nsqrt 3 9) 1) ; 1.0000039048439704
+
+;; y^10 = x
+((gen-fp-nsqrt 2 10) 1) ; x
+((gen-fp-nsqrt 3 10) 1) ; 1.0000000000394822
+
+;; y^11 = x
+((gen-fp-nsqrt 2 11) 1) ; x
+((gen-fp-nsqrt 3 11) 1) ; 1.000002632280844
+
+;; y^12 = x
+((gen-fp-nsqrt 2 12) 1) ; 1.0000006655983138
+((gen-fp-nsqrt 3 12) 1) ; 1.0000008866907955
+
+;; y^15 = x
+((gen-fp-nsqrt 2 15) 1) ; 1.0000065559266993
+((gen-fp-nsqrt 3 15) 1) ; 1.000000079561101
+
+;; y^16 = x
+((gen-fp-nsqrt 2 16) 1) ; 1.0000053925024897
+((gen-fp-nsqrt 3 16) 1) ; 1.0000000000954519
+
+
+;;;---
+(define (cube x)
+  (* x x x))
+
+(define (square x)
+  (* x x))
+
+(define (average-damp f)
+  (lambda (x) (average x (f x))))
+
+(define (average x y)
+  (/ (+ x y) 2))     
+;;;---
 
 ;;;--------------------------< ex 1.46 >--------------------------
 ;;; p100
 
+(define (iterative-improve1 f-improve f-good-enough? guess)
+  (define (iter guess x)
+    (if (f-good-enough? guess x)
+	guess
+	(iter (f-improve guess) x)))
+  (lambda (x)
+    (iter 1.0 x)))
+
+
+
+;;; p40의 sqrt를 아래와 같이 고침
+;; sqrt -> iterative-improve
+(define (sqrt-new x)
+  (define (improve guess)
+    (average guess (/ x guess)))
+  (define (good-enough? guess x)
+    (< (abs (- (square guess) x)) 0.001))
+  ((iterative-improve1 improve good-enough? 1.0) x))
+
+(sqrt-new 9) ; 3.00009155413138
+
+;-------------------------------------------------------------
+
+
+(define (iterative-improve2 f-improve f-good-enough?)
+  (define (iter guess)
+    (let ((next (f-improve guess)))
+      (if (f-good-enough? guess next)
+	  next 
+	  (iter next))))
+  (lambda (first-guess)
+    (iter first-guess)))
+
+
+;;; p88의 fixed-point를 아래와 같이 고침
+(define tolerance 0.00001)
+
+(define (fixed-point-new f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  ((iterative-improve2 f close-enough?) first-guess))
+
+(fixed-point-new cos 1.0)
+(fixed-point-new (lambda (y) (+ (sin y) (cos y))) 1.0)
+
+;;; p89의 sqrt를 다음과 같이 고침
+;; sqrt -> fixed-point-new -> iterative-improve
+(define (sqrt-new2 x)
+  (fixed-point-new (lambda (y) (average y (/ x y)))
+		   1.0))
+
+(sqrt-new2 9)
