@@ -230,9 +230,75 @@
 (define (compose f g)
   (lambda (x)
     (f (g x))))
+;; (define (repeated f n)
+;;   (define (iter n r)
+;;     (if (= n 1) r
+;;         (iter (- n 1)
+;;               (compose f r))))
+;;   (iter n f))
 (define (repeated f n)
-  (if (= n 0) f
-      (repeated (lambda (x) (f (f x))) (- n 1))))
+  (if (= n 1) f
+      (repeated (compose f f) (- n 1))))
 (define (square x)
   (* x x))
 ((repeated square 2) 5)
+
+;; 1.44
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+(define (repeated f n)
+  (if (= n 1) f
+      (repeated (compose f f) (- n 1))))
+(define dx 0.00001)
+(define (average a b c)
+  (/ (+ a b c) 3.0))
+
+(define (smooth f)
+  (lambda (x)
+    (average (f (- x dx)) (f x) (f (+ x dx)))))
+
+(define (smooth-n f n)
+  ((repeated smooth n) f))
+
+(define (inc n)
+  (+ n 1))
+((smooth inc) 1)
+((smooth (smooth inc)) 1)
+((smooth-n inc 2) 1)
+
+;; 1.45
+(define (fixed-point f first-guess)
+  (define tolerance 0.00001)  
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (display guess)
+      (newline)
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+(define (average x y)
+  (/ (+ x y) 2))
+(define (average-damp f)
+  (lambda (x) (average x (f x))))
+(define (compose f g)
+  (lambda (x)
+    (f (g x))))
+(define (repeated f n)
+  (if (= n 1) f
+      (repeated (compose f f) (- n 1))))
+(define (sqrt x)
+  (fixed-point (average-damp (lambda (y) (/ x y)) 1.0)))
+(define (n-rt x n)
+  (define (exp_ x n)
+    (if (= n 1) x
+        (* x (exp_ x (- n 1)))))        
+  (define (f x)
+    (lambda (y) (/ x (exp_ y (- n 1)))))
+  (fixed-point ((repeated average-damp n) f) 1.0))
+(define (inc n)
+  (+ n 1))
+;;(n-rt 4 2)

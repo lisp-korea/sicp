@@ -1,4 +1,4 @@
-(define tolerance 0.0001)
+(define tolerance 0.00001)
 (define (square x)
   (* x x))
 (define (average x y)
@@ -110,7 +110,62 @@
 (define (smooth-n f n)
   (repeated (smooth f) n))
 	  
-	    
-	      
-	      
-	      
+
+;; ex 1.45
+(define (nth-root-test x n r)
+  (fixed-point
+   ((repeated average-damp r) (lambda (y) (/ x (expt y (- n 1))))) 1.0))
+
+;; r=1(n < 3)
+
+;; > (nth-root-test (expt 2 2) 2 1)
+;; 2.000000000000002
+;; > (nth-root-test (expt 2 3) 3 1)
+;; 1.9999981824788517
+;; > (nth-root-test (expt 2 4) 4 1)
+;;   ^C ^Cuser break
+
+;; r=2(n < 7)
+
+;; > (nth-root-test (expt 2 4) 4 2)
+;; 2.0000000000021965
+;; > (nth-root-test (expt 2 5) 5 2)
+;; 2.000001512995761
+;; > (nth-root-test (expt 2 6) 6 2)
+;; 2.0000029334662086
+;; > (nth-root-test (expt 2 7) 7 2)
+;; 2.0000035538623377
+;; > (nth-root-test (expt 2 8) 8 2)
+;;   ^C ^Cuser break
+
+
+(define (log2 n)
+  (/ (log n)
+     (log 2)))
+(define (nth-root x n)
+  (fixed-point
+   ((repeated average-damp (floor (log2 n))) (lambda (y) (/ x (expt y (- n 1))))) 1))
+   
+;; ex 1.46
+
+(define (iterative-improve good-enough? improve)
+  (lambda (g)
+    (define (try g)
+      (let ((improved (improve g)))
+	(if (good-enough? g improved)
+	    improved
+	    (try improved))))
+    (try g)))
+
+(define (sqrt x)
+  ((iterative-improve
+    (lambda (v1 v2)
+      (< (abs (- v1 v2)) tolerance))
+    (lambda (y)
+      (average y (/ x y)))) 1.0))
+
+(define (fixed-point f first-guess)
+  ((iterative-improve
+    (lambda (v1 v2)
+      (< (abs (- v1 v2)) tolerance))
+    f) first-guess))
