@@ -92,10 +92,10 @@
 	    (else
 	     (cons (- (abs g-n)) (abs g-d)))))))
 
-(print-rat (make-rat 3 6))   ; 1/2
-(print-rat (make-rat -3 6))  ; -1/2
-(print-rat (make-rat 3 -6))  ; -1/2
-(print-rat (make-rat -3 -6)) ; 1/2
+(print-rat (make-rat 3 6))   ; ( 1 . 2) ->  1/2
+(print-rat (make-rat -3 6))  ; (-1 . 2) -> -1/2
+(print-rat (make-rat 3 -6))  ; (-1 . 2) -> -1/2
+(print-rat (make-rat -3 -6)) ; ( 1 . 2) ->  1/2
 
 
 ;;;;=================<ch 2.1.2 요약의 경계>=====================
@@ -114,6 +114,9 @@
 (define (denom x)
   (let ((g (gcd (car x) (cdr x))))
     (/ (cdr x) g)))
+
+(let ((N (+ 8 4667 15820 14287181)))
+  (* (/ (+ 8 4667) N) (/ (+ 8 15820) N) N))
 
 
 ;;;--------------------------< ex 2.2 >--------------------------
@@ -594,27 +597,397 @@
 
 
 ;;;--------------------------< ex 2.7 >--------------------------
+;;; p122
+(define (make-interval a b)
+  (cons a b))
 
+(define (lower-bound x)
+  (car x))
+
+(define (upper-bound x)
+  (cdr x))
+
+(let ((a (make-interval 4 6))
+      (b (make-interval 9 11)))
+  (display "interval a")
+  (newline)
+  (display a)
+  (newline)
+  (display "interval b")
+  (newline)
+  (display b)
+  (newline)
+  (display "add-interval")
+  (newline)
+  (display (add-interval a b))
+  (newline)
+  (display "mul-interval")
+  (newline)
+  (display (mul-interval a b))
+  (newline)
+  (display "div-interval")
+  (newline)
+  (display (div-interval a b))
+  (newline))
+	 
 
 ;;;--------------------------< ex 2.8 >--------------------------
+;;; p122
+(define (sub-interval x y)
+  (make-interval (- (lower-bound x) (upper-bound y))
+		 (- (upper-bound x) (lower-bound y))))
 
+
+(let ((a (make-interval 4 6))
+      (b (make-interval 9 11)))
+  (display "interval a")
+  (newline)
+  (display a)
+  (newline)
+  (display "interval b")
+  (newline)
+  (display b)
+  (newline)
+  (display "add-interval")
+  (newline)
+  (display (add-interval a b))
+  (newline)
+  (display "mul-interval")
+  (newline)
+  (display (mul-interval a b))
+  (newline)
+  (display "div-interval")
+  (newline)
+  (display (div-interval a b))
+  (newline)
+  (display "sub-interval")
+  (newline)
+  (display (sub-interval a b))
+  (newline))
+	 
 
 ;;;--------------------------< ex 2.9 >--------------------------
+;;; p123
+(define (width-interval i)
+  (/ (- (upper-bound i) (lower-bound i))
+     2.0))
+
+(define ia (make-interval 4 6))
+
+(width-interval ia)
+
+(define ib (make-interval 9 10))
+
+(width-interval ib)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; a: -+--+--+--+--+--+--+--
+;;;       [1     3]
+;;;
+;;; b: -+--+--+--+--+--+--+--
+;;;                [4     6]
+;;;=> a : (1 . 3)
+;;;=> b : (4 . 6)
+
+(define a (make-interval 1 3)) ; (1 . 3)
+
+(define wa (width-interval a)) ; 1.0
+
+(define b (make-interval 4 6)) ; (4 . 6)
+
+(define wb (width-interval b)) ; 1.0
+
+(define a+b (add-interval a b)) ; (5 . 9)
+
+(define wa+b (width-interval a+b)) ; 2.0
+;;= (+ (width-interval a) (width-interval b)) ; 2.0
+
+(define a*b (mul-interval a b)) ; (4 . 18)
+
+(define wa*b (width-interval a*b)) ; 7.0
+;;!= (* (width-interval a) (width-interval b)) ; 1.0
 
 
 ;;;--------------------------< ex 2.10 >--------------------------
 
 
+(define (div-interval x y)
+  (let ((uy (upper-bound y))
+	(ly (lower-bound y)))
+    (if (and (not (= uy 0)) (not (= ly 0)))
+	(mul-interval x
+		      (make-interval (/ 1.0 uy)
+				     (/ 1.0 ly)))
+	(error "devide by zero!! rhs has a zero!"))))
+
+(define a (make-interval 1 2))
+
+(define b (make-interval 0 3))
+
+(define c (make-interval 1 3))
+
+(div-interval a b)
+
+(div-interval a c)
+
 ;;;--------------------------< ex 2.11 >--------------------------
+;;; 9가지 경우
+;;; (- -) * { (- -), (- +), (+ +) } 
+;;; (- +) * { (- -), (- +), (+ +) } 
+;;; (+ +) * { (- -), (- +), (+ +) } 
+
+;;; (a b) * (c d)
+(mul-interval (make-interval -2 -1) (make-interval -4 -3)) ; ( 3  .  8) - (bd ac)
+(mul-interval (make-interval -2 -1) (make-interval -4  3)) ; (-6  .  8) - (ad ac)
+(mul-interval (make-interval -2 -1) (make-interval  3  4)) ; (-8  . -3) - (ad bc)
+
+(mul-interval (make-interval -2  1) (make-interval -4 -3)) ; (-4  .  8) - (bc ac)
+(mul-interval (make-interval -2  1) (make-interval -4  3)) ; (-6  .  8) - (ad ac)
+(mul-interval (make-interval -2  1) (make-interval  3  4)) ; (-8  .  4) - (ad bd)
+
+(mul-interval (make-interval  1  2) (make-interval -4 -3)) ; (-8  . -3) - (bc ad)
+(mul-interval (make-interval  1  2) (make-interval -4  3)) ; (-8  .  6) - (bc bd)
+(mul-interval (make-interval  1  2) (make-interval  3  4)) ; ( 3  .  8) - (ac bd)
+
+(define (mul-interval2 x y)
+  (let ((a (lower-bound x))
+	(b (upper-bound x))
+	(c (lower-bound y))
+	(d (upper-bound y)))
+    (cond ((and (< a 0) (< b 0))
+	   (cond ((and (< c 0) (< d 0)) (make-interval (* b d) (* a c)))
+		 ((and (< c 0) (> d 0)) (make-interval (* a d) (* a c)))
+		 ((and (> c 0) (> d 0)) (make-interval (* a d) (* b c)))))
+	  ((and (< a 0) (> b 0))
+	   (cond ((and (< c 0) (< d 0)) (make-interval (* b c) (* a c)))
+		 ((and (< c 0) (> d 0)) (make-interval (* a d) (* a c)))
+		 ((and (> c 0) (> d 0)) (make-interval (* a d) (* b d)))))
+	  ((and (> a 0) (> b 0))
+	   (cond ((and (< c 0) (< d 0)) (make-interval (* b c) (* a d)))
+		 ((and (< c 0) (> d 0)) (make-interval (* b c) (* b d)))
+		 ((and (> c 0) (> d 0)) (make-interval (* a c) (* b d))))))))
+
+(mul-interval2 (make-interval -2 -1) (make-interval -4 -3)) ; ( 3  .  8) - (bd ac)
+(mul-interval2 (make-interval -2 -1) (make-interval -4  3)) ; (-6  .  8) - (ad ac)
+(mul-interval2 (make-interval -2 -1) (make-interval  3  4)) ; (-8  . -3) - (ad bc)
+
+(mul-interval2 (make-interval -2  1) (make-interval -4 -3)) ; (-4  .  8) - (bc ac)
+(mul-interval2 (make-interval -2  1) (make-interval -4  3)) ; (-6  .  8) - (ad ac)
+(mul-interval2 (make-interval -2  1) (make-interval  3  4)) ; (-8  .  4) - (ad bd)
+
+(mul-interval2 (make-interval  1  2) (make-interval -4 -3)) ; (-8  . -3) - (bc ad)
+(mul-interval2 (make-interval  1  2) (make-interval -4  3)) ; (-8  .  6) - (bc bd)
+(mul-interval2 (make-interval  1  2) (make-interval  3  4)) ; ( 3  .  8) - (ac bd)
+
+
+
+
+;;; p123,124
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+
+(define (center i)
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+
+(define (width i)
+  (/ (- (upper-bound i) (lower-bound i)) 2))
+
+
+(make-center-width 10 0.5) ; (9.5 . 10.5)
+(center (make-center-width 10 0.5)) ; 10.0
+(width (make-center-width 10 0.5)) ; 0.5
 
 
 ;;;--------------------------< ex 2.12 >--------------------------
+;;; 주의! c 가 음수일 때
+(define (make-center-percent c p)
+  (let ((w (* c (/ p 100))))
+    (if (> c 0)
+	(make-center-width c w)
+	(make-center-width c (- w)))))
+
+(define (percent i)
+  (let ((c (center i))
+	(w (width i)))
+    (* (/ w c) 100)))
+  
+(make-center-percent 100 10) ; (90 . 110)
+(percent (make-center-percent 100 10)) ; 10
+
+(make-center-percent 100 5) ; (95 . 105)
+(percent (make-center-percent 100 5)) ; 5
+
+(make-center-percent -100 10) ; (-110 . -90)
+
+
+;;; 문제점 : 0이라면 오차율을 어떻게 적용하지!?
+
 
 
 ;;;--------------------------< ex 2.13 >--------------------------
+;;; 가운데값과 허용 오차로 두 개의 구간을 표현하면
+;;; i1 = (m a%) => (m-ma, m+ma)
+;;; i2 = (n b%) => (n-na, n+na)
+;;;
+;;; 두 구간이 모두 양수라면
+;;;
+;;; i1*i2 =>
+;;;
+;;; lower-bound : 
+;;;   (m-ma)*(n-na) 
+;;; = (mn - mna - mnb + mnab)
+;;; = mn * (1 - a - b + ab)
+;;; 
+;;; upper-bound :
+;;;   (m+ma)*(n+na)
+;;; = (mn + mna + mnb + mnab)
+;;; = mn * (1 + a + b + ab)
+
+(define (mul-interval-pos x y)
+  (let ((m (center x))
+	(a (/ (percent x) 100))
+	(n (center y))
+	(b (/ (percent y) 100)))
+    (let ((lbf (+ 1 (- a) (- b) (* a b)))
+	  (ubf (+ 1 a b (* a b))))
+      (make-interval (* m n lbf) (* m n ubf)))))
+
+(mul-interval (make-center-percent 1. 1)
+	      (make-center-percent 2. 1))
+; (1.9602 . 2.0402)
+
+
+(mul-interval2 (make-center-percent 1. 1)
+	      (make-center-percent 2. 1))
+; (1.9602 . 2.0402)
+
+(mul-interval-pos (make-center-percent 1. 1)
+		  (make-center-percent 2. 1))
+; (1.9602 . 2.0402)
+
+
+
+
+;;; 구간값으로 음수가 가능하다면 잘못된 결과를 낼 수 있다.
+(mul-interval (make-center-percent -1  1)
+	      (make-center-percent 2. 1))
+; (-2.0402 . -1.9602)
+
+(mul-interval2 (make-center-percent -1  1)
+	      (make-center-percent 2. 1))
+; (-2.0402 . -1.9602)
+
+(mul-interval-pos (make-center-percent -1. 1)
+		  (make-center-percent 2. 1))
+; (-1.9998 . -1.998)  <- 잘못된 결과
+
+
+
+
+
+;;;p125
+;;; R1*R2 / (R1 + R2)
+;;; 1 / ( 1/R1 + 1/R2 )
+
+(define (par1 r1 r2)
+  (div-interval (mul-interval r1 r2)
+		(add-interval r1 r2)))
+
+(define (par2 r1 r2)
+  (let ((one (make-interval 1 1)))
+    (div-interval one
+		  (add-interval (div-interval one r1)
+				(div-interval one r2)))))
+
 
 
 ;;;--------------------------< ex 2.14 >--------------------------
+(define P1 (par1 (make-center-percent 10 0.1)
+		 (make-center-percent 20 0.1)))
+; (6.646693306693306 . 6.686693360026694)
+(center P1) ; 6.66669333336
+(percent P1) ; 0.29999920000240643
+(percent (make-center-percent 10 0.1))  ; 0.09999999999999788
+
+(define P2 (par2 (make-center-percent 10 0.1)
+		 (make-center-percent 20 0.1)))
+; (6.66 . 6.673333333333333)
+(center P2) ; 6.666666666666666
+(percent P2) ; 0.09999999999999566
+;; <- par2 방식의 경우 구간의 오차율이 입력 구간과 거의 같다
+
+(define A (make-center-percent 10 0.1)) ; (9.99 . 10.01)
+(center A) ; 10.0
+(percent A) ; 0.09999999999999788
+
+(define B (make-center-percent 20 0.1)) ; (19.98 . 20.02)
+(center B) ; 20.0
+(percent B) ; 0.09999999999999788
+
+(define one-i (make-interval 1 1)) ; (1 . 1)
+
+
+;;; A/A
+;;; par1 방식
+(define A/A-1 (div-interval A A)) ; (0.9980019980019981 . 1.002002002002002)
+(center A/A-1) ; 1.000002000002
+(percent A/A-1) ; 0.19999980000019435
+
+
+;;; A/A = A * 1/A
+;;; par2 방식
+(define A/A-2 (mul-interval A 
+			    (div-interval one-i A))) ; (0.9980019980019981 . 1.002002002002002)
+;;; <= 두 방식이 같은 값을 내놓는다.
+
+;;; A/B
+;;; par1 방식
+(define A/B-1 (div-interval A B)) ; (0.49900099900099903 . 0.501001001001001)
+(center A/B-1) ; 0.500001000001
+(percent A/B-1) ; 0.19999980000019435
+
+(define A/B-2 (mul-interval A (div-interval one-i B))) ; (0.49900099900099903 . 0.501001001001001)
+
+;;; <= 두 방식이 같은 값을 내놓는다.
+
+
+
+
+
+
+;;; A + B
+(define A+B (add-interval A B)) ; (29.97 . 30.03)
+(center A+B) ; 30.0
+(percent A+B) ; 0.1000000000000038
+
+;;; A*B
+(define A*B (mul-interval A B)) ; (199.6002 . 200.40019999999998)
+(center A*B) ; 200.0002
+(percent A*B) ; 0.19999980000019574
+
+(div-interval A+B A*B) ; (0.14955074895134834 . 0.15045075105135164)
+(mul-interval A+B (div-interval one-i A*B)) ; 위와 같음
+
+
+
+;;; 1/A
+(define 1/A (div-interval one-i A)) ; (0.0999000999000999 . 0.10010010010010009)
+(center 1/A) ; 0.1000001000001
+(percent 1/A) ; 0.09999999999999441
+
+;;; 1/B
+(define 1/B (div-interval one-i B)) ; (0.04995004995004995 . 0.050050050050050046)
+(center 1/B) ; 0.05000005000005
+(percent 1/B) ; 0.09999999999999441
+
+(define 1/A+1/B (add-interval 1/A 1/B))
+; (0.14985014985014986 . 0.15015015015015015)
+;;<- (div-interval A+B A*B) 와 유사한 값을 가진다.
+
+(mul-interval one-i 1/A+1/B) ; (0.14985014985014986 . 0.15015015015015015)
+
+
+
 
 
 ;;;--------------------------< ex 2.15 >--------------------------
