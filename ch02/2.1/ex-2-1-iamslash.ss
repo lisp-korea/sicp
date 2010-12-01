@@ -40,3 +40,28 @@
   (display ")"))
 
 ;; ex.2.3
+(define (make-segment p1 p2)
+  (cons p1 p2))
+(define (start-segment l)
+  (car l))
+(define (end-segment l)
+  (cdr l))
+(define (make-point x y)
+  (cons x y))
+(define (x-point p) (car p))
+(define (y-point p) (cdr p))
+(define (print-point p)
+  (newline)
+  (display "(")
+  (display (x-point p))
+  (display ",")
+  (display (y-point p))
+  (display ")"))
+
+(define (make-square p1 p2 p3 p4)
+  (cons p1 p2 p3 p4))
+(define (get-perimeter s)
+  ()
+(define (get-area s))
+
+  
