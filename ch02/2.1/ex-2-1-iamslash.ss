@@ -13,6 +13,12 @@
   (display (numer x))
   (display "/")
   (display (denom x)))
-(define (make-rat n d)
+(define (make-rat_ n d)
+  (let ((g (gcd n d)))
+    (cond ((or (and (< 0 n) (< 0 d)) (and (> 0 n) (> 0 d)))
+           (cons (/ (abs n) g) (/ (abs d) g) ))
+          ((or (and (< 0 n) (> 0 d)) (and (> 0 n) (< 0 d)))
+           (cons (- (/ (abs n) g)) (/ (abs d) g) )))))
 
+;; ex.2.2
 
