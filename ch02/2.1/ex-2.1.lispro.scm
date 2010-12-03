@@ -266,3 +266,313 @@
  ((one square) 2)
  ((two square) 2)
 (((add-1 two one) square) 2)
+ (newline)
+;ex 2.7
+ (define (make-interval a b) (cons a b)) 
+ (define (upper-bound interval) (min (car interval) (cdr interval))) 
+ (define (lower-bound interval) (max (car interval) (cdr interval))) 
+(print "ex 2.7")
+ (newline)
+ ;; Usage 
+ (define i (make-interval 2 7)) 
+ (upper-bound i) 
+ (lower-bound i) 
+  
+ (define j (make-interval 8 3)) 
+ (upper-bound j) 
+ (lower-bound j) 
+ (newline)
+ ;ex 2.8
+ ;; The max and min can be supplied to the constructor in any order. 
+ (define (make-interval a b) (cons a b)) 
+ (define (upper-bound interval) (max (car interval) (cdr interval))) 
+ (define (lower-bound interval) (min (car interval) (cdr interval))) 
+  
+ ;; The minimum value would be the smallest possible value 
+ ;; of the first minus the largest of the second.  The maximum would be 
+ ;; the largest of the first minus the smallest of the second. 
+ (define (sub-interval x y) 
+   (make-interval (- (lower-bound x) (upper-bound y)) 
+                  (- (upper-bound x) (lower-bound y)))) 
+  
+ (define (display-interval i) 
+   (newline) 
+   (display "[") 
+   (display (lower-bound i)) 
+   (display ",") 
+   (display (upper-bound i)) 
+   (display "]")) 
+(print "ex 2.8->")
+(print "[a - c, b - d]")
+ ;; Usage 
+ (define i (make-interval 2 7)) 
+ (define j (make-interval 8 3)) 
+  
+ (display-interval i) 
+ (display-interval (sub-interval i j)) 
+ (display-interval (sub-interval j i)) 
+(newline)
+(newline)
+ ;ex 2.9
+(print "ex 2.9")
+(newline)
+(print "[0, 10] * [0, 2] = [0, 20]   (width = 10)")
+(newline)
+(print "0-sub operation")
+(newline)
+(print "[-5, 5] * [0, 2] = [0, 10]   (width = 5)")
+(newline)
+(print "0-product operation")
+(newline)
+(newline)
+
+;ex 2.10
+(define (mul-interval x y) 
+   (let ((p1 (* (lower-bound x) (lower-bound y))) 
+         (p2 (* (lower-bound x) (upper-bound y))) 
+         (p3 (* (upper-bound x) (lower-bound y))) 
+         (p4 (* (upper-bound x) (upper-bound y)))) 
+     (make-interval (min p1 p2 p3 p4) 
+                    (max p1 p2 p3 p4)))) 
+  
+ (define (div-interval x y) 
+   (mul-interval x  
+                 (make-interval (/ 1. (upper-bound y)) 
+                                (/ 1. (lower-bound y))))) 
+  
+ (define (print-interval name i) 
+   (newline) 
+   (display name) 
+   (display ": [") 
+   (display (lower-bound i)) 
+   (display ",") 
+   (display (upper-bound i)) 
+   (display "]")) 
+  
+ (print "ex 2.10")
+ (newline)
+ ;; Usage 
+ (define i (make-interval 2 7)) 
+ (define j (make-interval 8 3)) 
+  
+ (print-interval "i" i) 
+ (print-interval "j" j) 
+ (print-interval "i*j" (mul-interval i j)) 
+ (print-interval "j*i" (mul-interval j i)) 
+ (print-interval "i/j" (div-interval i j)) 
+ (print-interval "j/i" (div-interval j i)) 
+  
+ ;; Gives: 
+ ;; i: [2,7] 
+ ;; j: [3,8] 
+ ;; i*j: [6,56] 
+ ;; j*i: [6,56] 
+ ;; i/j: [.25,2.333333333333333] 
+ ;; j/i: [.42857142857142855,4.] 
+  
+  
+ ;; New definition: Division by interval spanning 0 should fail. 
+ (define (div-interval x y) 
+   (if (>= 0 (* (lower-bound y) (upper-bound y))) 
+       (error "Division error (interval spans 0)" y) 
+       (mul-interval x  
+                     (make-interval (/ 1. (upper-bound y)) 
+                                    (/ 1. (lower-bound y)))))) 
+  
+ (define span-0 (make-interval -1 1)) 
+ (print-interval "i/j" (div-interval i j)) 
+;(print-interval "i/span-0" (div-interval i span-0))  ;;;; error test
+  
+ ;; Results: 
+ ;; i/j: [.25,2.333333333333333] 
+ ;; ;Division error (interval spans 0) (-1 . 1) 
+(newline)
+
+;ex 2.11
+
+;; Old multiplication (given) 
+ (define (old-mul-interval x y) 
+   (let ((p1 (* (lower-bound x) (lower-bound y))) 
+         (p2 (* (lower-bound x) (upper-bound y))) 
+         (p3 (* (upper-bound x) (lower-bound y))) 
+         (p4 (* (upper-bound x) (upper-bound y)))) 
+     (make-interval (min p1 p2 p3 p4) 
+                    (max p1 p2 p3 p4)))) 
+  
+  
+ ;; This looks a *lot* more complicated to me, and with the extra 
+ ;; function calls I'm not sure that the complexity is worth it. 
+ (define (mul-interval x y) 
+   ;; endpoint-sign returns: 
+   ;;     +1 if both endpoints non-negative, 
+   ;;     -1 if both negative, 
+   ;;      0 if opposite sign 
+   (define (endpoint-sign i) 
+     (cond ((and (>= (upper-bound i) 0) 
+                 (>= (lower-bound i) 0)) 
+            1) 
+           ((and (< (upper-bound i) 0) 
+                 (< (lower-bound i) 0)) 
+            -1) 
+           (else 0))) 
+  
+   (let ((es-x (endpoint-sign x)) 
+         (es-y (endpoint-sign y)) 
+         (x-up (upper-bound x)) 
+         (x-lo (lower-bound x)) 
+         (y-up (upper-bound y)) 
+         (y-lo (lower-bound y))) 
+  
+     (cond ((> es-x 0) ;; both x endpoints are +ve or 0 
+            (cond ((> es-y 0) 
+                   (make-interval (* x-lo y-lo) (* x-up y-up))) 
+                  ((< es-y 0) 
+                   (make-interval (* x-up y-lo) (* x-lo y-up))) 
+                  (else 
+                   (make-interval (* x-up y-lo) (* x-up y-up))))) 
+  
+           ((< es-x 0) ;; both x endpoints are -ve 
+            (cond ((> es-y 0) 
+                   (make-interval (* x-lo y-up) (* x-up y-lo))) 
+                  ((< es-y 0) 
+                   (make-interval (* x-up y-up) (* x-lo y-lo))) 
+                  (else 
+                   (make-interval (* x-lo y-up) (* x-up y-lo))))) 
+  
+           (else  ;; x spans 0 
+            (cond ((> es-y 0) 
+                   (make-interval (* x-lo y-up) (* x-up y-up))) 
+                  ((< es-y 0) 
+                   (make-interval (* x-up y-lo) (* x-lo y-lo))) 
+                  (else 
+                   ;; Both x and y span 0 ... need to check values 
+                   (make-interval (min (* x-lo y-up) (* x-up y-lo)) 
+                                  (max (* x-lo y-lo) (* x-up y-up))))))))) 
+ (define (eql-interval? a b) 
+   (and (= (upper-bound a) (upper-bound b)) 
+        (= (lower-bound a) (lower-bound b)))) 
+  
+ ;; Fails if the new mult doesn't return the same answer as the old 
+ ;; naive mult. 
+ (define (ensure-mult-works aH aL bH bL) 
+   (let ((a (make-interval aL aH)) 
+         (b (make-interval bL bH))) 
+   (if (eql-interval? (old-mul-interval a b) 
+                      (mul-interval a b)) 
+       true 
+       (error "new mult returns different value!"  
+              a  
+              b  
+              (old-mul-interval a b) 
+              (mul-interval a b))))) 
+  
+  
+ ;; The following is overkill, but it found some errors in my 
+ ;; work.  The first two #s are the endpoints of one interval, the last 
+ ;; two are the other's.  There are 3 possible layouts (both pos, both 
+ ;; neg, one pos one neg), with 0's added for edge cases (pos-0, 0-0, 
+ ;; 0-neg). 
+  (newline)
+  (print "ex 2.11")
+  (newline)
+ (ensure-mult-works  +10 +10   +10 +10) 
+ (ensure-mult-works  +10 +10   +00 +10) 
+ (ensure-mult-works  +10 +10   +00 +00) 
+ (ensure-mult-works  +10 +10   +10 -10) 
+ (ensure-mult-works  +10 +10   -10 +00) 
+ (ensure-mult-works  +10 +10   -10 -10) 
+  
+ (ensure-mult-works  +00 +10   +10 +10) 
+ (ensure-mult-works  +00 +10   +00 +10) 
+ (ensure-mult-works  +00 +10   +00 +00) 
+ (ensure-mult-works  +00 +10   +10 -10) 
+ (ensure-mult-works  +00 +10   -10 +00) 
+ (ensure-mult-works  +00 +10   -10 -10) 
+  
+ (ensure-mult-works  +00 +00   +10 +10) 
+ (ensure-mult-works  +00 +00   +00 +10) 
+ (ensure-mult-works  +00 +00   +00 +00) 
+ (ensure-mult-works  +00 +00   +10 -10) 
+ (ensure-mult-works  +00 +00   -10 +00) 
+ (ensure-mult-works  +00 +00   -10 -10) 
+  
+ (ensure-mult-works  +10 -10   +10 +10) 
+ (ensure-mult-works  +10 -10   +00 +10) 
+ (ensure-mult-works  +10 -10   +00 +00) 
+ (ensure-mult-works  +10 -10   +10 -10) 
+ (ensure-mult-works  +10 -10   -10 +00) 
+ (ensure-mult-works  +10 -10   -10 -10) 
+  
+ (ensure-mult-works  -10 +00   +10 +10) 
+ (ensure-mult-works  -10 +00   +00 +10) 
+ (ensure-mult-works  -10 +00   +00 +00) 
+ (ensure-mult-works  -10 +00   +10 -10) 
+ (ensure-mult-works  -10 +00   -10 +00) 
+ (ensure-mult-works  -10 +00   -10 -10) 
+  
+ (ensure-mult-works  -10 -10   +10 +10) 
+ (ensure-mult-works  -10 -10   +00 +10) 
+ (ensure-mult-works  -10 -10   +00 +00) 
+ (ensure-mult-works  -10 -10   +10 -10) 
+ (ensure-mult-works  -10 -10   -10 +00) 
+ (ensure-mult-works  -10 -10   -10 -10) 
+
+ ;ex 2.12
+ (define (center i) (/ (+ (upper-bound i) (lower-bound i)) 2)) 
+  
+ ;; Percent is between 0 and 100.0 
+ (define (make-interval-center-percent c pct) 
+   (let ((width (* c (/ pct 100.0)))) 
+     (make-interval (- c width) (+ c width)))) 
+  
+ (define (percent-tolerance i) 
+   (let ((center (/ (+ (upper-bound i) (lower-bound i)) 2.0)) 
+         (width (/ (- (upper-bound i) (lower-bound i)) 2.0))) 
+     (* (/ width center) 100))) 
+  
+  
+ ;; A quick check: 
+  (newline)
+  (print "ex 2.12")
+  (newline)
+ (define i (make-interval-center-percent 10 50)) 
+ (lower-bound i) 
+ (upper-bound i) 
+ (center i) 
+ (percent-tolerance i)
+ 
+ (newline)
+ 
+ ;ex 2.13
+ ;a = [Ca*(1 - 0.5*Ta), Ca*(1 + 0.5*Ta)]
+; b = [Cb*(1 - 0.5*Tb), Cb*(1 + 0.5*Tb)]
+; a*b = [Ca*Cb*(1 - 0.5*(Ta + Tb) + 0.25*Ta*Tb),
+;         Ca*Cb*(1 + 0.5*(Ta + Tb) + 0.25*Ta*Tb)]
+(print "ex 2.13")
+(newline)
+;; Percent is between 0 and 100.0 
+ (define (make-interval-center-percent c pct) 
+   (let ((width (* c (/ pct 100.0)))) 
+     (make-interval (- c width) (+ c width)))) 
+  
+ (define (percent-tolerance i) 
+   (let ((center (/ (+ (upper-bound i) (lower-bound i)) 2.0)) 
+         (width (/ (- (upper-bound i) (lower-bound i)) 2.0))) 
+     (* (/ width center) 100))) 
+  
+ (define (mul-interval x y) 
+   (let ((p1 (* (lower-bound x) (lower-bound y))) 
+         (p2 (* (lower-bound x) (upper-bound y))) 
+         (p3 (* (upper-bound x) (lower-bound y))) 
+         (p4 (* (upper-bound x) (upper-bound y)))) 
+     (make-interval (min p1 p2 p3 p4) 
+                    (max p1 p2 p3 p4)))) 
+  
+  
+ (define i (make-interval-center-percent 10 0.5)) 
+ (define j (make-interval-center-percent 10 0.4)) 
+ (percent-tolerance (mul-interval i j)) 
+  
+(newline)
+
+;ex 2.14
