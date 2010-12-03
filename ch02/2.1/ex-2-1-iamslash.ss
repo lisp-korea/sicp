@@ -125,4 +125,113 @@
 (define (cdr z)
   (get-exp z 3 0))
 
-;; ex2.6
+;; ex2.6 ???
+
+;; ex2.7
+(define (make-interval a b) (cons a b))
+(define (lower-bound i)
+  (car i))
+(define (upper-bound i)
+  (cdr i))
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x) (lower-bound y))
+                 (+ (upper-bound x) (upper-bound y))))
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+(define (div-interval x y)
+  (mul-interval x
+                (make-interval (/ 1.0 (upper-bound y))
+                               (/ 1.0 (lower-bound y)))))
+(define (print-interval i)
+  (newline)
+  (display "(")
+  (display (lower-bound i))
+  (display ",")
+  (display (upper-bound i))
+  (display ")")
+  (newline))
+
+(print-interval (add-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0.01 10.11)))
+(print-interval (mul-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0.01 10.11)))
+(print-interval (div-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0.01 10.11)))
+
+;; ex2.8
+(define (sub-interval x y)
+  (let ((p1 (- (lower-bound x) (lower-bound y)))
+        (p2 (- (upper-bound x) (upper-bound y))))
+    (if (> p1 p2)
+        (make-interval p2 p1)
+        (make-interval p1 p2))))
+(print-interval (sub-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0.01 10.01)))
+
+;; ex2.9
+(define (width-interval i)
+  (/ (- (upper-bound i) (lower-bound i)) 2))
+(+ (width-interval (make-interval 0.1 10.1))
+   (width-interval (make-interval 0.01 10.01)))
+(width-interval (add-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0.01 10.01)))
+(* (width-interval (make-interval 0.1 10.1))
+   (width-interval (make-interval 0.01 10.01)))
+(width-interval (mul-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0.01 10.01)))
+(/ (width-interval (make-interval 0.1 10.1))
+   (width-interval (make-interval 0.01 10.01)))
+(width-interval (div-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0.01 10.01)))
+
+;; ex2.10
+(define (div-interval x y)
+  (if (or (= 0 (upper-bound y)) (= 0 (lower-bound y)))
+      (error "ERROR: divided by zero" y)    
+      (mul-interval x
+                    (make-interval (/ 1.0 (upper-bound y))
+                                   (/ 1.0 (lower-bound y))))))
+(print-interval (div-interval
+                 (make-interval 0.1 10.1)
+                 (make-interval 0 10.11)))
+;; ex2.11 ???
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+;; ex2.12
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
+(define (center i)
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+(define (width i)
+  (/ (- (lower-bound i) (upper-bound i)) 2))
+(define (make-center-percent c w)
+  (let ((p (* c (* w 0.01))))
+    (make-interval (- c p) (+ c p))))
+(define (percent i)
+  (let ((c (center i))
+        (u (upper-bound i)))
+    (* (/ (- u c) c) 100)))
+(percent (make-interval 5.0 7.0))
+
+  
+
+                
+        
