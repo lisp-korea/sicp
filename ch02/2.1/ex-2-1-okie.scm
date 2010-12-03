@@ -304,7 +304,104 @@
       (make-interval (* ux uy) (* lx ly)))
      )))
      
-       
-                                
-        
+;; text
+(define (make-center-width c w)
+  (make-interval (- c w) (+ c w)))
 
+(define (center i)
+  (/ (+ (upper-bound i) (lower-bound i)) 2))
+
+(define (width i)
+  (/ (- (upper-bound i ) (lower-bound i)) 2))
+
+;; ex 2.12
+(define (make-center-percent c p)
+  (let ((width (/ (* c p) 100)))
+    (make-center-width c width)))
+
+(define (percent x)
+  (* 100 (/ (width x) (center x))))
+
+(define z (make-center-percent 3.5 10))
+
+;; ex 2.13
+;; Assume that all numbers are plus.
+(define x (make-center-percent 10 0.00000001))
+(define y (make-center-percent 50 0.00000001))
+
+(define a (percent (mul-interval x y)))
+
+;; z + dz  = (x + dx) * (y + dy)
+;; z + dz = xy + xdy + ydx + dxdy
+;; dx << y, dy << y
+;; z + dz = xy + xdy + ydx
+;; dz = xdy + ydx
+
+(define dz (+ (* (center x) (percent y)) (* (center x) (percent y))))
+
+;; text
+
+(define r1 (make-center-percent 10 5))
+(define r2 (make-center-percent 5 1))
+
+(define (par1 r1 r2)
+  (div-interval (mul-interval r1 r2)
+                (add-interval r1 r2)))
+
+(define (par2 r1 r2)
+  (let ((one (make-interval 1 1 )))
+    (div-interval one
+                  (add-interval (div-interval one r1)
+                                (div-interval one r2)))))
+
+;; 2.14
+(define r1 (make-center-percent 10 0.005))
+(define r2 (make-center-percent 5 0.00001))
+
+(define rAA (div-interval r1 r1))
+(define rAB (div-interval r1 r2))
+
+;;  R1R2     (R1+d1) (R2+d2)
+;; ------  = ----------------
+;; R1 + R2  (R1+d1) + (R2+d2)
+
+;;     1                1           (R1+d1) (R2+d2)
+;;----------   = --------------  = ----------------
+;;  1     1         1       1      (R2+d2) + (R1+d1)
+;;---- + ----     ----- + -----
+;; R1     R2      R1+d1   R2+d2
+;;
+;; Of course not. After all, it’s just two intervals divided one by another, and all the rules apply. No wonder Lem is getting different answers – he is ;; using two different formulas!
+
+
+;; 2.15
+;; interval arithmetic system
+(define a (make-interval 2 4))
+(define b (make-interval -2 0))
+(define c (make-interval 3 8))
+
+;; x = a(b + c)
+(define x (mul-interval a (add-interval b c)))
+(define y (add-interval (mul-interval a b) (mul-interval a c)))
+
+;; Solution 1
+;;This is a combined answer to both exercises:
+
+;;Eva Lu Ator is right, and an example can be seen in the computation done in the previous exercise – par2 produces tighter bounds than par1. To understand why this is so, I will try to explain the problems with interval arithmetic (answer to 2.16):
+
+;; In doing arithmetic, we rely on some laws to hold without giving them much thought. Speaking mathematically, the real numbers are fields. For example, we expect to have an inverse element for addition – for each element A to have an element A’ so that A + A’ = 0. It is easy to check that this doesn’t hold for intervals! An inverse element for multiplication also doesn’t exist (this is the problem we saw in exercise 2.14). The distributive law doesn’t hold – consider the expression [1,2] * ([-3,-2] + [3,4]) – it makes a difference whether you do the additions or the multiplication first.
+
+;; To solve these problems at least for the simple arithmetic package we’re developing, I think we need to define the concept of identity for an interval. Operations must be able to identify if two operators are identical, and adjust the results accordingly.
+
+;; Soluation 2
+;; 2.15
+;; Eva is right. Program par2 is better than program par1. As we have observed in SICP Exercise 2.14, Alyssa’s system will produce big errors when computing expressions such as A/A. The reason is the following. When an interval A appears twice in an expression, they should not behave independently. They are correlated. In fact, they are the same unit in a system. So if the real value of A is , both A‘s should have the same value in a good system. However, Alyssa’s program treats them independently. In Alyssa’s system, one A may have a value of , whereas the other A may have a value of . Therefore we conclude that Alyssa’s system is flawed.
+
+;; 2.16
+;; We have observed in SICP Exercise 2.14 and 2.15 that equivalent algebraic expressions may lead to different answers. I think it is because an interval that appears multiple times in an expression will behave independently though they should behave exactly the same way.
+
+;;Can we devise an interval-arithmetic package that does not have this shortcoming? The authors of SICP warned us of the difficulty of this problem. But talk is cheap. So I will still try to say something.
+
+;;We should take Eva Lu Ator’s suggestion (SICP Exercise 2.15) to avoid repeated appearance of intervals.
+;;Remember the Taylor expansion: . Maybe we could design a system which utilizes the Taylor expansion, assuming that percentage tolerances are small. To compute the resulting center of an expression, we perform normal arithmetics on the centers of argument intervals. Then we compute the partial derivatives by varying the value of one interval while keeping the others fixed. Finally we combine the partial derivatives and percentage tolerances together to obtain the resulting percentage tolerance.
+;;For really complicated systems, we could also perform Monte carlo simulations to get an answer that is good enough.
