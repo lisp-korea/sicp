@@ -150,65 +150,161 @@
 ;; 1
 
 ;; ex 2.5
+;; x = 2^a * 3^b
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(defun divides? (a b)
-  (= (rem b a) 0))
-
-(defun my-cons (a b)
+(define (my-cons a b)
   (* (expt 2 a) (expt 3 b)))
 
-(defun my-car (z)
-  (do ( (n 0 (1+ n))
-        (aa z (/ aa 2)))
-      ((not (divides? 2 aa)) n)))
+(define (devide? n d)
+  (if (= 0 (remainder n d)) #t
+      #f))
 
-(defun my-cdr (z)
-  (do ( (n 0 (1+ n))
-        (aa z (/ aa 3)))
-      ((not (divides? 3 aa)) n)))
-;After writing code like this, it becomes immediately obvious that there’s a repetition we can remove by abstracting it as a function:
+(define (find-exp x e i)
+  (if (devide? x e) (find-exp (/ x e) e (+ i 1))
+      i))
 
-(defun degree-of-factor (num f)
-  "Finds the degree of factor f in number num"
-  (do ( (deg 0 (1+ deg))
-        (div num (/ div f)))
-      ((not (divides? f div)) deg)))
+(define (my-car x)
+  (find-exp x 2 0))
 
-(defun my-car (z)
-  (degree-of-factor z 2))
+(define (my-cdr x)
+  (find-exp x 3 0))
+        
 
-(defun my-cdr (z)
+;; ex 2.6
+(define zero (lambda (f) (lambda (x) x)))
+
+(define (add-1 n)
+  (lambda (f) (lambda (x) (f ((n f) x)))))
+
+(define one
+  (add-1 zero)
+;==>
+(lambda (f) (lambda (x) (f ((zero f) x))))
+(lambda (f) (lambda (x) (f x)))
+
+(define two
+  (add-1 one)
+;==>
+(lambda (f) (lambda (x) (f ((one f) x))))
+(lambda (f) (lambda (x) (f (f x))))
+
+;; text 2.1.4
+(define (add-interval x y)
+  (make-interval (+ (lower-bound x) (lower-bound y))
+                 (+ (upper-bound x) (upper-bound y))))
+
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+(define (div-interval x y)
+  (mul-interval x
+                (make-interval (/ 1.0 (upper-bound y))
+                               (/ 1.0 (lower-bound y)))))
+;; ex 2.7
+;(define (make-interval a b) (cons a b))
+
+(define (make-interval lower upper) (cons lower upper))
+(define (upper-bound x)
+  (cdr x))
+
+(define (lower-bound x)
+  (car x))
+
+(define x (make-interval -1.5 1.5))
+(define y (make-interval 0.0 10.0))
+(add-interval x y)
+
+
+;; ex 2.8
+(define (sub-interval x y)
+  (make-interval (- (lower-bound x) (lower-bound y))
+                 (- (upper-bound x) (upper-bound y))))
+
+(sub-interval x y)
+
+;; ex 2.9
+(define (interval-width x)
+  (/ (- (upper-bound x) (lower-bound x)) 2))
+
+(interval-width x)
+
+(= (interval-width (add-interval x y))
+   (+ (interval-width x) (interval-width y)))
+
+(= (interval-width (mul-interval x y))
+   (* (interval-width x) (interval-width y)))
+
+;; ex 2.10
+(define (div-interval x y)
+  (if (<= 0 (* (lower-bound y) (lower-bound y)))
+      (error "devide by interval containing zero!")
+      (mul-interval x
+                    (make-interval (/ 1.0 (upper-bound y))
+                                   (/ 1.0 (lower-bound y))))))
+(div-interval x y)
+(div-interval y x)
+
+;; ex 2.11
+;; (define (mul-interval x y)
+;;   (let ((p1 (* (lower-bound x) (lower-bound y)))
+;;         (p2 (* (lower-bound x) (upper-bound y)))
+;;         (p3 (* (upper-bound x) (lower-bound y)))
+;;         (p4 (* (upper-bound x) (upper-bound y))))
+;;     (make-interval (min p1 p2 p3 p4)
+;;                    (max p1 p2 p3 p4))))
+;;
+;;     x  y
+;; 1. ++ ++
+;; 2. ++ -+
+;; 3. ++ --
+;; 4. -+ ++
+;; 5. -+ -+
+;; 6. -+ --
+;; 7. -- ++
+;; 8. -- -+
+;; 9. -- --
+
+(define (mul-interval)
+  (let ((lx (lower-bound x))
+        (ux (upper-bound x))
+        (ly (lower-bound y))
+        (uy (upper-bound y)))
+    (cond 
+     ;; 1. ++ ++
+     ((and (>= lx 0) (>= ux 0) (>= ly 0) (>= uy 0))
+      (make-interval (* lx ly) (* ux uy)))
+     ;; 2. ++ -+
+     ((and (>= lx 0) (>= ux 0) (< ly 0) (>= uy 0))
+      (make-interval (* lx ly) (* ux uy)))
+     ;; 3. ++ --
+     ((and (>= lx 0) (>= ux 0) (< ly 0) (< uy 0))
+      (make-interval (* ux ly) (* lx uy)))
+     ;; 4. -+ ++
+     ((and (>= lx 0) (>= ux 0) (< ly 0) (>= uy 0))
+      (make-interval (* lx ly) (* ux uy)))
+     ;; 5. -+ -+
+     ((and (< lx 0) (>= ux 0) (< ly 0) (>= uy 0))
+      (make-interval (min (* lx uy) (* ux ly)) (max (* lx ly) (* ux uy))))
+     ;; 6. -+ --
+     ((and (< lx 0) (>= ux 0) (< ly 0) (< uy 0))
+      (make-interval (* ux uy) (* lx uy)))
+     ;; 7. -- ++
+     ((and (< lx 0) (< ux 0) (>= ly 0) (>= uy 0))
+      (make-interval (* ux ly) (* lx uy)))
+     ;; 8. -- -+
+     ((and (< lx 0) (< ux 0) (< ly 0) (>= uy 0))
+      (make-interval (* lx uy) (* ux ly)))
+     ;; 9. -- --
+     ((and (< lx 0) (< ux 0) (< ly 0) (< uy 0))
+      (make-interval (* ux uy) (* lx ly)))
+     )))
+     
+       
+                                
+        
+
