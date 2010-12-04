@@ -17,9 +17,9 @@
 (define (denom x) (cdr x))
 
 (define (add-rat x y)
-  (make-rat (+ (* (car x) (cdr y))
-               (* (car y) (cdr x)))
-            (* (cdr x) (cdr y))))
+  (make-rat (+ (* (numer x) (denom y))
+               (* (numer y) (denom x)))
+            (* (denom x) (denom y))))
 
 (define (mult-rat x y)
   (make-rat (* (car x) (car y))
@@ -48,8 +48,10 @@
 ;; ex 2.1
 
 (define (deter-sign n d)
-  (cond ((< 0 (* n d)) (if (< n 0) (make-rat (- n) (- d))
-                           (make-rat n d)))
+  (cond ((< 0 (* n d)) 
+         (if (< n 0) 
+             (make-rat (- n) (- d))
+             (make-rat n d)))
         (else (if (> n 0) (make-rat (- n) (- d))
                   (make-rat n d)))))
 
@@ -147,10 +149,14 @@
   (z (lambda (p q) p)))
 
 ((lambda (m) (m 1 2)) (lambda (p q) p))
+((lambda (p q) p) 1 2)
 ;; 1
 
 ;; ex 2.5
 ;; x = 2^a * 3^b
+;; log x = log2(2^a*3^b)
+;; log2(2^a) + log2(3^b)
+;; log x = a + b*log2(3)
 
 (define (my-cons a b)
   (* (expt 2 a) (expt 3 b)))
@@ -188,6 +194,8 @@
 (lambda (f) (lambda (x) (f ((one f) x))))
 (lambda (f) (lambda (x) (f (f x))))
 
+
+
 ;; text 2.1.4
 (define (add-interval x y)
   (make-interval (+ (lower-bound x) (lower-bound y))
@@ -222,8 +230,8 @@
 
 ;; ex 2.8
 (define (sub-interval x y)
-  (make-interval (- (lower-bound x) (lower-bound y))
-                 (- (upper-bound x) (upper-bound y))))
+  (make-interval (- (lower-bound x) (upper-bound y))
+                 (- (upper-bound x) (lower-bound y))))
 
 (sub-interval x y)
 
@@ -241,7 +249,7 @@
 
 ;; ex 2.10
 (define (div-interval x y)
-  (if (<= 0 (* (lower-bound y) (lower-bound y)))
+  (if (>= 0 (* (lower-bound y) (upper-bound y)))
       (error "devide by interval containing zero!")
       (mul-interval x
                     (make-interval (/ 1.0 (upper-bound y))
@@ -329,11 +337,11 @@
 (define x (make-center-percent 10 0.00000001))
 (define y (make-center-percent 50 0.00000001))
 
-(define a (percent (mul-interval x y)))
+(define dz1 (percent (mul-interval x y)))
 
 ;; z + dz  = (x + dx) * (y + dy)
 ;; z + dz = xy + xdy + ydx + dxdy
-;; dx << y, dy << y
+;; dx << x, dy << y
 ;; z + dz = xy + xdy + ydx
 ;; dz = xdy + ydx
 
@@ -366,7 +374,7 @@
 ;; R1 + R2  (R1+d1) + (R2+d2)
 
 ;;     1                1           (R1+d1) (R2+d2)
-;;----------   = --------------  = ----------------
+;;----------   = -------------- != ----------------
 ;;  1     1         1       1      (R2+d2) + (R1+d1)
 ;;---- + ----     ----- + -----
 ;; R1     R2      R1+d1   R2+d2
@@ -380,7 +388,7 @@
 (define b (make-interval -2 0))
 (define c (make-interval 3 8))
 
-;; x = a(b + c)
+;; x = a(b + c), y = ab + ac
 (define x (mul-interval a (add-interval b c)))
 (define y (add-interval (mul-interval a b) (mul-interval a c)))
 
