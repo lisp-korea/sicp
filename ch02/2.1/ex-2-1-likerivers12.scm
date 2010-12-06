@@ -6,7 +6,7 @@
 ;;; p108
 
 ;;; p109
-(define (add-rat x y)
+(define (eadd-rat x y)
   (make-rat (+ (* (numer x) (denom y))
 	       (* (numer y) (denom x)))
 	    (* (denom x) (denom y))))
@@ -446,7 +446,8 @@
   (* (calc-head a)
      (calc-tail b)))
 
-;;; c를 3으로 계속 나누면 나머지가 2^a 이 된다.
+;;; c를 3으로 나누어 떨어지는 동안 계속 나눈다.
+;;; 더 이상 3으로 나누어 떨어지지 않을 때 2^a 이 된다.
 ;;; 2^a 에서 2로 나눠지는 횟수를 구하면 a가 나온다
 (define (car-new c)
   (define (num-head x)
@@ -461,7 +462,8 @@
 	  0)))
   (count-div-2 (num-head c)))
 
-;;; c를 2로 계속 나누면 나머지가 3^b 이 된다.
+;;; c를 2로 나누어 떨어지는 동안 계속 나눈다.
+;;; 더 이상 2로 나누어 떨어지지 않을 때 3^b 이 된다.
 ;;; 3^b 에서 3으로 나눠지는 횟수를 구하면 b가 나온다
 (define (cdr-new c)
   (define (num-tail x)
@@ -837,19 +839,23 @@
 ;;;   (m-ma)*(n-na) 
 ;;; = (mn - mna - mnb + mnab)
 ;;; = mn * (1 - a - b + ab)
+;;; = mn * (1 - a)*(1 - b)
 ;;; 
 ;;; upper-bound :
 ;;;   (m+ma)*(n+na)
 ;;; = (mn + mna + mnb + mnab)
 ;;; = mn * (1 + a + b + ab)
+;;; = mn * (1 + a)*(1 + b)
 
 (define (mul-interval-pos x y)
   (let ((m (center x))
 	(a (/ (percent x) 100))
 	(n (center y))
 	(b (/ (percent y) 100)))
-    (let ((lbf (+ 1 (- a) (- b) (* a b)))
-	  (ubf (+ 1 a b (* a b))))
+;;    (let ((lbf (+ 1 (- a) (- b) (* a b)))
+;;	  (ubf (+ 1 a b (* a b))))
+    (let ((lbf (* (- 1 a) (- 1 b)))
+	  (ubf (* (+ 1 a) (+ 1 b))))
       (make-interval (* m n lbf) (* m n ubf)))))
 
 (mul-interval (make-center-percent 1. 1)
