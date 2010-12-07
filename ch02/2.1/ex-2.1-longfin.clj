@@ -320,3 +320,42 @@
      (and (neg? lx) (neg? ux) (neg? ly) (neg? uy))
      (make-interval (* ux uy) (* lx ly)))))
 
+(defn center [i]
+  (/ (+ (lower-bound i) (upper-bound i)) 2))
+
+;; ex 2.12
+(defn make-center-percent [c p]
+  (let [offset (* c (/ p 100))
+	lower (- c offset)
+	upper (+ c offset)]
+    (make-interval lower upper)))
+
+(defn percent [i]
+  (let [c (center i)
+	offset (- (upper-bound i) c)]
+    (/ (* 100 offset) c)))
+    
+;; ex 2.13
+;; c, o => (c-o, c+o)
+;; c', o' => (c'-o', c'+o')
+;; p1 = (c-o)(c'-o') = cc' + oo'
+;; p2 = (c-o)(c'+o') = cc' - oo'
+;; p3 = (c+o)(c'-o') = cc' - oo'
+;; p4 = (c+o)(c'+o') = cc' + oo'
+
+;; if o and o' are positive, 
+;; min = cc' - oo'
+;; max = cc' + oo'
+;; complicated offset is oo'
+
+;; ex 2.14
+
+(def a (make-center-percent 10 0.005))
+(def b (make-center-percent 100 0.005))
+
+(div-interval a a)
+(div-interval a b)
+
+;; ex 2.15
+;; ex 2.16
+;; ex 2.17
