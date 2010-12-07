@@ -196,3 +196,127 @@
 (= ((three inc) 0) 3)
 (= (((add one two) inc) 0) 3)
 
+
+;; ex 2.7
+
+(defn make-interval [a b]
+  (list a b))
+
+(defn upper-bound [i]
+  (max (first i) (last i)))
+
+(defn lower-bound [i]
+  (min (first i) (last i)))
+
+(defn add-interval [x y]
+  (make-interval (+ (lower-bound x) (lower-bound y))
+		 (+ (upper-bound x) (upper-bound y))))
+
+(defn mul-interval [x y]
+  (let [p1 (* (lower-bound x) (lower-bound y))
+	p2 (* (lower-bound x) (upper-bound y))
+	p3 (* (upper-bound x) (upper-bound y))
+	p4 (* (upper-bound x) (lower-bound y))]
+
+    (make-interval (min p1 p2 p3 p4)
+		   (max p1 p2 p3 p4))))
+(defn div-interval [x y]
+  (mul-interval x
+		(make-interval (/ 1.0 (upper-bound y))
+			       (/ 1.0 (lower-bound y)))))
+
+(add-interval (make-interval 4 10)
+	      (make-interval -5 -10))
+(mul-interval (make-interval 5 10)
+	      (make-interval -4 20))
+
+;; ex 2.8
+
+(defn sub-interval [x y]
+  (make-interval (- (lower-bound x) (upper-bound y))
+		 (- (upper-bound x) (lower-bound y))))
+
+(sub-interval (make-interval 4 10)
+	      (make-interval -5 -1))
+
+;; ex 2.9
+
+(defn width [x]
+  (/ (- (upper-bound x)
+	(lower-bound x)) 2.0))
+
+(def x (make-interval -5 5))
+(def y (make-interval -10 10))
+
+(= (width (add-interval x y))
+   (+ (width x) (width y)))
+
+(= (width (mul-interval x y))
+   (* (width x) (width y)))
+
+(def y (make-interval 0 15))
+
+(= (width (mul-interval x y))
+   (* (width x) (width y)))
+
+;; ex 2.10
+
+(defn div-interval [x y]
+  (if (>= 0 (* (upper-bound y)
+	       (lower-bound y)))
+    (print "error: divide by interval contains 0")
+    (mul-interval x
+		  (make-interval (/ 1.0 (upper-bound y))
+				 (/ 1.0 (lower-bound y))))))
+
+(div-interval x y)
+
+;; ex 2.11
+
+;; x  y  r
+;; ========
+;; ++ ++ ++ ll' uu'
+;; ++ +- +- ul' lu'
+;; ++ -- -- uu' ll'
+;; +- ++ -+ lu' ul'
+;; +- +- -+ lu' ul', ul' lu' 
+;; +- -- -+ ul' lu' 
+;; -- ++ -- lu' ul'
+;; -- +- -+ lu' ul'
+;; -- -- ++ uu' ll'
+
+(defn mul-interval [x y]
+  (let [lx (lower-bound x)
+	ux (upper-bound x)
+	ly (lower-bound y)
+	uy (upper-bound y)]
+    (cond
+     ;; ++/++
+     (and (pos? lx) (pos? ux) (pos? ly) (pos? uy))
+     (make-interval (* lx ly) (* ux uy))
+     ;; ++/+-
+     (and (pos? lx) (pos? ux) (neg? ly) (pos? uy))
+     (make-interval (* ux ly) (* lx uy))
+     ;; ++/--
+     (and (pos? lx) (pos? ux) (neg? ly) (neg? uy))
+     (make-interval (* ux uy) (* lx ly))
+     ;; +-/++
+     (and (neg? lx) (pos? ux) (pos? ly) (pos? uy))
+     (make-interval (* lx uy) (* ux ly))
+     ;; +-/+-
+     (and (neg? lx) (pos? ux) (neg? ly) (pos? uy))
+     (make-interval (min (* lx uy) (* ux ly))
+		    (max (* lx ly) (* ux uy)))
+     ;; +-/--
+     (and (neg? lx) (pos? ux) (neg? ly) (pos? uy))
+     (make-interval (* ux ly) (* lx uy))
+     ;; --/++
+     (and (neg? lx) (neg? ux) (pos? ly) (pos? uy))
+     (make-interval (* lx uy) (ux ly))
+     ;; --/+-
+     (and (neg? lx) (neg? ux) (neg? ly) (pos? uy))
+     (make-interval (* lx uy) (* ux ly))
+     ;; --/--
+     (and (neg? lx) (neg? ux) (neg? ly) (neg? uy))
+     (make-interval (* ux uy) (* lx ly)))))
+
