@@ -303,17 +303,14 @@
 ;;
 
 ;; ex.2.20
-(define (xor a b)
-  (if a
-      
 (define (same-parity a . l)
   (define (same-parity_ b_odd l1 l2)
     (if (null? l1)
         (reverse l2)
-        (if (= b_odd (odd? (car l1)))
+        (if (= b_odd (remainder (car l1) 2))
             (same-parity_ b_odd (cdr l1) (cons (car l1) l2))
             (same-parity_ b_odd (cdr l1) l2))))      
-  (same-parity_ (odd? a) (cons a l) null))
+  (same-parity_ (remainder a 2) (cons a l) null))
 
 (same-parity 1 2 3 4 5 6 7)
 (same-parity 2 3 4 5 6 7)
