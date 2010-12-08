@@ -111,7 +111,7 @@
 ;; (25 16 9 4 1)
 
 
-;;;--------------------------< ex 2.20 >--------------------------
+;;;--------------------------< ex 2.19 >--------------------------
 ;;; 동전 바꾸기 다시 보기
 ;;; p133,4
 
@@ -190,6 +190,8 @@
 
 (same-parity 1 2 4 6)
 ;; (1)
+
+
 
 
 ;;;-----------------------------
@@ -277,7 +279,6 @@
 ;;       1  nil
 
 
-
 (define (square-list items)
   (define (iter things answer)
     (if (null? things)
@@ -307,6 +308,7 @@
 
 ;; 2)
 (define ans '(() . 1))
+
 (cons ans 4)
 ;; [ + | + ] <- new cons cell
 ;;   |   |
@@ -324,6 +326,7 @@
 
 ;; 3) 
 (define ans '((() . 1) . 4))
+
 (cons ans 9)
 ;; '(((() . 1) . 4) . 9)
 
@@ -341,15 +344,16 @@
 
 (square-list (list 1 2 3 4))
 ;; (1 4 9 16)
+
 (append (append (append (append '() (list 1)) (list 4)) (list 9)) (list 16))
 ;;                      ^^^^^^^^^^^^^^^^^^^^^
-;;                                   1)
+;;                             1) - (1)
 ;;              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-;;                                   2)
+;;                             2) - (1 4)
 ;;      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-;;                                   3)
+;;                             3) - (1 4 9)
 ;;^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-;;                                   4)
+;;                             4) - (1 4 9 16)
 
 ;;; b) 첫번째 방식으로 풀고 최종결과를 reverse
 (define (square-list items)
@@ -423,3 +427,333 @@
 (count-leaves (list x x))
 ;; 8
 
+
+
+;;;--------------------------< ex 2.24 >--------------------------
+;;; p142
+(list 1 (list 2 (list 3 4)))  ;에 대한 나무꼴
+;; (1 (2 (3 4)))
+;;=>
+;; [ + | + ]-->[ + | / ]  
+;;   |           | 
+;;   1         [ + | + ]-->[ + | / ]
+;;               |           |
+;;               2         [ + | + ]--[ + | / ]
+;;                           |          |
+;;                           3          4
+
+;;;--------------------------< ex 2.25 >--------------------------
+;;; p142,3
+;;; 7을 꺼집어 내려면
+(car (cdaddr '(1 3 (5 7) 9)))
+;; 7
+
+(caar '((7)))
+;; 7
+
+(cadadr (cadadr (cadadr '(1 (2 (3 (4 (5 (6 7)))))))))
+;; 7
+
+;;;--------------------------< ex 2.26 >--------------------------
+;;; p143
+
+(define x (list 1 2 3))
+
+(define y (list 4 5 6))
+
+(append x y)
+;; (1 2 3 4 5 6)
+
+(cons x y)
+;; ((1 2 3) 4 5 6)
+
+(list x y)
+;; ((1 2 3) (4 5 6))
+
+;;;--------------------------< ex 2.27 >--------------------------
+;;; p143,4
+
+;; 리스트에 아닌 경우에도 가능하도록 list인지 여부를 확인하는 내용을 추가함
+(define (reverse items)
+  (define (reverse-iter items2 acc)
+    (if (list? items2)
+	(if (null? items2)
+	    acc
+	    (reverse-iter (cdr items2) (cons (car items2) acc)))
+	items2))
+  (reverse-iter items '()))
+
+(reverse '(1 2 3 4))
+;; (4 3 2 1)
+
+(reverse 1)
+;; 1
+
+(reverse '(1 . 2))
+;; (1 . 2)
+
+(reverse '(1 (2 . 3)))
+;; ((2 . 3) 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 풀이 1)
+;; 인자가 항상 2 단계의 리스트라면 아래와 같이 해도 된다.
+(define (deep-reverse items)
+  (reverse (map reverse items)))
+
+(deep-reverse '(1 2 3 4))
+;; (4 3 2 1)
+
+(deep-reverse '((1 2) (3 4)))
+;; ((4 3) (2 1))
+
+;; 그러나! 이 방법에서는 3단계 이상의 리스트에 대해서 내부의 순서를 바꾸지 못한다.
+(deep-reverse '((1 2) (3 (4 5))))
+;;-> (((4 5) 3) (2 1))
+;; (((5 4) 3) (2 1)) 이 바른 답임.
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 바른 풀이
+(define (deep-reverse items)
+  (cond ((null? items) '())
+	((list? items) (reverse (map deep-reverse items)))
+	(else items)))
+
+(deep-reverse '(1 2 3 4))
+;; (4 3 2 1)
+
+(deep-reverse '((1 2) (3 4)))
+;; ((4 3) (2 1))
+
+(deep-reverse '((1 2) (3 (4 5))))
+;; (((5 4) 3) (2 1))
+
+(deep-reverse 1)
+;; 1
+
+(deep-reverse '(1 . 2))
+;; (1 . 2)   <- 리스트가 아니므로 맞는 결과임.
+
+(deep-reverse '(1 2 (3 4 (5 6)) 7 8 (9 . 10)))
+;; ((9 . 10) 8 7 ((6 5) 4 3) 2 1)
+
+
+(define x (list (list 1 2) (list 3 4)))
+
+x
+;; ((1 2) (3 4))
+
+(reverse x)
+;; ((3 4) (1 2))
+
+(deep-reverse x)
+;; ((4 3) (2 1))
+
+;;;--------------------------< ex 2.28 >--------------------------
+;;; p144
+
+;; 풀이 1)
+(define (fringe items)
+  (cond ((null? items) '())
+	((list? items) (append (fringe (car items)) (fringe (cdr items))))
+	(else (list items))))
+
+(fringe '(1 2 3 4))
+;; (1 2 3 4)
+
+(fringe '((1 2) (3 4)))
+;; (1 2 3 4)
+
+(fringe '(1 2 (3 4 (5 6) 7) 8 9 (10 . 11) 12))
+;; (1 2 3 4 5 6 7 8 9 (10 . 11) 12)
+
+(define x (list (list 1 2) (list 3 4)))
+x
+;; ((1 2) (3 4))
+
+(fringe x)
+;; (1 2 3 4)
+
+(fringe (list x x))
+;; (1 2 3 4 1 2 3 4)
+
+
+;;----------------------------------
+;; 여러가지 시도...
+
+;; 아래와 같이 하면..
+(define (fringe items)
+  (cond ((null? items) '())
+	((list? items) (cons (fringe (car items)) (fringe (cdr items))))
+	(else (list items))))
+;;==
+(define (fringe items)
+  (cond ((null? items) '())
+	((list? items) (append (map fringe items)))
+	(else (list items))))
+
+(fringe '(1 2 3 4))
+;; ((1) (2) (3) (4))
+
+(fringe '((1 2) (3 4)))
+;; (((1) (2)) ((3) (4)))
+
+(fringe '(1 2 (3 4 (5 6) 7) 8 9 (10 . 11) 12))
+;; ((1) (2) ((3) (4) ((5) (6)) (7)) (8) (9) ((10 . 11)) (12))
+
+;; 유사..
+(define (fringe items)
+  (cond ((null? items) '())
+	((list? items) (cons (fringe (car items)) (cons (fringe (cdr items)) '())))
+	(else items)))
+
+
+(fringe '(1 2 3 4))
+;; '(1 (2 (3 (4 ()))))
+
+(fringe '((1 2) (3 4)))
+;; '((1 (2 ())) ((3 (4 ())) ()))
+
+(fringe '(1 2 (3 4 (5 6) 7) 8 9 (10 . 11) 12))
+;; '(1 (2 ((3 (4 ((5 (6 ())) (7 ())))) (8 (9 ((10 . 11) (12 ())))))))
+
+;;;--------------------------< ex 2.29 >--------------------------
+;;; p144,5
+
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+
+;;-------------------------------------------------
+;; a) - 모빌에서 가지를 골라내는 고르개 정의
+;;    - 가지의 구성요소를 골라내는 고르개
+(define (left-branch mbl)
+  (car mbl))
+
+(define (right-branch mbl)
+  (cadr mbl))
+
+(define (branch-length brch)
+  (car brch))
+
+(define (branch-structure brch)
+  (cadr brch))
+
+;;;--------------------------
+;;; 테스트 
+;;                        *
+;;                        |
+;;                 *-=----+----=----=*
+;;                 |                 |
+;;           *=----+--3          *---+----=----=---*
+;;           |                       |             |
+;;         2-+--*              3=----+--*        3-+---1
+;;              |                       |
+;;        1=----+-5                1----+--2
+;;
+;;
+;;=>
+;;                        m0 
+;;                         |
+;;             1[6 m]-=----+----=----=2[10 m]
+;;                 |                       |
+;;      3[5 m]=----+--4[2 3:s]    5[3 m]---+----=----=---6[13 m]
+;;          |                         |                       |
+;; 7[1 2:s]-+--8[2 m]     9[4 1:s]----+--10[2 m]    11[1 3:s]-+---12[3 1:s]
+;;                 |                          |                 
+;;   13[5 1:s]=----+-14[1 5:s]   15[4 1:s]----+--16[2 2:s]
+
+(define s16 2)
+(define b16 (make-branch 4 s16))
+
+(define s15 1)
+(define b15 (make-branch 2 s15))
+
+(define s14 5)
+(define b14 (make-branch 1 s14))
+
+(define s13 1)
+(define b13 (make-branch 5 s13))
+
+(define s12 1)
+(define b12 (make-branch 3 s12))
+
+(define s11 3)
+(define b11 (make-branch 1 s11))
+
+(define m10 (make-mobile b15 b16))
+(define b10 (make-branch 2 m10))
+
+(define s9 1)
+(define b9 (make-branch 4 s9))
+
+(define m8 (make-mobile b13 b14))
+(define b8 (make-branch 2 m8))
+
+(define s7 2)
+(define b7 (make-branch 1 s7))
+
+(define m6 (make-mobile b11 b12))
+(define b6 (make-branch 13 m6))
+
+(define m5 (make-mobile b9 b10))
+(define b5 (make-branch 3 m5))
+
+(define s4 3)
+(define b4 (make-branch 2 s4))
+
+(define m3 (make-mobile b7 b8))
+(define b3 (make-branch 5 m3))
+
+(define m2 (make-mobile b5 b6))
+(define b2 (make-branch 10 m2))
+
+(define m1 (make-mobile b3 b4))
+(define b1 (make-branch 6 m1))
+
+(define m0 (make-branch b1 b2))
+
+m0 
+;;'((6 ((5 ((1 2) (2 ((5 1) (1 5))))) (2 3)))
+;;  (10 ((3 ((4 1) (2 ((2 1) (4 2))))) (13 ((1 3) (3 1))))))
+
+m10
+;; '((2 1) (4 2))
+
+(left-branch m10)  ; '(2 1)
+(right-branch m10) ; '(4 2)
+
+(branch-length (right-branch m10)) ; 4
+(branch-structure (right-branch m10)) ; 2
+
+;;-------------------------------------------------
+;; b)
+
+(define (total-weight mbl)
+  (define (total-branch-weight b)
+    (let ((len (branch-length b))
+	  (st (branch-structure b)))
+      (if (pair? st) 
+	  (total-weight st)
+	  st)))
+  (if (null? mbl)
+      0
+      (let ((left (left-branch mbl))
+	    (right (right-branch mbl)))
+	(+ (total-branch-weight left)
+	   (total-branch-weight right)))))
+
+(total-weight m1)
+;; 11 
+
+(total-weight m2)
+;; 8
+
+(total-weight m0)
+;; 19
+
+;;-------------------------------------------------
+;; c)
