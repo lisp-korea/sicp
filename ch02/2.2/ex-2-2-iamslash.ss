@@ -74,3 +74,124 @@
 (same-parity 1 2 3 4 5 6 7)
 (same-parity 2 3 4 5 6 7)
 
+;; ex.2.21
+(define (square x)
+  (* x x))
+(define (square-list items)
+  (if (null? items)
+      null
+      (cons (square (car items))
+            (square-list (cdr items)))))
+(define (square-list items)
+  (map square items))
+(square-list (list 1 2 3 4 5))
+
+;; ex.2.22
+(define (square-list items)
+  (define (iter things answer)
+    (if (null? things)
+        answer
+        (iter (cdr things)
+              (cons (square (car things))
+                    answer))))
+  (iter items null))
+(square-list (list 1 2 3 4 5))
+
+(define (square-list items)
+  (define (iter things answer)
+    (if (null? things)
+        answer
+        (iter (cdr things)
+              (cons answer
+                    (square (car things))))))
+  (iter items null))
+(square-list (list 1 2 3 4 5))
+
+;; iteration의 특성때문에 뒤집어 주어야 함
+(define (reverse l)
+  (define (reverse-iter l1 l2)
+    (if (null? l1)
+        l2
+        (reverse-iter (cdr l1) (cons (car l1) l2))))
+  (reverse-iter l null))
+(define (square-list items)
+  (define (iter things answer)
+    (if (null? things)
+        (reverse answer)
+        (iter (cdr things)
+              (cons (square (car things))
+                    answer))))
+  (iter items null))
+(square-list (list 1 2 3 4 5))
+
+;; ex.2.23
+(define (length items)
+  (define (length-iter a count)
+    (if (null? a)
+        count
+        (length-iter (cdr a) (+ 1 count))))
+  (length-iter items 0))
+(define (for-each f l)
+  (f (car l))
+  (if (= (length l) 1)
+      (f (car l))
+      (for-each f (cdr l))))  
+(for-each (lambda (x) (newline) (display x))
+          (list 57 321 88))
+
+;; ex.2.24
+
+ ;; (1 (2 (3 4)))
+ ;;      ^
+ ;;    /   \
+ ;;   1     ^ (2 (3 4))
+ ;;       /   \
+ ;;      2     ^ (3 4)
+ ;;          /   \
+ ;;         3     4
+
+   ;; +---+---+  +---+---+
+   ;; | * | *-+->| * | / |
+   ;; +-+-+---+  +-+-+---+
+   ;;   |          |   
+   ;;   V          V      
+   ;; +---+      +---+---+  +---+---+
+   ;; | 1 |      | * | *-+->| * | / |
+   ;; +---+      +-+-+---+  +---+---+
+   ;;              |          |
+   ;;              V          V
+   ;;            +---+      +---+---+  +---+---+
+   ;;            | 2 |      | * | *-+->| * | / |
+   ;;            +---+      +-+-+---+  +-+-+---+
+   ;;                         |          |
+   ;;                         V          V
+   ;;                       +---+      +---+
+   ;;                       | 3 |      | 4 |
+   ;;                       +---+      +---+
+
+;; ex.2.25
+(define l1 (list 1 3 (list 5 7) 9))
+(define l2 (list (list 7)))
+(define l3 (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))
+(car (cdr (car (cdr (cdr l1)))))
+(car (car l2))
+(car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr l3))))))))))))
+
+;; ex.2.26
+(define x (list 1 2 3))
+(define y (list 4 5 6))
+(append x y)
+(cons x y)
+(list x y)
+
+;; ex.2.27
+(define (reverse l)
+  (define (reverse-iter l1 l2)
+    (if (null? l1)
+        l2
+        (reverse-iter (cdr l1) (cons (car l1) l2))))
+  (reverse-iter l null))
+(define (deep-reverse l)
+  (cond ((pair? l)
+       (reverse l)
+(define x (list (list 1 2) (list 3 4)))
