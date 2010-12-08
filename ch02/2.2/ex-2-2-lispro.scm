@@ -208,4 +208,221 @@
 ; '(10 (9 (8 7) 6) 5 (4 3) 2 1) 
 
 ;ex 2.28
+ (define (fringe tree) 
+   (define nil '()) 
+   (if (null? tree)  
+       nil 
+       (let ((first (car tree))) 
+         (if (not (pair? first)) 
+             (cons first (fringe (cdr tree))) 
+             ;; bad line follows: 
+             (cons (fringe first) (fringe (cdr tree))))))) 
 
+ (define x (list (list 1 2) (list 3 4)))
+ (print "ex 2.28")
+ (newline)
+ (fringe x) 
+ (fringe (list x x))
+
+;ex 2.29
+  ;; Given: 
+ (define (make-mobile left right) 
+   (list left right)) 
+ (define (make-branch length structure) 
+   (list length structure)) 
+  
+  
+ ;; ---------------------- 
+  
+ ;; a.  "Primary accessors" ... accessors that know the underlying data 
+ ;; structures.  All operations should be defined in terms of these. 
+  
+ (define (left-branch mobile) 
+   (car mobile)) 
+ (define (right-branch mobile) 
+   (car (cdr mobile))) 
+  
+ (define (branch-length branch) 
+   (car branch)) 
+ (define (branch-structure branch) 
+   (car (cdr branch))) 
+  
+ (define (structure-is-mobile? structure) 
+   (pair? structure)) 
+  
+ ;; (Re-run everything from here on after the redefinition in part d.) 
+ ;; Tests: 
+ (print "ex2.29-a")
+ (newline)
+ (left-branch (make-mobile 2 3)) 
+ (right-branch (make-mobile 2 3)) 
+ (branch-length (make-branch 4 5)) 
+ (branch-structure (make-branch 4 5))
+ 
+ ;b
+  (define (branch-weight branch) 
+   (let ((s (branch-structure branch))) 
+     (if (structure-is-mobile? s) 
+         (total-weight s) 
+         s))) 
+  
+ (define (total-weight mobile) 
+   (+ (branch-weight (left-branch mobile)) 
+      (branch-weight (right-branch mobile)))) 
+  
+  
+ ;; A test mobile: 
+ ;; Level 
+ ;; ----- 
+ ;; 3                   4  |    8                                      
+ ;;              +---------+--------+ 2                        
+ ;; 2         3  |  9                                        
+ ;;        +-----+----+ 1                                    
+ ;; 1    1 | 2                                       
+ ;;    +---+---+                             
+ ;;    2       1                             
+  
+ (define level-1-mobile (make-mobile (make-branch 2 1) 
+                                     (make-branch 1 2))) 
+ (define level-2-mobile (make-mobile (make-branch 3 level-1-mobile) 
+                                     (make-branch 9 1))) 
+ (define level-3-mobile (make-mobile (make-branch 4 level-2-mobile) 
+                                     (make-branch 8 2))) 
+(print "ex2.29-b")
+(newline)
+ (total-weight level-1-mobile) 
+ (total-weight level-2-mobile) 
+ (total-weight level-3-mobile) 
+ 
+ ;c
+  (define (branch-balanced? branch) 
+   (let ((s (branch-structure branch))) 
+     (if (structure-is-mobile? s) 
+         (balanced? s) 
+         true))) 
+  
+ ;; Test: 
+  (print "ex2.29-c")
+  (newline)
+ (branch-balanced? (make-branch 2 3)) 
+  
+ ;; Can't test branch holding mobile yet, balanced? not created.  We ''could'' stub out the function to always return true or false and ensure that it's getting called (a Test Driven Development technique), but I won't bother here. 
+  
+ (define (branch-torque branch) 
+   (* (branch-weight branch) 
+      (branch-length branch))) 
+  
+ ;; Test: 
+ (branch-torque (make-branch 2 3)) 
+  
+  
+ ;; Mobile is balanced if the torques of the branches are equal and any 
+ ;; mobiles on branches are also balanced. 
+ (define (balanced? mobile) 
+  
+   (let ((left (left-branch mobile)) 
+         (right (right-branch mobile))) 
+     (and (= (branch-torque left) 
+             (branch-torque right)) 
+          (branch-balanced? left) 
+          (branch-balanced? right)))) 
+  
+ ;; Usage: 
+ (balanced? (make-mobile (make-branch 2 3) 
+                         (make-branch 3 2))) 
+  
+ ;; Usage: 
+ (balanced? level-1-mobile) 
+ (balanced? level-2-mobile) 
+ (balanced? level-3-mobile) 
+  
+ (balanced? (make-mobile (make-branch 10 1000) 
+                         (make-branch 1 level-3-mobile))) 
+  
+
+;d
+  (define (make-mobile left right) 
+   (cons left right)) 
+ (define (make-branch length structure) 
+   (cons length structure)) 
+  
+ (define (left-branch mobile) 
+   (car mobile)) 
+ (define (right-branch mobile) 
+   (cdr mobile)) 
+  
+ (define (branch-length branch) 
+   (car branch)) 
+ (define (branch-structure branch) 
+   (cdr branch)) 
+  
+ (define (structure-is-mobile? structure) 
+   (pair? structure)) 
+
+ ;ex2.30
+ (define my-tree (list 1 (list 2 (list 3 4) 5) (list 6 7))) 
+  
+ ;; Defining directly: 
+ (define (square-tree tree) 
+   (define nil '())  ;; my env lacks nil 
+   (cond ((null? tree) nil) 
+         ((not (pair? (car tree))) 
+          (cons (square (car tree)) (square-tree (cdr tree)))) 
+         (else (cons (square-tree (car tree)) 
+                     (square-tree (cdr tree)))))) 
+  
+ ;; The above works, but there's no need to rip the tree apart in the (not 
+ ;; ...) cond branch, since square-tree takes the tree apart for us in 
+ ;; the else branch if we do one more recurse.  The following is 
+ ;; better: 
+ (define (sq-tree-2 tree) 
+   (define nil '()) 
+   (cond ((null? tree) nil) 
+         ((not (pair? tree)) (square tree)) 
+         (else (cons (sq-tree-2 (car tree)) 
+                     (sq-tree-2 (cdr tree)))))) 
+  
+  
+ ;; By using map: 
+ (define (sq-tree-with-map tree) 
+   (define nil '()) 
+   (map (lambda (x) 
+          (cond ((null? x) nil) 
+                ((not (pair? x)) (square x)) 
+                (else (sq-tree-with-map x)))) 
+        tree)) 
+  
+ ;; Usage 
+ (print "ex2.30")
+ (newline)
+ (square-tree my-tree) 
+ (sq-tree-2 my-tree) 
+ (sq-tree-with-map my-tree) 
+
+ ;ex 2.31
+  (define (tree-map proc tree) 
+   (define nil '()) 
+   (map (lambda (subtree) 
+          (cond ((null? subtree) nil) 
+                ((not (pair? subtree)) (proc subtree)) 
+                (else (tree-map proc subtree)))) 
+        tree)) 
+  
+ ;; Usage: 
+ (define my-tree (list (list 1 2) 3 (list 4 5))) 
+(print "ex2.31")
+(newline)
+ (tree-map square my-tree) 
+ (tree-map (lambda (x) (+ x 1)) my-tree) 
+
+ ;ex2.32
+  (define (subsets s) 
+   (if (null? s) 
+       (list nil)   ;; initially had nil, always got () back! 
+       (let ((rest (subsets (cdr s)))) 
+         (append rest (map (lambda (x) (cons (car s) x)) rest))))) 
+  (print "ex 2.32")
+  (newline)
+ (subsets (list 1 2 3)) 
+ (subsets (list 1 2 3 4 5)) 
+  
