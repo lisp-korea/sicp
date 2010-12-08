@@ -1,0 +1,83 @@
+// graphviz file for ex 2.24
+// Usage : dot -Tpng -o ex-2-2-okie2.png ex-2-2-okie.gv 
+/*
+digraph g {
+graph [rankdir = "LR"];
+node [fontsize = "14" shape = "record"];
+edge [];
+list1 [label = "((1 2) 3 4)" shape = "ellipse"];
+list2 [label = "(3 4)" shape = "ellipse"];
+list3 [label = "(1 2)" shape = "ellipse"];
+node1 [label = "<f0> | <f1> " shape = "record"];
+node2 [label = "<f0> | <f1> " shape = "record"];
+node3 [label = "<f0> | <f1> " shape = "record"];
+node4 [label = "<f0> | <f1> " shape = "record"];
+node5 [label = "<f0> | <f1> " shape = "record"];
+node6 [label = "1" shape = "record"];
+node7 [label = "2" shape = "record"];
+node8 [label = "3" shape = "record"];
+node9 [label = "4" shape = "record"];
+
+list1 -> node1;
+node1:f0 -> node4:f0;
+node1:f1 -> node2:f0;
+list2 -> node2;
+node2:f0 -> node8;
+node2:f1 -> node3;
+node3:f0 -> node9;
+list3 -> node4;
+node4:f0 -> node6;
+node4:f1 -> node5;
+node5:f0 -> node7;
+}
+*/
+/*
+digraph g {
+    graph [rankdir = "LR"];
+    node [fontsize = "14" shape = "record"];
+    edge [];
+    list1 [label = "(1 (2 (3 4)))" shape = "ellipse"];
+    //list2 [label = "(2 (3 4))" shape = "ellipse"];
+    //list3 [label = "(3 4)" shape = "ellipse"];
+    node1 [label = "<f0> | <f1> "];
+    node2 [label = "<f0> | <f1> "];
+    node3 [label = "<f0> | <f1> "];
+    node4 [label = "<f0> | <f1> "];
+    node6 [label = "1" shape = "record"];
+    node7 [label = "2" shape = "record"];
+    node8 [label = "3" shape = "record"];
+    node9 [label = "4" shape = "record"];
+    
+    list1 -> node1 [arrowhead="dot"];
+    node1:f0 -> node6;
+    node1:f1 -> node2;
+    //list2 -> node2:f1  [arrowhead="dot"];
+    node2:f0 -> node7;
+    node2:f1 -> node3;
+    //list3 -> node3:f1  [arrowhead="dot"];
+    node3:f0 -> node8;
+    node3:f1 -> node4;
+    //list4 -> node4;
+    node4:f0 -> node9;
+}
+*/
+
+digraph g {
+//  graph [rankdir = "LR"];
+  node [fontsize = "14" shape = "ellipse"];
+  edge [arrowtail="dot" dir="back"];
+  list1 [label = "(1 (2 (3 4)))" shape = "ellipse"];
+  list2 [label = "(2 (3 4))" shape = "ellipse"];
+  list3 [label = "(3 4)" shape = "ellipse"];
+  node6 [label = "1" shape = "record"];
+  node7 [label = "2" shape = "record"];
+  node8 [label = "3" shape = "record"];
+  node9 [label = "4" shape = "record"];
+  
+  list1 -> node6;
+  list1 -> list2;
+  list2 -> node7;
+  list2 -> list3;
+  list3 -> node8;
+  list3 -> node9;
+}

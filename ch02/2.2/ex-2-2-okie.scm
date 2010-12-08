@@ -187,3 +187,244 @@
   (if (not (null? (cdr l)))
       (for-each proc (cdr l))
       #f))
+
+;; 2.2.2
+(cons (list 1 2) (list 3 4))
+
+(define x (cons (list 1 2) (list 3 4)))
+(length x)
+
+(count-leaves x)
+
+(list x x)
+
+(length (list x x))
+
+(count-leaves (list x x))
+
+(define (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+
+; ex 2.24
+(list 1 (list 2 (list 3 4)))
+
+; list type
++---------------+     +---+--+     +---+--+     +---+--+     +---+--+
+| (1 (2 (3 4))) | --> |   |  | --> |   |  | --> |   |  | --> |   |  |
++---------------+     +---+--+     +---+--+     +---+--+     +---+--+
+                        |            |            |            |
+                        |            |            |            |
+                        v            v            v            v
+                      +---+        +---+        +---+        +---+
+                      | 1 |        | 2 |        | 3 |        | 4 |
+                      +---+        +---+        +---+        +---+
+
+
+; tree type?
++---------------+     +-----------+     +-------+     +---+
+| (1 (2 (3 4))) | --> | (2 (3 4)) | --> | (3 4) | --> | 4 |
++---------------+     +-----------+     +-------+     +---+
+  |                     |                 |
+  |                     |                 |
+  v                     v                 v
++---------------+     +-----------+     +-------+
+|       1       |     |     2     |     |   3   |
++---------------+     +-----------+     +-------+
+
+; ex 2.25
+
+(define x (list 1 3 (list 5 7) 9))
+
+(define y (list (list 7)))
+
+(define z (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))
+
+(define (find-number x n)
+  (cond ((null? x) 0)
+        ((not (pair? x)) (if (= x n) 1
+                             0))
+        (else (+ (find-number (car x) n)
+                 (find-number (cdr x) n))))))
+
+(car (cdr (car (cdr (cdr x)))))
+
+(car (car y))
+
+(car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr z))))))))))))
+
+; ex 2.26
+
+(define x (list 1 2 3))
+
+(define y (list 4 5 6))
+
+(append x y)
+; (1 2 3 4 5 6)
+
+(cons x y)
+; ((1 2 3) 4 5 6)
+
+(list x y)
+; ((1 2 3) (4 5 6))
+
+; ex 2.27
+(define x (list (list 1 2) (list 3 4))) ; ((1 2) (3 4))
+(define y (list (list 1 2) 3 4)) ; ((1 2) 3 4))
+(define z (list (list (list 1 2) (list 3 4)) 5 6)) ; (((1 2) (3 4)) 5 6))
+
+(define (deep-reverse x)
+  (cond ((null? x) '())
+        ((pair? (car x))
+         (append (deep-reverse (cdr x)) (list (deep-reverse (car x)))))
+        (else
+         (append (deep-reverse (cdr x)) (list (car x))))))
+
+;(define (deep-reverse x)
+;  (cond ((null? x) '())
+;        ((pair? x)
+;         (if (null? (cdr x))
+;             (append (deep-reverse (car x)) (list (cdr x)))
+;             (append (deep-reverse (cdr x)) (deep-reverse (car x)))))
+;        (else (list x))))
+                    
+
+(deep-reverse x)
+(deep-reverse y)
+(deep-reverse z)
+(reverse x)
+           
+; ex 2.28
+(define x (list (list 1 2) (list 3 4)))
+
+(define (fringe x)
+  (cond ((null? x) '())
+        ((pair? x)
+         (append (fringe (car x)) (fringe (cdr x))))
+        (else (list x))))
+
+(fringe x)
+
+(fringe (list x x))
+
+; ex 2.29
+(define (make-mobile left right)
+  (list left right))
+
+(define (make-branch length structure)
+  (list length structure))
+
+; a.
+(define (left-branch mobile)
+  (car mobile))
+
+(define (right-branch mobile)
+  (car (cdr mobile)))
+
+(define mobile1 (make-mobile (make-branch 1 10) (make-branch 1 20)))
+
+(define (branch-length x)
+  (car x))
+
+(define (branch-structure x)
+  (car (cdr x)))
+
+; b.
+(define total-weight (+ (branch-structure (left-branch mobile1))
+                        (branch-structure (right-branch mobile1))))
+
+; c.
+(define (torque x)
+  (* (branch-structure x) (branch-length x)))
+
+(= (torque (left-branch mobile1)) (torque (right-branch mobile1)))
+
+; d.
+(define (make-mobile left right)
+  (cons left right))
+
+(define (make-branch length structure)
+  (cons length structure))
+
+(define (right-branch mobile)
+  (cdr mobile))
+
+(define (branch-structure x)
+  (cdr x))
+
+; tree mapping
+
+(define (scale-tree tree factor)
+  (cond ((null? tree) '())
+        ((not (pair? tree)) (* tree factor))
+        (else (cons (scale-tree (car tree) factor)
+                    (scale-tree (cdr tree) factor)))))
+
+(scale-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)) 10)
+
+(define (scale-tree tree factor)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (scale-tree sub-tree factor)
+             (* sub-tree factor)))
+       tree))
+
+; ex 2.30
+
+(square-tree
+ (list 1
+       (list 2 (list 3 4) 5)
+       (list 6 7)))
+
+(define (square-tree tree)
+  (cond ((null? tree) '())
+        ((not (pair? tree)) (* tree tree))
+        (else (cons (square-tree (car tree))
+                    (square-tree (cdr tree))))))
+
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (square-tree sub-tree)
+             (* sub-tree sub-tree)))
+       tree))
+
+; ex 2.31
+(define (square x) (* x x))
+
+(define (square-tree tree) 
+  (tree-map square tree))
+
+(define (tree-map proc tree)
+  (map (lambda (sub-tree)
+         (if (pair? sub-tree)
+             (tree-map proc sub-tree)
+             (proc sub-tree)))
+       tree))
+
+; ex 2.32
+(define (subsets s)
+  (if (null? s)
+      (list '())
+      (let ((rest (subsets (cdr s))))
+        (append rest (map (lambda(x) (cons (car s) x)) rest)))))
+
+(subsets (list 1 2 3))
+
+(subset '(1))
+
+;(subsets '(1 2 3))
+;rest ← (subsets '(2 3))
+;       rest ← (subsets '(3))
+;              rest ← (subsets '())
+;                     '(())
+;              (append '(()) (map ⟨…⟩ '(())))
+;              '(() (3))
+;       (append '(() (3)) (map ⟨…⟩ '(() (3))))
+;       '(() (3) (2) (2 3))
+;(append '(() (3) (2) (2 3)) (map ⟨…⟩ '(() (3) (2) (2 3))))
+;'(() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
+; ??
+
