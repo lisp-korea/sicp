@@ -413,18 +413,25 @@
 
 (subsets (list 1 2 3))
 
-(subset '(1))
+;1. The powerset of all the elements without the first.
+;2. The powerset of all the elements without the first, with the first element prepended to each subset.
 
-;(subsets '(1 2 3))
-;rest ← (subsets '(2 3))
-;       rest ← (subsets '(3))
-;              rest ← (subsets '())
-;                     '(())
-;              (append '(()) (map ⟨…⟩ '(())))
-;              '(() (3))
-;       (append '(() (3)) (map ⟨…⟩ '(() (3))))
-;       '(() (3) (2) (2 3))
-;(append '(() (3) (2) (2 3)) (map ⟨…⟩ '(() (3) (2) (2 3))))
-;'(() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
-; ??
+(subsets '(1))
+; 1. ()
+; 2. (1)
 
+(subsets '(2))
+; 1. ()
+; 2. (2)
+
+(subsets '(1 2))
+; 1. () (2)
+; 2. (1) (1 2)
+
+(subsets '(2 3))
+; 1. () (3)
+; 2. (2) (2 3)
+
+(subsets '(1 2 3))
+; 1. () (3) (2) (2 3)
+; 2. (1) (1 2) (1 3) (1 2 3)
