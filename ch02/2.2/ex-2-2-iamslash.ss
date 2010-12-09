@@ -190,8 +190,21 @@
     (if (null? l1)
         l2
         (reverse-iter (cdr l1) (cons (car l1) l2))))
-  (reverse-iter l null))
+  (if (pair? l)
+       (reverse-iter l null)
+       l))
 (define (deep-reverse l)
-  (cond ((pair? l)
-       (reverse l)
+  (if (pair? l)
+       (reverse (map reverse l))
+       l))
 (define x (list (list 1 2) (list 3 4)))
+
+;; ex.2.28
+(define x (list (list 1 2) (list 3 4)))
+(define (fringe l)
+  (cond ((pair? l)
+         (append (list (car l)) (fringe (cdr l))))
+        (else (list l))))
+
+(fringe x)
+(fringe (list x x))
