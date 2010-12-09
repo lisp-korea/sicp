@@ -803,7 +803,7 @@ s4 ;; 6
 m1 ;;'((3 ((1 4) (2 2))) (3 6))
 
 ;; 모빌 수정
-(define s4 6) ;; <------------ 6에서 4로 수정
+(define s4 4) ;; <------------ 6에서 4로 수정
 (define b4 (make-branch 3 s4))
 
 (define m3 (make-mobile b7 b8))
