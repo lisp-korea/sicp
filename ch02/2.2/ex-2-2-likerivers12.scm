@@ -193,7 +193,6 @@
 
 
 
-
 ;;;-----------------------------
 ;;; 리스트 매핑(mapping)
 ;;; p136
@@ -647,63 +646,48 @@ x
 ;;                       m0
 ;;                        *
 ;;                        |
-;;                m1      |          m2
-;;                 *-=----+----=----=*
-;;                 |                 |
-;;          m3     |  s4        m5   |             m6 
-;;           *=----+--3          *---+----=----=---*
-;;           |                   |                 |
-;;        s7 |  m8        s9     |  m10        s11 |   s12
-;;         2-+--*          3=----+--*            3-+---1
-;;              |                   |
-;;      s13     | s14        s15    |  s16
-;;        1=----+-5            1----+--2
-;;
+;;                m1      |        m2
+;;                 *-=----+----=---*
+;;                 |               |
+;;          m3     |  s4       m5  |       m6 
+;;             *---+---6        *--+----=--*
+;;             |                |          |
+;;          s7 |  s8     s9     |  s10  s11|  s12
+;;           4-+--2       2=----+--5    1--+--1
 
-(define s16 2)
-(define b16 (make-branch 4 s16))
-
-(define s15 1)
-(define b15 (make-branch 2 s15))
-
-(define s14 5)
-(define b14 (make-branch 1 s14))
-
-(define s13 1)
-(define b13 (make-branch 5 s13))
 
 (define s12 1)
-(define b12 (make-branch 3 s12))
+(define b12 (make-branch 2 s12))
 
-(define s11 3)
-(define b11 (make-branch 1 s11))
+(define s11 1)
+(define b11 (make-branch 2 s11))
 
-(define m10 (make-mobile b15 b16))
-(define b10 (make-branch 2 m10))
+(define s10 5)  ;(define s10 4))
+(define b10 (make-branch 2 s10))
 
-(define s9 1)
-(define b9 (make-branch 4 s9))
+(define s9 2)
+(define b9 (make-branch 5 s9))
 
-(define m8 (make-mobile b13 b14))
-(define b8 (make-branch 2 m8))
+(define s8 2)
+(define b8 (make-branch 2 s8))
 
-(define s7 2)
+(define s7 4)
 (define b7 (make-branch 1 s7))
 
 (define m6 (make-mobile b11 b12))
-(define b6 (make-branch 13 m6))
+(define b6 (make-branch 7 m6))
 
 (define m5 (make-mobile b9 b10))
-(define b5 (make-branch 3 m5))
+(define b5 (make-branch 2 m5))
 
-(define s4 3)
-(define b4 (make-branch 2 s4))
+(define s4 6)
+(define b4 (make-branch 3 s4))
 
 (define m3 (make-mobile b7 b8))
-(define b3 (make-branch 5 m3))
+(define b3 (make-branch 3 m3))
 
 (define m2 (make-mobile b5 b6))
-(define b2 (make-branch 10 m2))
+(define b2 (make-branch 8 m2))
 
 (define m1 (make-mobile b3 b4))
 (define b1 (make-branch 6 m1))
@@ -711,43 +695,263 @@ x
 (define m0 (make-branch b1 b2))
 
 m0 
-;;'((6 ((5 ((1 2) (2 ((5 1) (1 5))))) (2 3)))
-;;  (10 ((3 ((4 1) (2 ((2 1) (4 2))))) (13 ((1 3) (3 1))))))
+;; '((6 ((3 ((1 4) (2 2))) (3 6))) (8 ((2 ((5 2) (2 5))) (7 ((2 1) (2 1))))))
 
-m10
-;; '((2 1) (4 2))
+m5
+;; '((5 2) (2 5))
 
-(left-branch m10)  ; '(2 1)
-(right-branch m10) ; '(4 2)
+s10
+;; 5
 
-(branch-length (right-branch m10)) ; 4
-(branch-structure (right-branch m10)) ; 2
+s4
+;; 6
+
+(left-branch m5)  ; '(5 2)
+(right-branch m5) ; '(2 5)
+
+(branch-length (right-branch m5)) ; 2
+(branch-structure (right-branch m5)) ; 5
 
 ;;-------------------------------------------------
-;; b)
+;; b) 모빌의 전체 무게
 
-(define (total-weight mbl)
-  (define (total-branch-weight b)
-    (let ((len (branch-length b))
-	  (st (branch-structure b)))
-      (if (pair? st) 
-	  (total-weight st)
-	  st)))
-  (if (null? mbl)
-      0
-      (let ((left (left-branch mbl))
-	    (right (right-branch mbl)))
+(define (total-weight m)
+  (if (mobile? m)
+      (let ((left (left-branch m))
+	    (right (right-branch m)))
 	(+ (total-branch-weight left)
-	   (total-branch-weight right)))))
+	   (total-branch-weight right)))
+      m))
 
-(total-weight m1)
-;; 11 
+(define (total-branch-weight b)
+  (let ((len (branch-length b))
+	(s (branch-structure b)))
+    (if (mobile? s) 
+	(total-weight s)
+	s)))
 
-(total-weight m2)
-;; 8
+(define (mobile? s)
+  (if (pair? s)
+      #t
+      #f))
 
-(total-weight m0)
-;; 19
+(total-weight m1) ;; 12 
+
+(total-weight m2) ;; 9
+
+(total-weight m0) ;; 21
+
+(total-weight s10) ;; 5
 
 ;;-------------------------------------------------
-;; c)
+;; c) 균형 잡힌 상태
+;;  1) 왼쪽 맨 윗가지의 돌림힘 = 오른쪽 맨 윗가지의 돌림힘
+;;     돌림힘 = (막대 길이) * (막대에 매달린 추 무게 합)
+;;  2) 가지마다 매달린 모든 부분 모빌도 균형 잡힌 상태
+
+(define (mobile-torque m)
+  (if (mobile? m)
+      (let ((lb (left-branch m))
+	    (rb (right-branch m)))
+	(cons (branch-torque lb)
+	      (branch-torque rb)))
+      0))
+
+(define (branch-torque b)
+  (* (total-branch-weight b) 
+     (branch-length b)))
+
+(define (mobile-balanced? m)
+  (if (mobile? m)
+      (let ((lb (left-branch m))
+	    (rb (right-branch m)))
+	(and (= (branch-torque lb) (branch-torque rb))
+	     (branch-balanced? lb)
+	     (branch-balanced? rb)))
+      #t))
+
+(define (branch-balanced? b)
+  (if (pair? b)
+      (let ((s (branch-structure b)))
+	(if (mobile? s)
+	    (mobile-balanced? s)
+	    #t))
+      #t))
+
+(mobile-torque m0)     ;; (72 . 72)
+
+(mobile-balanced? m0)  ;; #t
+
+(mobile-torque m1)     ;; (18 . 18)
+
+(mobile-balanced? m1)  ;; #t
+
+(mobile-torque m2)     ;; (14 . 14)
+
+(mobile-balanced? m2)  ;; #t
+
+(mobile-torque m6)     ;; (2 . 2)
+
+(mobile-balanced? m6)  ;; #t
+
+(mobile-torque s10)    ;; 0
+
+(mobile-balanced? s10) ;; #t
+
+s4 ;; 6
+
+m1 ;;'((3 ((1 4) (2 2))) (3 6))
+
+;; 모빌 수정
+(define s4 6) ;; <------------ 6에서 4로 수정
+(define b4 (make-branch 3 s4))
+
+(define m3 (make-mobile b7 b8))
+(define b3 (make-branch 3 m3))
+
+(define m2 (make-mobile b5 b6))
+(define b2 (make-branch 8 m2))
+
+(define m1 (make-mobile b3 b4))
+(define b1 (make-branch 6 m1))
+
+(define m0 (make-branch b1 b2))
+
+s4 ;; 4
+
+(mobile-torque s4)    ;; 0 
+
+;;!!!!!
+(mobile-balanced? s10) ;; #t
+
+;;;
+(mobile-torque m0)     ;; (60 . 72)
+
+(mobile-balanced? m0)  ;; #f
+
+(mobile-torque m1)     ;; (18 . 12)
+
+(mobile-balanced? m1)  ;; #f
+
+(mobile-torque m2)     ;; (14 . 14)
+
+(mobile-balanced? m2)  ;; #t
+
+(mobile-torque m6)     ;; (2 . 2)
+
+(mobile-balanced? m6)  ;; #t
+
+(mobile-torque s10)    ;; 0
+
+(mobile-balanced? s10) ;; #t
+
+;;-------------------------------------------------
+;; d) 짜맞추개를 바꾸면 지금까지 짠 프로그램을 얼마나 손봐야하나?
+
+(define (make-mobile left right)
+  (cons left right))
+
+(define (make-branch length structure)
+  (cons length structure))
+
+;;;----------------------
+;;; 수정 필요
+(define (right-branch mbl)
+  (cdr mbl)) ; <- cadr
+
+(define (branch-structure brch)
+  (cdr brch)) ; <- cadr
+;;;----------------------
+
+
+
+
+;;; 나무 매핑
+;;; p145
+
+(define (scale-tree tree factor)
+  (cond ((null? tree) '())
+	((not (pair? tree)) (* tree factor))
+	(else (cons (scale-tree (car tree) factor)
+		    (scale-tree (cdr tree) factor)))))
+
+(scale-tree (list 1 (list 2 (list 3 4) 5) (list 6 7))
+	    10)
+;; (10 (20 (30 40) 50) (60 70))
+
+;;; map 이용
+(define (scale-tree tree factor)
+  (map (lambda (sub-tree)
+	 (if (pair? sub-tree)
+	     (scale-tree sub-tree factor)
+	     (* sub-tree factor)))
+       tree))
+
+(scale-tree (list 1 (list 2 (list 3 4) 5) (list 6 7))
+	    10)
+;; (10 (20 (30 40) 50) (60 70))
+
+;;;--------------------------< ex 2.30 >--------------------------
+;;; p146,7
+
+;;;---
+(define (square x) (* x x))
+
+;; 곧 바로 정의
+(define (square-tree tree)
+  (cond ((null? tree) '())
+	((not (pair? tree)) (square tree))
+	(else
+	 (cons (square-tree (car tree))
+	       (square-tree (cdr tree))))))
+
+(square-tree
+ (list 1
+       (list 2 (list 3 4) 5)
+       (list 6 7)))
+;; 입력 : '(1 (2 (3 4) 5) (6 7))
+;; 결과 : '(1 (4 (9 16) 25) (36 49))
+
+;; map과 재귀를 써서 정의
+(define (square-tree tree)
+  (map (lambda (sub-tree)
+	 (if (pair? sub-tree)
+	     (square-tree sub-tree)
+	     (square sub-tree)))
+       tree))
+
+(square-tree
+ (list 1
+       (list 2 (list 3 4) 5)
+       (list 6 7)))
+;; '(1 (4 (9 16) 25) (36 49))
+
+;;;--------------------------< ex 2.31 >--------------------------
+;;; p147
+
+(define (tree-map proc tree)
+  (map (lambda (sub-tree)
+	 (if (pair? sub-tree)
+	     (tree-map proc sub-tree)
+	     (proc sub-tree)))
+       tree))
+
+(define (square-tree tree) (tree-map square tree))
+
+(square-tree
+ (list 1
+       (list 2 (list 3 4) 5)
+       (list 6 7)))
+;; '(1 (4 (9 16) 25) (36 49))
+
+
+;;;--------------------------< ex 2.32 >--------------------------
+;;; p147
+
+(define (subsets s)
+  (if (null? s)
+      (list '())
+      (let ((rest (subsets (cdr s))))
+	(append rest (map <??> rest)))))
+
+(subsets '(1 2 3))
