@@ -202,9 +202,10 @@
 ;; ex.2.28
 (define x (list (list 1 2) (list 3 4)))
 (define (fringe l)
-  (cond ((pair? l)
-         (append (list (car l)) (fringe (cdr l))))
-        (else (list l))))
-
+  (define (fringe-iter l1 l2)
+    (cond ((null? l1) l2)
+          ((not (pair? l1)) (fringe-iter null (cons l1 l2)))
+          (else (fringe-iter (cdr l1) (cons (car l1) l2)))))
+  (fringe-iter l null))
 (fringe x)
 (fringe (list x x))
