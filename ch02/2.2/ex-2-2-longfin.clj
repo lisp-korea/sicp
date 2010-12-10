@@ -277,5 +277,77 @@
 ;; only change left-branch, right-branch, branch-lenght and branch-structure
 
 
+(defn scale-tree [tree factor]
+  (cond (null? tree) nil
+	(not (seq? tree)) (* tree factor)
+	:else (cons (scale-tree (first tree) factor)
+		    (scale-tree (rest tree) factor))))
+
+(scale-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)) 10)
+
+(defn scale-tree [tree factor]
+  (mapn (fn [sub-tree]
+	  (if (seq? sub-tree)
+	    (scale-tree sub-tree factor)
+	    (* sub-tree factor)))
+	tree))
 
 
+(scale-tree (list 1 (list 2 (list 3 4) 5) (list 6 7)) 10)
+
+;; ex 2.30
+(defn sqaure-tree [tree]
+  (cond (null? tree) nil
+	(not (seq? tree)) (* tree tree)
+	:else (cons (sqaure-tree (first tree))
+		    (sqaure-tree (rest tree)))))
+
+(sqaure-tree
+ (list 1
+       (list 2 (list 3 4) 5)
+       (list 6 7)))
+
+(defn square-tree [tree]
+  (mapn (fn [sub-tree]
+	  (if (seq? sub-tree)
+	    (square-tree sub-tree)
+	    (* sub-tree sub-tree)))
+	tree))
+
+;; ex 2.31
+
+(defn tree-map [proc tree]
+  (mapn (fn [sub-tree]
+	  (if (seq? sub-tree)
+	    (tree-map proc sub-tree)
+	    (proc sub-tree)))
+	tree))
+
+(defn square-tree [tree]
+  (tree-map (fn [x] (* x x)) tree))
+
+;; ex 2.32
+
+(defn subsets [s]
+  (if (null? s)
+    (list '())
+    (let [r (subsets (rest s))]
+      (append r (mapn (fn [x] (cons (first s) x)) r)))))
+
+(subsets (list 3))
+;; (subsets (rest (list 3)))
+;; (subsets ())
+;; ()
+;; (() (3))
+
+(subsets (list 2 3))
+;; (subsets (rest (list 2 3)))
+;; (subsets (rest (list 3)))
+;; (() (3)) <= apply 2
+;; (() (3) (2) (2 3))
+
+(subsets (list 1 2 3))
+;; (subsets (rest (list 1 2 3)))
+;; (subsets (rest (list 2 3)))
+;; (() (3) (2) (2 3)) <= apply 1
+;; (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
