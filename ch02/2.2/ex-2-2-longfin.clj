@@ -95,3 +95,187 @@
        (empty? arr) result
        (even? (+ parity (first arr))) (recur (rest arr) (conj result (first arr)))
        :else (recur (rest arr) result)))))
+
+
+(defn scale-list [items factor]
+  (if (empty? items)
+    nil
+    (cons (* (first items) factor)
+	  (scale-list (rest items) factor))))
+
+(defn mapn [proc items]
+  (if (empty? items)
+    nil
+    (cons (proc (first items))
+	  (mapn proc (rest items)))))
+
+(defn scale-list [items factor]
+  (mapn (fn [x] (* x factor))
+	items))
+
+;; ex 2.21
+
+(defn square-list [items]
+  (if (empty? items)
+    nil
+    (cons (* (first items) (first items))
+	  (square-list (rest items)))))
+
+(defn square-list [items]
+  (mapn (fn [x] (* x x)) items))
+
+;; ex 2.22
+
+(defn square-list [items]
+  (defn iter [things answer]
+    (if (empty? things)
+      answer
+      (iter (rest things)
+	    (cons (* (first things) (first things))
+		  answer))))
+  (iter items nil))
+
+;; (square-list '(1 2 3))
+;; (iter '(1 2 3) nil)
+;; (iter '(2 3) '(1))
+;; (iter '(3) '(4 1))
+;; (iter '() '(9 4 1))
+;; '(9 4 1)
+
+(defn square-list [items]
+  (defn iter [things answer]
+    (if (empty? things)
+      answer
+      (iter (rest things)
+	    (cons answer
+		  (* (first things) (first things))))))
+  (iter items nil))
+
+;; (cons x xs) not (cons xs x)
+
+;; ex 2.23
+(defn for-each [proc items]
+  (if (not (empty? items))
+    (do (proc (first items))
+	(for-each proc (rest items)))))
+
+
+(def x (cons (list 1 2) (list  3 4)))
+(length x)
+
+(defn null? [x]
+  (cond (nil? x) true
+	(and (seq? x) (empty? x)) true
+	:else false))(
+(defn count-leaves [x]
+  (cond (null? x) 0
+	(not (seq? x)) 1
+	:else (+ (count-leaves (first x))
+		 (count-leaves (rest x)))))
+(count-leaves x)
+
+(count-leaves (list x x))
+
+;; ex 2.24
+
+(list 1 (list 2 (list 3 4)))
+
+;; [1 [2 [3 4]]]
+
+;; ex 2.25
+
+(def a '(1 3 (5 7)))
+(def b '((7)))
+(def c '(1 (2 (3 (4 (5 (6 7)))))))
+
+(first (rest (first (rest (rest a)))))
+(first (first b))
+(first (rest (first (rest (first (rest (first (rest (first (rest (first (rest c))))))))))))
+
+(def x (list 1 2 3))
+(def y (list 4 5 6))
+
+(append x y)
+;; (1 2 3 4 5 6)
+
+(cons x y)
+;; ((1 2 3) 4 5 6)
+
+(list x y)
+;; ((1 2 3) (4 5 6))
+
+;; ex 2.27
+(defn deep-reverse [items]
+  (loop [arr items
+	 result (list)
+	 ]
+    (let [target (first arr)
+	  reversed (if (seq? target) (deep-reverse target) target)]
+      (if (= (length items) (length result))
+	result
+	(recur (rest arr) (append (list reversed) result))))))
+
+
+;; ex 2.28
+
+(defn fringe [x]
+  (loop [arr x
+	 result (list)]
+    (let [target (first arr)
+	  flatten (if (seq? target) (fringe target) (list target))]
+      (print target)
+      (newline)
+      (if (null? arr)
+	result
+	(recur (rest arr) (append result flatten))))))
+	  
+;; ex 2.29
+
+(defn make-mobile [left right]
+  (list left right))
+
+(defn make-branch [length structure]
+  (list length structure))
+
+;; a
+
+(defn left-branch [m]
+  (first m))
+(defn right-branch [m]
+  (last m))
+
+(defn branch-length [b]
+  (first b))
+(defn branch-structure [b]
+  (last b))
+
+
+(defn mobile? [x]
+  (seq? x))
+;; b
+
+(defn total-weight [m]
+  (let [left (branch-structure (left-branch m))
+	left-weight (if (seq? left) (total-weight left) left)
+	right (branch-structure (right-branch m))
+	right-weight (if (seq? right) (total-weight right) right)]
+    (+ left-weight right-weight)))
+
+;; c
+(defn balanced? [m]
+  (let [left (branch-structure (left-branch m))
+	right (branch-structure (right-branch m))]
+    (cond (and (seq? left) (not (balanced? left))) false
+	  (and (seq? right) (not (balanced? right))) false
+	  :else
+	  (let [left-weight (if (seq? left) (total-weight left) left)
+		right-weight (if (seq? right) (total-weight right) right)]
+	    (= (* left-weight (branch-length (left-branch m)))
+	       (* right-weight (branch-length (right-branch m))))))))
+    
+;; d
+;; only change left-branch, right-branch, branch-lenght and branch-structure
+
+
+
+
