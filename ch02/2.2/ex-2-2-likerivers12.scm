@@ -2,8 +2,54 @@
 ;;; Ch 2 데이터를 요약해서 표현력을 끌어올리는 방법
 ;;; Ch 2.2 계층 구조 데이터와 닫힘 성질
 
+;;; p126
+
+;;;-----------
+;;; 쌍 만들기
+;;; 1과 2의 쌍
+(cons 1 2)
+;; (1 . 2)
+
+;;; 상자와 화살표로 나타내면.
+;;; [ + | + ]
+;;;   |   | 
+;;;   1   2
+
+
+;;; 쌍은 모든 종류의 데이터 구조를 짜맞추는데 두루 쓸 수 있다.
+
+
+;;;-----------
+;;; * 닫힘 성질
+;;;  - 어떤 연산이 닫힘 성질을 가진다.
+;;;    -> 연산으로 만든 물체가 다시 그 연산의 대상이 될 수 있음.
+
+
+;;; 닫힘 성질을 이용한 자연수의 정의
+;;; N -> 1
+;;; N -> N V (N + 1)
+
+
+;;; - 닫힘 성질은 계층 구조를 만들 수 있도록 해주기 때문에
+;;;  데이터를 합치는 모든 표현 수단에서 표현력을 끌어올리는 열쇠가 된다.
+
 ;;;;=================<ch 2.2.1 차례열의 표현 방법>=====================
 ;;; p129
+
+;;; 리스트 : cons를 겹쳐 만든 쌍의 차례열.
+(cons 1
+      (cons 2
+	    (cons 3
+		  (cons 4 '()))))
+;; (1 2 3 4)
+
+
+;;; 리스트에서 car, cdr, cons
+;;; car : 리스트의 첫번째 원소를 골라내는 연산
+;;; cdr : 리스트의 첫번째 원소를 뺀 나머지 리스트를 골라내는 연산
+;;; cons : 원래 리스트의 맨 앞에 새 원소를 보태어 리스트로 만들어 내는 연산
+
+;;; nil - '() : 원소를 가지지 않은 차례열(빈 리스트)
 
 (define one-through-four (list 1 2 3 4))
 
@@ -27,6 +73,10 @@
 ;;; 리스트 연산 
 ;;; p131
 
+;;; 리스트의 n번째 원소를 내놓는 프로시저
+;;; <규칙>
+;;;  - n=0 이면 리스트의 car
+;;;    그렇지 않으면 리스트의 cdr에서 n-1번째 원소.
 (define (list-ref items n)
   (if (= n 0)
       (car items)
@@ -34,10 +84,12 @@
 
 (define squares (list 1 4 9 16 25))
 
-(list-ref squares 3)
-;; 16
+(list-ref squares 3) ;; 16
+
+;;; null? : 빈리스트인지 아닌지 확인하는 기본 술어 프로시저
 
 
+;;; 리스트의 원소가 몇 개인지 알아보는 프로시저
 (define (length items)
   (if (null? items)
       0
@@ -549,6 +601,33 @@ x
 (deep-reverse x)
 ;; ((4 3) (2 1))
 
+
+
+
+
+;; 리스트 확인
+(list? 1)             ; #f
+(list? '())           ; #t
+(list? '(1 . 2))      ; #f
+(list? '(1 2))        ; #t
+(list? '(1 . (2 3)))  ; #t
+
+(pair? 1)             ; #f
+(pair? '())           ; #f
+(pair? '(1 . 2))      ; #t
+(pair? '(1 2))        ; #t
+(pair? '(1 . (2 3)))  ; #t
+
+(define (my-list? x)
+  (or (null? x) 
+      (and (pair? x) (pair? (cdr x)))))
+
+(my-list? 1)            ; #f
+(my-list? '())          ; #t
+(my-list? '(1 . 2))     ; #f
+(my-list? '(1 2))       ; #t
+(my-list? '(1 . (2 3))) ; #t
+
 ;;;--------------------------< ex 2.28 >--------------------------
 ;;; p144
 
@@ -629,17 +708,17 @@ x
 ;;-------------------------------------------------
 ;; a) - 모빌에서 가지를 골라내는 고르개 정의
 ;;    - 가지의 구성요소를 골라내는 고르개
-(define (left-branch mbl)
-  (car mbl))
+(define (left-branch m)
+  (car m))
 
-(define (right-branch mbl)
-  (cadr mbl))
+(define (right-branch m)
+  (cadr m))
 
-(define (branch-length brch)
-  (car brch))
+(define (branch-length b)
+  (car b))
 
-(define (branch-structure brch)
-  (cadr brch))
+(define (branch-structure b)
+  (cadr b))
 
 ;;;--------------------------
 ;;; 테스트                
@@ -662,7 +741,7 @@ x
 (define s11 1)
 (define b11 (make-branch 2 s11))
 
-(define s10 5)  ;(define s10 4))
+(define s10 5)
 (define b10 (make-branch 2 s10))
 
 (define s9 2)
@@ -856,11 +935,11 @@ s4 ;; 4
 
 ;;;----------------------
 ;;; 수정 필요
-(define (right-branch mbl)
-  (cdr mbl)) ; <- cadr
+(define (right-branch m)
+  (cdr m)) ; <- cadr
 
-(define (branch-structure brch)
-  (cdr brch)) ; <- cadr
+(define (branch-structure b)
+  (cdr b)) ; <- cadr
 ;;;----------------------
 
 
@@ -948,10 +1027,47 @@ s4 ;; 4
 ;;;--------------------------< ex 2.32 >--------------------------
 ;;; p147
 
+;; 영식님의 방법으로
 (define (subsets s)
   (if (null? s)
       (list '())
       (let ((rest (subsets (cdr s))))
-	(append rest (map <??> rest)))))
+	(append rest (map (lambda (x) (cons (car s) x))
+			  rest)))))
 
 (subsets '(1 2 3))
+;; (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
+
+(define (subsets s)
+  (begin 
+    (print "---->")
+    (print s)
+    (newline)
+    (if (null? s)
+	(list '())
+	(let ((rest (subsets (cdr s))))
+	  (print "s    :")
+	  (print s)
+	  (newline)
+	  (print "rest :")
+	  (print rest)
+	  (newline)
+	  (newline)
+	  (append rest (map (lambda (x) (cons (car s) x))
+			    rest))))))
+
+(subsets '(1 2 3))
+;; "---->"'(1 2 3)
+;; "---->"'(2 3)
+;; "---->"'(3)
+;; "---->"'()
+;; "s    :"'(3)
+;; "rest :"'(())
+;;
+;; "s    :"'(2 3)
+;; "rest :"'(() (3))
+;;
+;; "s    :"'(1 2 3)
+;; "rest :"'(() (3) (2) (2 3))
+;;
+;; '(() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
