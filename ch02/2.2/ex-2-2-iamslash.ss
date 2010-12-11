@@ -202,10 +202,76 @@
 ;; ex.2.28
 (define x (list (list 1 2) (list 3 4)))
 (define (fringe l)
-  (define (fringe-iter l1 l2)
-    (cond ((null? l1) l2)
-          ((not (pair? l1)) (fringe-iter null (cons l1 l2)))
-          (else (fringe-iter (cdr l1) (cons (car l1) l2)))))
-  (fringe-iter l null))
+  (cond ((null? l) null)
+        ((pair? l) (append (fringe (car l)) (fringe (cdr l))))
+        (else (list l))))
 (fringe x)
 (fringe (list x x))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.29 ???
+
+;; ex.2.29.a
+(define (make-mobile left right)
+  (list left right))
+(define (make-branch length structure)
+  (list length structure))
+(define (left-branch m)
+  (car m))
+(define (right-branch m)
+  (car (cdr m)))
+(define (branch-length b)
+  (car b))
+(define (branch-structure b)
+  (car (cdr b)))
+(left-branch (make-mobile 1 2))
+(right-branch (make-mobile 1 2))
+(branch-length (make-branch 1 2))
+(branch-structure (make-branch 1 2))
+
+;; ex.2.29.b
+(define (total-weight m)
+  (cond ((null? m) 0)
+        ((not (pair? x)) m)
+        (else (+ (total-weight (car m))
+                 (total-weight (cdr x))))))
+;; ex.2.29.c
+;; ex.2.29.d
+
+
+;; ex.2.30
+(define (square-tree t)
+  (cond ((null? t) null)
+        ((not (pair? t)) (* t t))
+        (else (cons (square-tree (car t))
+                    (square-tree (cdr t))))))
+(define (square-tree t)
+  (map (lambda (st)
+         (if (pair? st)
+             (square-tree st)
+             (* st st)))
+       t))
+(square-tree (list 1
+                   (list 2 (list 3 4) 5)
+                   (list 6 7)))
+
+;; ex.2.31
+(define (square x)
+  (* x x))
+(define (tree-map f t)
+  (cond ((null? t) null)
+        ((not (pair? t)) (f t))
+        (else (cons (tree-map f (car t))
+                    (tree-map f (cdr t))))))
+(define (square-tree tree) (tree-map square tree))
+(square-tree (list 1
+                   (list 2 (list 3 4) 5)
+                   (list 6 7)))
+;; ex.2.32???
+(define (subsets s)
+  (if (null? s)
+      null
+      (let ((rest (subsets (cdr s))))
+        (append rest (map <??> rest)))))
+(subsets '(1 2 3))
