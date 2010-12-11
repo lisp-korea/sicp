@@ -42,8 +42,8 @@
 (defn reverse-recur [items]
   (if (= (length items) 1)
     items
-    (append (reverse-recur (rest items)) (list (first items)))))
-(reverse-recur (list 1 4 9))
+    (cons (first items) (reverse-recur (rest items)))))
+(reverse-recur (list 10 4 9))
 
 (defn reverse-iter [items]
   (loop [arr items
@@ -51,7 +51,7 @@
 	 ]
     (if (= (length items) (length reversed))
       reversed
-      (recur (rest arr) (append (list (first arr)) reversed)))))
+      (recur (rest arr) (cons (first arr) reversed)))))
 
 (reverse-iter (list 3 4))
 
