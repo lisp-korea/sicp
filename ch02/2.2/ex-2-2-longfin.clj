@@ -166,7 +166,7 @@
 (defn null? [x]
   (cond (nil? x) true
 	(and (seq? x) (empty? x)) true
-	:else false))(
+	:else false))
 (defn count-leaves [x]
   (cond (null? x) 0
 	(not (seq? x)) 1
@@ -351,3 +351,280 @@
 ;; (subsets (rest (list 2 3)))
 ;; (() (3) (2) (2 3)) <= apply 1
 ;; (() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
+
+
+;; 2.2.3
+
+(defn sum-odd-squares [tree]
+  (cond (null? tree) 0
+	(not (seq? tree)) (if (odd? tree) (* tree tree) 0)
+	:else (+ (sum-odd-squares (first tree))
+		 (sum-odd-squares (rest tree)))))
+
+(sum-odd-squares (list 1 (list 2 3 (list 4 5))))
+
+
+(defn fib [n]
+  (loop [a 0
+	 b 1
+	 c 1]
+    (cond (= n 0) 0
+	  (< n 2) 1
+	  (= n c) b
+	  :else (recur b (+ a b) (+ c 1)))))
+(defn even-fibs [n]
+  (defn _next[k]
+    (if (> k n)
+      nil
+      (let [f (fib k)]
+	(if (even? f)
+	  (cons f (_next (+ k 1)))
+	  (_next (+ k 1))))))
+  (_next 0))
+
+(defn filtern [pred seq]
+  (cond (null? seq) nil
+	(pred (first seq)) (cons (first seq)
+				 (filtern pred (rest seq)))
+	:else (filtern pred (rest seq))))
+
+(filtern odd? (list 1 2 3 4 5))
+
+(defn filtern-iter [pred seq]
+  (loop [result (list)
+	 arr seq]
+    (cond (null? arr) (reverse-iter result)
+	  (pred (first arr)) (recur (cons (first arr) result) (rest arr))
+	  :else (recur result (rest arr)))))
+
+(filtern-iter odd? (list 1 2 3 4 5))
+
+(defn accumulate [op initial seq]
+  (if (null? seq)
+    initial
+    (op (first seq)
+	(accumulate op initial (rest seq)))))
+
+(accumulate + 0 (list 1 2 3 4 5))
+
+(accumulate * 1 (list 1 2 3 4 5))
+
+(accumulate cons nil (list 1 2 3 4 5))
+
+(defn accumulate-iter [op initial seq]
+  (loop [result initial
+	 arr seq]
+    (if (null? arr)
+      result
+      (recur (op (first arr) result) (rest arr)))))
+
+(accumulate-iter + 0 (list 1 2 3 4 5))
+
+(accumulate-iter * 1 (list 1 2 3 4 5))
+
+(accumulate-iter cons nil (list 1 2 3 4 5)) ;; reversed
+
+
+(defn enumerate-interval [low high]
+  (if (> low high)
+    nil
+    (cons low (enumerate-interval (inc low) high))))
+
+(enumerate-interval 2 7)
+
+(defn enumerate-interval-iter [low high]
+  (loop [n low
+	 result nil]
+    (if (> n high)
+      (reverse-iter result)
+      (recur (inc n) (cons n result)))))
+
+(enumerate-interval-iter 2 7)
+
+(defn enumerate-tree [tree]
+  (cond (null? tree) nil
+	(not (seq? tree)) (list tree)
+	:else (append (enumerate-tree (first tree))
+		      (enumerate-tree (rest tree)))))
+
+(enumerate-tree (list 1 (list 2 (list 3 4)) 5))
+
+(defn sum-odd-squares [tree]
+  (accumulate-iter +
+		   0
+		   (mapn (fn [x] (* x x))
+			 (filtern-iter odd?
+				       (enumerate-tree tree)))))
+
+(sum-odd-squares (list 1 (list 2 3 (list 4 5))))
+
+(defn even-fibs [n]
+  (accumulate cons
+	      nil
+	      (filtern-iter even?
+			    (mapn fib
+				  (enumerate-interval-iter 0 n)))))
+
+(even-fibs 10)
+
+
+(defn list-fib-squares [n]
+  (accumulate cons
+	      nil
+	      (mapn (fn [x] (* x x))
+		    (mapn fib
+			  (enumerate-interval-iter 0 n)))))
+
+(list-fib-squares 10)
+
+(defn product-of-squares-of-odd-elements [seq]
+  (accumulate *
+	      1
+	      (mapn (fn [x] (* x x))
+		    (filtern-iter odd? seq))))
+
+(product-of-squares-of-odd-elements (list 1 2 3 4 5))
+
+;; (defn salary-of-highest-paid-programmer [records]
+;;   (accumulate max
+;; 	      0
+;; 	      (map salary
+;; 		   (filter programmer? records))))
+
+;; ex 2.33
+
+(defn mapn [p seq]
+  (accumulate (fn [x y] (cons (p x) y)) nil seq))
+
+(mapn inc (list 1 2 3))
+
+(defn append [seq1 seq2]
+  (accumulate cons seq2 seq1))
+
+(append (list 1 2 3) (list 4 5 6))
+
+(defn length [seq]
+  (accumulate (fn [x y] (inc y)) 0 seq))
+
+(length (list 1 2 3 4 5 6))
+
+
+;; ex 2.34
+
+(defn horner-eval [x coefficient-sequence]
+  (accumulate (fn [this-coeff higher-terms]
+		(+ this-coeff
+		   (* x
+		      (horner-eval x (rest coefficient-sequence)))))
+	      0
+	      coefficient-sequence))
+
+;; (x=1) 1 + 1*1 => 1
+(horner-eval 1 (list 1 1))
+
+;; (x=2) 2 + x*2 => 6
+(horner-eval 2 (list 2 2))
+
+;; (x=3) 1+ 3x + 5x^3 + x^5 => 388
+(horner-eval 3 (list 1 3 0 5 0 1))
+
+
+;; ex 2.35
+
+(defn count-leaves [t]
+  (accumulate (fn [x y] (+ x y))
+	      0
+	      (mapn (fn [e]
+		      (cond (null? e) 0
+			    (not (seq? e)) 1
+			    :else (count-leaves e))) t)))
+
+(count-leaves (list 1))
+(count-leaves (list 1 2 3))
+(count-leaves (list 1 (list 2 3) 4))
+(count-leaves (list 1 (list 2 3 (list 4 5) 6) 7))
+
+;; ex 2.36
+
+(defn accumulate-n [op init seqs]
+  (if (null? (first seqs))
+    nil
+    (cons (accumulate op init (mapn first seqs))
+	  (accumulate-n op init (mapn rest seqs)))))
+
+(accumulate-n + 0 (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)))
+
+
+;; ex 2.37
+
+(defn dot-product [v w]
+  (accumulate + 0 (map * v w)))
+
+(defn matrix-*-vector [m v]
+  (map (fn [r]
+	 (dot-product r v)) m))
+
+(matrix-*-vector (list (list 1 0 2)
+		       (list -1 3 1)) (list 3 2 1))
+
+(defn transpose [m]
+  (accumulate-n cons nil m))
+
+(transpose (list (list 3 1)
+		 (list 2 1)
+		 (list 1 0)))
+
+(defn matrix-*-matrix [m n]
+  (let [cols (transpose n)]
+    (map (fn [w]
+	   (map (fn [v]
+		  (dot-product w v)) cols)) m)))
+
+(matrix-*-matrix (list (list 1 0 2)
+		       (list -1 3 1))
+		 (list (list 3 1)
+		       (list 2 1)
+		       (list 1 0)))
+
+;; ex 2.38
+
+(defn fold-left [op initial sequence]
+  (loop [result initial
+	 arr sequence]
+    (if (null? arr)
+      result
+      (recur (op result (first arr))
+	     (rest arr)))))
+(defn fold-right [op initial sequence]
+  (loop [result initial
+	 arr sequence]
+    (if (null? arr)
+      result
+      (recur (op (first arr) result)
+	     (rest arr)))))
+
+(fold-right / 1 (list 1 2 3))
+;; 3/2
+
+(fold-left / 1 (list 1 2 3))
+;; 1/6
+
+
+(fold-right list nil (list 1 2 3))
+
+(fold-left list nil (list 1 2 3))
+
+;; op's assertion (= (op a b) (op b a))
+
+
+;; ex 2.39
+
+(defn reverse-l [sequence]
+  (fold-left (fn [x y] (cons y x)) nil sequence))
+
+(reverse-l (list 1 2 3))
+
+(defn reverse-r [sequence]
+  (fold-right (fn [x y] (cons x y)) nil sequence))
+
+(reverse-r (list 1 2 3))
