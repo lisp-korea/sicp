@@ -213,7 +213,7 @@
 	  reversed (if (seq? target) (deep-reverse target) target)]
       (if (= (length items) (length result))
 	result
-	(recur (rest arr) (append (list reversed) result))))))
+	(recur (rest arr) (cons reversed result))))))
 
 
 ;; ex 2.28
