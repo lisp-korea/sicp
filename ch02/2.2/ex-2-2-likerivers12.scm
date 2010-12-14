@@ -194,6 +194,8 @@
 (cc 100 us-coins)
 ;; 292
 
+(cc 100 uk-coins)
+
 (define us-coins (reverse (list 50 25 10 5 1)))
 
 (cc 100 us-coins)
@@ -499,6 +501,7 @@
 (car (cdaddr '(1 3 (5 7) 9)))
 ;; 7
 
+(third
 (caar '((7)))
 ;; 7
 
@@ -523,6 +526,10 @@
 
 ;;;--------------------------< ex 2.27 >--------------------------
 ;;; p143,4
+;((1 2) (3 4))
+; ((3 4) (1 2))
+
+;; ((4 3) (2 1))
 
 ;; 리스트가 아닌 경우에도 가능하도록 list인지 여부를 확인하는 내용을 추가함
 (define (reverse items)
@@ -728,7 +735,7 @@ x
 ;;                m1      |        m2
 ;;                 *-=----+----=---*
 ;;                 |               |
-;;          m3     |  s4       m5  |       m6 
+;;            m3   |   s4      m5  |       m6 
 ;;             *---+---6        *--+----=--*
 ;;             |                |          |
 ;;          s7 |  s8     s9     |  s10  s11|  s12
@@ -803,8 +810,7 @@ s4
       m))
 
 (define (total-branch-weight b)
-  (let ((len (branch-length b))
-	(s (branch-structure b)))
+  (let ((s (branch-structure b)))
     (if (mobile? s) 
 	(total-weight s)
 	s)))
@@ -1071,3 +1077,303 @@ s4 ;; 4
 ;; "rest :"'(() (3) (2) (2 3))
 ;;
 ;; '(() (3) (2) (2 3) (1) (1 3) (1 2) (1 2 3))
+
+
+;;;;==============<ch 2.2.3 공통 인터페이스로써 차례열의 쓰임새>==================
+;;; p147
+
+(define (sum-odd-squares tree)
+  (cond ((null? tree) 0)
+	((not (pair? tree))
+	 (if (odd? tree) (square tree) 0))
+	(else (+ (sum-odd-squares (car tree))
+		 (sum-odd-squares (cdr tree))))))
+
+(sum-odd-squares '((1 2 (3 4)) ((5 6 7) (8 9 10))))
+;; 3^2 + 5^2 + 7^2 + 9^2
+;; 165
+
+(define (even-fibs n)
+  (define (next k)
+    (if (> k n)
+	'()
+	(let ((f (fib k)))
+	  (if (even? f)
+	      (cons f (next (+ k 1)))
+	      (next (+ k 1))))))
+  (next 0))
+
+;;;---
+(define (fib n)
+  (cond ((= n 0) 0)
+	((= n 1) 1)
+	(else
+	 (+ (fib (- n 1)) (fib (- n 2))))))
+;;;---
+
+(even-fibs 10) ; '(0 2 8 34)
+
+
+;;; enumerate -> filter -> map -> accumulate
+;;; enumerate -> map -> filter -> accumulate
+
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; 차례열 연산
+;; p150
+
+;;;---
+(define nil '())
+;;;---
+
+
+;;; 매핑 단계 - map
+;;; 골라내는 연산 - filter
+(define (filter predicate sequence)
+  (cond ((null? sequence) nil)
+	((predicate (car sequence))
+	 (cons (car sequence)
+	       (filter predicate (cdr sequence))))
+	(else (filter predicate (cdr sequence)))))
+
+(filter odd? (list 1 2 3 4 5))  ; '(1 3 5)
+
+;;; 어큐물례이쎤
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+	  (accumulate op initial (cdr sequence)))))
+
+(accumulate + 0 (list 1 2 3 4 5)) ; 15
+
+(accumulate * 1 (list 1 2 3 4 5)) ; 120
+
+(accumulate cons nil (list 1 2 3 4 5)) ; '(1 2 3 4 5)
+
+
+;;; 어떤 범위에 있는 모든 정수를 뽑아내는 연산
+(define (enumerate-interval low high)
+  (if (> low high)
+      nil
+      (cons low (enumerate-interval (+ low 1) high))))
+
+(enumerate-interval 2 7) ; '(2 3 4 5 6 7)
+
+
+;;; 나무에서 잎사귀를 떼어낼 때
+(define (enumerate-tree tree)
+  (cond ((null? tree) nil)
+	((not (pair? tree)) (list tree))
+	(else (append (enumerate-tree (car tree))
+		      (enumerate-tree (cdr tree))))))
+
+(enumerate-tree (list 1 (list 2 (list 3 4)) 5))
+;; '(1 2 3 4 5)
+
+
+;;; sum-odd-square를 다시 정의
+(define (sum-odd-squares tree)
+  (accumulate + 
+	      0
+	      (map square
+		   (filter odd?
+			   (enumerate-tree tree)))))
+
+(sum-odd-squares '(1 2 3 4 5)) ; 35
+
+;;; even-fibs를 다시 정의
+(define (even-fibs n)
+  (accumulate cons
+	      nil
+	      (filter even?
+		      (map fib
+			   (enumerate-interval 0 n)))))
+
+(even-fibs 10) ; '(0 2 8 34)
+
+
+;;; p153
+;;; 차례열 연산으로 프로그램을 표현하는 방법은 모듈 방식
+;;; 곧 독립된 부품을 짜 맞추듯이 프로그램을 설계할 수 있다는 점에서 가치가 있다.
+
+;;; 부품 재사용
+
+(define (list-fib-squares n)
+  (accumulate cons
+	      nil
+	      (map square
+		   (map fib
+			(enumerate-interval 0 n)))))
+
+(list-fib-squares 10) ; '(0 1 1 4 9 25 64 169 441 1156 3025)
+
+(define (product-of-squares-of-odd-elements sequence)
+  (accumulate *
+	      1
+	      (map square
+		   (filter odd? sequence))))
+
+(product-of-squares-of-odd-elements '(1 2 3 4 5)) ; 225
+
+
+;; (define (salary-of-highest-paid-programmer records)
+;;   (accumulate max
+;; 	      0
+;; 	      (map salary
+;; 		   (filter programmer? records))))
+
+
+   
+
+;;;--------------------------< ex 2.33 >--------------------------
+;;; p155
+
+(define (map2 p sequence)
+  (accumulate (lambda (x y)
+		(cons (p x) y))   ;; <---
+	      nil
+	      sequence))
+
+;;; accumulate 코드에서
+;; (op       (car sequence) (accumulate op initial (cdr sequence)))
+;; ^^^       ^^^^^^^^^^^^^^ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+;; lambda..    x                    y
+
+(map square '(1 2 3 4))  ; '(1 4 9 16)
+(map2 square '(1 2 3 4)) ; '(1 4 9 16)
+
+
+;;;----------------
+(define (append2 seq1 seq2)
+  (accumulate cons 
+	      seq2 ;;<--
+	      seq1 ;;<--
+	      ))
+
+(append '(1 2) '(3 4)) ; '(1 2 3 4)
+(append '(1) 2)        ; '(1 . 2)
+
+(append2 '(1 2) '(3 4))  ; '(1 2 3 4)
+(append2 '(1) 2)         ; '(1 . 2)
+
+
+;;;----------------
+(define (length2 sequence)
+  (accumulate (lambda (x y)
+		(+ 1 y))
+	      0 sequence))
+
+(length '(1 2 3 4)) ; 4
+
+(length2 '(1 2 3 4)) ; 4
+
+
+;;;--------------------------< ex 2.34 >--------------------------
+;;; p155,6
+
+;; a_n     * x^n     +
+;; a_(n-1) * x^(n-1) +
+;; ...
+;; a_1     * x^1     +
+;; a_0
+;;
+;;=> (호너의 규칙)
+;;
+;; ( ... (a_n*x + a_(n-1) )*x + ... + a_1)*x + a_0
+;;
+;;=>
+;; a_0 + x*(a_1 + ... + x*( a_(n-1) + x*a_n) ... )
+
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms)
+		(+ this-coeff 
+		   (* x higher-terms))) ;;<--
+		0
+		coefficient-sequence))
+
+;; x=2일 때, 1 + 3x + 5x^3 + x^5
+
+(horner-eval 2 (list 1 3 0 5 0 1)) ; 79
+;; (+ 1 (* 2 3) (* 5 (* 2 2 2)) (* 2 2 2 2 2))
+;;;; -> 79
+
+
+;;;--------------------------< ex 2.35 >--------------------------
+;;; p156
+;;; 2.2.2절의 count-leaves 를 accumulate를 이용해서 정의
+
+(define (count-leaves x)
+  (cond ((null? x) 0)
+	((not (pair? x)) 1)
+	(else (+ (count-leaves (car x))
+		 (count-leaves (cdr x))))))
+
+(define (count-leaves2 t)
+  (accumulate  +
+	       0
+	       (map length t)))
+
+;;항상 깊이가 2이고, 깊이 2에서만 leaf가 매달린다면 위와 같이 해도 된다.
+(count-leaves2 '((1 2) (3 4) (5 6)))
+
+;; 어떤 tree에도 대응.
+(define (count-leaves2 t)
+  (accumulate  +
+	       0
+	       (map (lambda (x)
+		      (if (not (pair? x))
+			  1
+			  (count-leaves2 x)))
+		    t)))
+;; tree의 원소가 leaf이면 map에서 1을 카운트하고
+;; tree의 원소가 다시 tree이면 count-leaves를 되돈다.
+;; accumulate는 그냥 map에서 1의 수를 되돌면서 더하면 된다.
+
+(count-leaves '((1 2) ((3 4 5) 6) 7)) ; 7
+
+(count-leaves2 '((1 2) ((3 4 5) 6) 7)) ; 7
+
+;;;--------------------
+;;; 되도는 map 테스트 
+(define (test-map t)
+  (if (null? t)
+      nil
+      (map (lambda (x)
+	     (if (not (pair? x))
+		 1
+		 (test-map x)))
+	   t)))
+
+(test-map '((1 2) ((3 4 5) 6) 7))
+;; '((1 1) ((1 1 1) 1) 1)
+
+
+;;;--------------------------< ex 2.36 >--------------------------
+;;; p156
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map car seqs))
+	    (accumulate-n op init (map cdr seqs)))))
+
+(define s '((1 2 3) (4 5 6) (7 8 9) (10 11 12)))
+
+(accumulate-n + 0 s) ; '(22 26 30)
+
+;; 또 다른 accumulate-n
+;; 각 차례열을 더한 차례열을 내놓는 프로시저
+(define (another-accumulate-n op init seqs)
+  (if (not (pair? seqs))
+      nil
+      (if (null? (car seqs))
+	  nil
+	  (cons (accumulate op init (car seqs))
+		(another-accumulate-n op init (cdr seqs))))))
+
+(another-accumulate-n + 0 s)
+;; '(6 15 24 33)
+
+;;;--------------------------< ex 2.37 >--------------------------
+;;; p157
