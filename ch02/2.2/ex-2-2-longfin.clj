@@ -715,3 +715,29 @@
        (filter prime-sum? (unique-pair n))))
 
 (prime-sum-pairs 6)
+
+;; ex 2.41
+
+(defn unique-triples [n]
+  (flatmap (fn [i]
+	      (map (fn [j]
+		     (first (map (fn [k]
+			    (list i j k))
+			  (enumerate-interval 1 (- j 1)))))
+		   (enumerate-interval 1 (- i 1))))
+	    (enumerate-interval 1 n)))
+
+(unique-triples 5)
+(defn get-consists [n s]
+  (filtern
+   (fn [e]
+     (if (null? e)
+       false
+       (=
+	(+ (first e) (first (rest e)) (first (rest (rest e))))
+	s)))
+   (unique-triples n)))
+
+(get-consists 10 6)
+(get-consists 10 7)
+(get-consists 10 8)
