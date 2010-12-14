@@ -148,3 +148,67 @@
 0 (cc 2 0) (cc 1 1)
 0 (cc 1 0) (cc 0 1)
 0 1
+
+
+;; ex-1.15
+(define (cube x) (* x x x))
+(define (p x) (- (* 3 x) (* 4 (cube x))))
+(define (sine angle)
+   (if (not (> (abs angle) 0.1))
+       angle
+       (p (sine (/ angle 3.0)))))
+
+;; a
+(sine 12.15)
+(p (sine (/ 12.15 3.0)))
+(p (sine 4.05))
+(p (p (sine (/ 4.05 3.0))))
+(p (p (sine 1.3499999999999999)))
+(p (p (p (sine (/ 1.3499999999999999 3.0)))))
+(p (p (p (sine .44999999999999996))))
+(p (p (p (p (sine (/ .44999999999999996 3.0))))))
+(p (p (p (p (sine .15)))))
+(p (p (p (p (p (sine (/ .15 3.0)))))))
+(p (p (p (p (p (sine 4.9999999999999996e-2))))))
+(p (p (p (p (p 4.9999999999999996e-2)))))
+;; 5 times
+
+;; b
+(sine a)
+;; The order of growth in space: O(log_3(a))
+;; The order of growth in number of steps: O(log_3(a))
+
+
+;; ex-1.16
+(define (fast-expt b n)
+  (define (fast-expt-iter a b n)
+    (cond ((= n 0) a)
+	  (else (fast-expt-iter
+		 (if (even? n) a (* a b))
+		 (if (even? n) (square b) b)
+		 (if (even? n) (/ n 2) (- n 1))))))
+  (fast-expt-iter 1 b n))
+
+
+;; ex-1.17
+(define (* a b)
+  (if (= b 0)
+      0
+      (+ a (* a (- b 1)))))
+
+(define (halve  x) (/ x 2))
+(define (double x) (+ x x))
+
+(define (* a b)
+  (cond ((= b 0) 0)
+	((even? b) (* (double a) (halve b)))
+	(else (+ a (* a (- b 1))))))
+
+
+;; ex-1.18
+(define (* a b)
+  (define (iter a b c )
+    (cond ((= b 0) c)
+	  ((even? b) (iter (double a) (halve b) c))
+	  (else (iter a (- b 1) (+ a c)))))
+  (iter a b 0))
