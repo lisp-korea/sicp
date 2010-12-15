@@ -750,14 +750,29 @@
   (last p))
 (defn get-col [p]
   (first p))
-(defn move [p r c]
-  (make-position (+ (get-row p) r)
-		 (+ (get-col p) c)))
-(defn capture? [p1 p2]
-  (and
-   (= (get-row p1) (get-row p2))
-   (= (get-col p1) (get-col p2))))
 (def empty-board (list))
+
+
+;; c,r
+;; 1,1 2,1 3,1 4,1 5,1
+;; 1,2 2,2 3,2 4,2 5,2
+;; 1,3 2,3 3,3 4,3 5,3
+;; 1,4 2,4 3,4 4,4 5,4
+;; 1,5 2,5 3,5 4,5 5,5
+
+;; c+r
+;; 2    3    4    5    6
+;; 3    4    5    6    7
+;; 4    5    6    7    8
+;; 5    6    7    8    9
+;; 6    7    8    9    10
+
+;; c-r
+;; 0    1    2    3    4
+;; -1	0    1    2    3
+;; -2  -1    0    1    2
+;; -3  -2   -1    0    1
+;; -4  -3   -2   -1    0 
 (defn safe? [k positions]
   (if (= k 1)
     true
@@ -766,18 +781,15 @@
       (null?
        (filter
 	(fn [p]
-	  (or
-	   (= (get-row p) (get-row q))
-	   (diagonal? p q k 1 1)
-	   (diagonal? p q k -1 1)))
+	  (let [pr (get-row p)
+		pc (get-col p)
+		qr (get-row q)
+		qc (get-col q)]
+	    (or
+	     (= (get-row p) (get-row q))
+	     (= (+ pc pr) (+ qc qr))
+	     (= (- pc pr) (- qc qr)))))
 	restq)))))
-(defn diagonal? [p1 p2 k rv cv]
-  (let [r (get-row p1)
-	c (get-col p1)]
-    (cond (capture? p1 p2) true
-	  (or (= r 0) (= c 0)) false
-	  (or (> c k)) false
-	  :else (diagonal? (move p1 rv cv) p2 k rv cv))))
 
 (defn adjoin-position [new-row k rest-of-queens]
   (cons (make-position new-row k) rest-of-queens))
