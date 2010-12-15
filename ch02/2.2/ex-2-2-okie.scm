@@ -7,7 +7,7 @@
 (define one-through-four (list 1 2 3 4))
 
 (define (list-ref items n)
-  (if (=n 0)
+  (if (= n 0)
       (car items)
       (list-ref (cdr items) (- n 1))))
 
@@ -39,6 +39,12 @@
   (if (null? list1)
       list2
       (cons (car list1) (append (cdr list1) list2))))
+
+;> (append '(1) 2)
+;(1 . 2)
+;> (append '(1) '(2))
+;(1 2)
+;> 
 
 ; ex 2.17
 (list-pair (list 23 72 149 34))
@@ -95,11 +101,17 @@
 
 (cc 100 us-coins2)
 
+(cc 100 us-coins)
+(cc 100 (reverse us-coins))
+
+(cc 100 uk-coins)
+
 ;; no effect
 
 ; ex 2.20  
 (same-parity 1 2 3 4 5 6 7)
 (same-parity 2 3 4 5 6 7)
+(same-parity ) ;; TODO
 
 (define (same-parity . n)
   (define (same-parity-inter l parity result)
@@ -162,7 +174,8 @@
         (iter (cdr things)
               (cons (square (car things))
                     answer))))
-  (iter items '()))
+  (let ((result (iter items '())))
+    (reverse result)))
                
 (define (square-list items)
   (define (iter things answer)
