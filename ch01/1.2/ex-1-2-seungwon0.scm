@@ -212,3 +212,183 @@
 	  ((even? b) (iter (double a) (halve b) c))
 	  (else (iter a (- b 1) (+ a c)))))
   (iter a b 0))
+
+
+;; ex-1.19
+;; a = b(2pq + q^2) + a(2pq + q^2) + a(p^2 + q^2)
+;; b = b(p^ + q^2) + a(2pq + q^2)
+;; p' = p^2 + q^2
+;; q' = 2pq + q^2
+(define (fib n)
+  (fib-iter 1 0 0 1 n))
+(define (fib-iter a b p q count)
+  (cond ((= count 0) b)
+        ((even? count)
+         (fib-iter a
+                   b
+                   (+ (square p) (square q)) ; compute p'
+                   (+ (* 2 p q) (square q))  ; compute q'
+                   (/ count 2)))
+        (else (fib-iter (+ (* b q) (* a q) (* a p))
+                        (+ (* b p) (* a q))
+                        p
+                        q
+                        (- count 1)))))
+
+
+;; ex-1.20
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+
+;; normal-order evaluation
+(gcd 206 40)
+(gcd 40 (remainder 206 40))
+(if (= (remainder 206 40) 0)
+    40
+    (gcd (remainder 206 40) (remainder 40 (remainder 206 40))))
+(gcd (remainder 206 40) (remainder 40 (remainder 206 40)))
+(if (= (remainder 40 (remainder 206 40)) 0)
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+         (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))
+(gcd (remainder 40 (remainder 206 40))
+     (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))
+(if (= (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))))
+(gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+     (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))
+(if (= (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))) 0)
+    (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+    (gcd (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))) (remainder (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) (remainder (remainder 40 (remainder 206 40)) (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))
+(remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+2
+
+;; applicative-order evaluation
+(gcd 206 40)
+(gcd 40 (remainder 206 40))
+(gcd 50 6)
+(gcd 6 (remainder 50 6))
+(gcd 6 2)
+(gcd 2 (remainder 6 2))
+(gcd 2 2)
+(gcd 2 (remainder 2 2))
+(gcd 2 0)
+2
+
+
+;; ex-1.21
+(define (smallest-divisor n)
+  (find-divisor n 2))
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (+ test-divisor 1)))))
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(smallest-divisor 199)                  ;199
+(smallest-divisor 1999)                 ;1999
+(smallest-divisor 19999)                ;7
+
+
+;; ex-1.22
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+(define (start-prime-test n start-time)
+  (if (prime? n)
+      (report-prime (- (runtime) start-time))))
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(define (search-for-primes min max)
+  (cond ((> min max) #f)
+        (else
+         (if (even? min)
+             #f
+             (timed-prime-test min))
+         (search-for-primes (+ min 1) max))))
+
+(search-for-primes    1000    1019)
+(search-for-primes   10000   10037)
+(search-for-primes  100000  100043)
+(search-for-primes 1000000 1000037)
+
+(search-for-primes    1000000000    1000000021)
+(search-for-primes   10000000000   10000000061)
+(search-for-primes  100000000000  100000000057)
+(search-for-primes 1000000000000 1000000000063)
+
+
+;; ex-1.23
+(define (next input)
+  (if (= input 2)
+      3
+      (+ input 2)))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+        ((divides? test-divisor n) test-divisor)
+        (else (find-divisor n (next test-divisor)))))
+
+(search-for-primes    1000000000    1000000021)
+(search-for-primes   10000000000   10000000061)
+(search-for-primes  100000000000  100000000057)
+(search-for-primes 1000000000000 1000000000063)
+
+;; The observed ration of the speeds of the two algorithms: 1.5 ~ 1.7
+
+
+;; ex-1.24
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((fermat-test n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(define (fermat-test n)
+  (define (try-it a)
+    (= (expmod a n n) a))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m))))
+
+(define (start-prime-test n start-time)
+  (if (fast-prime? n 5)
+      (report-prime (- (runtime) start-time))))
+
+(timed-prime-test 1000000007)
+(timed-prime-test 1000000009)
+(timed-prime-test 1000000021)
+(timed-prime-test 10000000019)
+(timed-prime-test 10000000033)
+(timed-prime-test 10000000061)
+(timed-prime-test 100000000003)
+(timed-prime-test 100000000019)
+(timed-prime-test 100000000057)
+(timed-prime-test 1000000000039)
+(timed-prime-test 1000000000061)
+(timed-prime-test 1000000000063)
+
+
+;; ex-1.25
+(define (expmod base exp m)
+  (remainder (fast-expt base exp) m))
+
+
+;; ex-1.26
