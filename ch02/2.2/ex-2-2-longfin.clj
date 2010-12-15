@@ -628,3 +628,116 @@
   (fold-right (fn [x y] (cons x y)) nil sequence))
 
 (reverse-r (list 1 2 3))
+
+(def n 10)
+(accumulate append
+	    nil
+	    (map (fn [i]
+		   (map (fn [j] (list i j))
+			(enumerate-interval 1 (- i 1))))
+		 (enumerate-interval 1 n)))
+
+(defn flatmap [proc seq]
+  (accumulate append nil (mapn proc seq)))
+
+(flatmap (fn [i] (map (fn [j] (list i j))
+		      (enumerate-interval 1 (- i 1))))
+	 (enumerate-interval 1 10))
+
+(defn square [x]
+  (* x x))
+(defn divides? [a b]
+  (= (mod b a) 0))
+(defn find-divisor [n test-divisor]
+  (loop [n n
+	 test-divisor test-divisor]
+    (cond (> (square test-divisor) n) n
+	  (divides? test-divisor n) test-divisor
+	  :else (recur n (+ test-divisor 1)))))
+(defn smallest-divisor [n]
+  (find-divisor n 2))
+
+(defn prime? [n]
+  (= n (smallest-divisor n)))
+
+
+(defn prime-sum? [pair]
+  (prime? (+ (first pair) (first (rest pair)))))
+
+(prime-sum? (list 3 5))
+(prime-sum? (list 2 3))
+
+(defn make-pair-sum [pair]
+  (list (first pair)
+	(first (rest pair))
+	(+ (first pair)
+	   (first (rest pair)))))
+
+(make-pair-sum (list 3 5))
+
+(defn prime-sum-pairs [n]
+  (mapn make-pair-sum
+	(filtern-iter prime-sum?
+		      (flatmap
+		       (fn [i]
+			 (mapn (fn [j] (list i j))
+			       (enumerate-interval 1 (- i 1))))
+		       (enumerate-interval 1 n)))))
+(prime-sum-pairs 6)
+
+(defn removen [item seq]
+  (filter (fn [x] (not (= x item)))
+	  seq))
+(defn permutations [s]
+  (if (null? s)
+    (list nil)
+    (flatmap (fn [x]
+	       (map (fn [p] (cons x p))
+		    (permutations (removen x s))))
+	     s)))
+
+(permutations (list 1 2 3))
+;; (map (fn [x] (map (fn [p] (cons x p)) (permutations (removen x s)))) '(1 2 3))
+;;
+
+;; ex 2.40
+
+(defn unique-pair [n]
+  (flatmap (fn [i]
+	     (mapn (fn [j] (list i j))
+		   (enumerate-interval 1 (- i 1))))
+	   (enumerate-interval 1 n)))
+
+(unique-pair 5)
+
+(defn prime-sum-pairs [n]
+  (map make-pair-sum
+       (filter prime-sum? (unique-pair n))))
+
+(prime-sum-pairs 6)
+
+;; ex 2.41
+
+(defn unique-triples [n]
+  (flatmap (fn [i]
+	      (map (fn [j]
+		     (first (map (fn [k]
+			    (list i j k))
+			  (enumerate-interval 1 (- j 1)))))
+		   (enumerate-interval 1 (- i 1))))
+	    (enumerate-interval 1 n)))
+
+(unique-triples 5)
+(defn get-consists [n s]
+  (filtern
+   (fn [e]
+     (if (null? e)
+       false
+       (=
+	(+ (first e) (first (rest e)) (first (rest (rest e))))
+	s)))
+   (unique-triples n)))
+
+(get-consists 10 6)
+(get-consists 10 7)
+(get-consists 10 8)

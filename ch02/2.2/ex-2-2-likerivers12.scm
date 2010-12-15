@@ -1082,6 +1082,10 @@ s4 ;; 4
 ;;;;==============<ch 2.2.3 공통 인터페이스로써 차례열의 쓰임새>==================
 ;;; p147
 
+;;;---
+(define (square x) (* x x))
+;;;---
+
 (define (sum-odd-squares tree)
   (cond ((null? tree) 0)
 	((not (pair? tree))
@@ -1377,3 +1381,341 @@ s4 ;; 4
 
 ;;;--------------------------< ex 2.37 >--------------------------
 ;;; p157
+
+;;; 행렬
+;;; ((1 2 3 4) (4 5 6 6) (6 7 8 9))
+;;=>
+;; [ 1 2 3 4
+;;   4 5 6 6
+;;   6 7 8 9 ]
+
+;; (dot-product v w)
+;; S_i : vi * wi
+
+;; (matrix-*-vector m v)
+;; ti = Sj : mij * vj
+
+;; (matrix-*-matrix m n)
+;; Pij = Sk : mik * nkj
+
+;; (transpose m)
+;; nij = mji
+
+(define m '((1 2) (3 4)))
+
+(define v '(5 6))
+
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+;;; 2.2.1 에서 정의한 map으로는 안됨.
+
+(dot-product v v) ; 61
+;; (5 6) .* (5 6) = 5*5 + 6*6 = 61
+
+
+
+(define (matrix-*-vector m v)
+  (map (lambda (x)
+	 (accumulate + 0 (map * x v)))
+       m))
+
+(matrix-*-vector m v) ; '(17 39)
+;; [ 1 2 | * [ 5 | = [ 1*5 + 2*6 | = [ 17 |
+;; | 3 4 ]   | 6 ]   | 3*5 + 4*6 ]   | 39 ]
+
+
+
+(define (transpose mat)
+  (accumulate-n cons nil mat))
+
+(define m2 '((1 2 3) (4 5 6) (7 8 9)))
+
+(transpose m2) ; '((1 4 7) (2 5 8) (3 6 9))
+;; [ 1 2 3 | -> [ 1 4 7 |
+;; | 4 5 6 |    | 2 5 8 |
+;; | 7 8 9 ]    | 3 6 9 ]
+
+
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (x) 
+	   (accumulate cons nil (matrix-*-vector cols x)))
+	 m)))
+
+(matrix-*-matrix m m) ; '((7 10) (15 22))
+;; [ 1 2 | * [ 1 2 | = [ 1*1 + 2*3   1*2 + 2*4 | = [  7 10 |
+;; | 3 4 ]   | 3 4 ]   | 3*1 + 4*3   3*2 + 4*4 ]   | 15 22 ]
+
+(matrix-*-matrix m2 m2) ; '((30 36 42) (66 81 96) (102 126 150))
+
+
+
+
+;;;--------------------------< ex 2.38 >--------------------------
+;;; p158
+
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+	result
+	(iter (op result (car rest))
+	      (cdr rest))))
+  (iter initial sequence))
+
+(define fold-right accumulate)
+
+(fold-right / 1 (list 1 2 3)) ; 3/2
+;; (/ 1 (/ 2 (/ 3 1)))
+;;                i
+;;
+;;   1     2     3
+;;   |     |     |    
+;;   |     |     /--> 1
+;;   |     |          | (3/1) 
+;;   |     |          v
+;;   |     /------->  3
+;;   |                | (2 / 3)
+;;   |                v
+;;   /------------ > 2/3
+;;                    | (1 / (2/3))
+;;                    v
+;;                   3/2
+
+(fold-right / 1 (list 4 5 6)) ; 24/5
+;; (/ 4 (/ 5 (/ 6 1)))
+
+(fold-left / 1 (list 1 2 3)) ; 1/6
+;; (/ (/ (/ 1 1) 2) 3)
+;;          i
+;;          
+;;                    1     2     3
+;;                    |     |     |
+;;             1  <-- /     |     |
+;; (1 / 1)     |            |     |    
+;;             v            |     |
+;;             1  <-------- /     |  
+;; (1 / 2)     |                  |  
+;;             v                  |
+;;            1/2 <-------------- /
+;; (1/2) / 3   |
+;;             v
+;;            1/6
+
+(fold-left / 1 (list 4 5 6)) ; 1/120
+;; (/ (/ (/ 1 4) 5) 6)
+
+(fold-right list nil (list 1 2 3)) ; '(1 (2 (3 ())))
+
+(fold-left list nil (list 1 2 3)) ; '(((() 1) 2) 3)
+
+
+;; 위에서 볼 때 
+;; right에서는 2 3 -> (x / 2) / 3
+;; left에서는  2 3 -> (y / 3) / 2
+;; 즉 2,3의 순서가 바뀐다.
+;; 같으려면 순서가 바껴도 연산의 결과가 같아야 한다 : 즉 교환 법칙 성립
+
+(fold-left * 1 (list 4 5 6))  ; 120
+(fold-right * 1 (list 4 5 6)) ; 120
+
+(fold-left + 1 (list 4 5 6))  ; 16
+(fold-right + 1 (list 4 5 6)) ; 16
+
+
+;;;--------------------------< ex 2.39 >--------------------------
+;;; p159
+
+(define (reverse2 sequence)
+  ;; initial 값이 y에 들어간다.
+  ;; 중간 결과물이 y에 들어간다.
+  ;; sequence의 원소는 뒤에서부터 x에 들어간다
+  (fold-right (lambda (x y) 
+		(append y (cons x nil))) 
+	      nil 
+	      sequence))
+
+(reverse2 '(1 2 3 4))
+
+(define (reverse2 sequence)
+  ;; initial 값이 x에 들어간다.
+  ;; 중간 결과물이 x에 들어간다.
+  ;; sequence의 원소는 앞에서부터 y에 들어간다.
+  (fold-left (lambda (x y) 
+	       (cons y x))
+	     nil 
+	     sequence))
+
+(reverse2 '(1 2 3 4))
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; 겹친 매핑
+;; p159
+
+;;(1) (enumerate-interval 1 n) 으로 차례열 뽑아내기
+;;(2) 원소 i마다 (enumerate-interval 1 (- i 1)) 을 적용하여 다시 차례열 뽑기
+;;(3) 차례열 원소 j에 대하여  (list i j) 만들기
+;; (accumulate append
+;; 	    nil
+;; 	    (map (lambda (i)
+;; 		   (map (lambda (j) (list i j))
+;; 			(enumerate-interval 1 (- i 1))))
+;; 		 (enumerate-interval 1 n)))
+
+
+(define (flatmap proc seq)
+  (accumulate append nil (map proc seq)))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+;;; 한데 엮으면 ->
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum?
+	       (flatmap
+		(lambda (i)
+		  (map (lambda (j) (list i j))
+		       (enumerate-interval 1 (- i 1))))
+		(enumerate-interval 1 n)))))
+
+(prime-sum-pairs 6)
+;; '((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7) (6 1 7) (6 5 11))
+
+(let ((n 4))
+  (flatmap
+   (lambda (i)
+     (map (lambda (j) (list i j))
+	  (enumerate-interval 1 (- i 1))))
+   (enumerate-interval 1 n)))
+;; '((2 1) (3 1) (3 2) (4 1) (4 2) (4 3))
+
+;;;---
+;; p64 ch 1.2.6
+(define (smallest-divisor n)
+  (find-divisor n 2))
+
+(define (find-divisor n test-divisor)
+  (cond ((> (square test-divisor) n) n)
+	((divides? test-divisor n) test-divisor)
+	(else (find-divisor n (+ test-divisor 1)))))
+
+(define (divides? a b)
+  (= (remainder b a) 0))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+;;;---
+
+
+;;; p161
+;;; 순열
+
+;;(1) S의 각 원소 x에 대하셔, S - x 의 순열을 모두 구해 차례열로 묶어낸다.
+;;(2) 차례열 속에 있는 각 순열의 맨 앞에 x를 덧붙인다.
+(define (permutations s)
+  (if (null? s)
+      (list nil)
+      (flatmap (lambda (x)
+		 (map (lambda (p) (cons x p))
+		      (permutations (remove x s))))
+	       s)))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+	  sequence))
+
+(permutations '(1 2 3))
+;; '((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1))
+
+
+;;;--------------------------< ex 2.40 >--------------------------
+;;; p162
+
+;; 정수 n을 인자로 받아서 1<= j < i <= n 을 만족하는 (i,j) 쌍의 차례열 뽑기
+(define (unique-pairs n)
+  (flatmap (lambda (i)
+	     (map (lambda (j) (list i j))
+		  (enumerate-interval 1 (- i 1))))
+	   (enumerate-interval 2 n)))
+
+(unique-pairs 5)
+;; '((2 1) (3 1) (3 2) (4 1) (4 2) (4 3) (5 1) (5 2) (5 3) (5 4))
+
+;;; unique-pairs를 이용해서 prime-sum-pairs 정의 줄이기
+(define (prime-sum-pairs2 n)
+  (map make-pair-sum
+       (filter prime-sum?
+	       (unique-pairs n))))
+	     
+(prime-sum-pairs 5)
+;; '((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7))
+
+(prime-sum-pairs2 5)
+;; '((2 1 3) (3 2 5) (4 1 5) (4 3 7) (5 2 7))
+
+;;;--------------------------< ex 2.41 >--------------------------
+;;; p162
+
+(define (unique-triple n)
+  (define (unique-triple? items)
+    (let ((a (car items))
+  	  (b (cadr items))
+  	  (c (caddr items)))
+      (cond ((= a b) #f)
+  	    ((= b c) #f)
+  	    ((= a c) #f)
+  	    (else #t))))
+  (filter unique-triple?
+	  (accumulate append nil
+		      (flatmap (lambda (i)
+				 (map (lambda (j)
+					(map (lambda (k)
+					       (list i j k))
+					     (enumerate-interval 1 n)))
+				      (enumerate-interval 1 n)))
+			       (enumerate-interval 1 n)))))
+
+(unique-triple 3)
+;; '((1 2 3) (1 3 2) (2 1 3) (2 3 1) (3 1 2) (3 2 1))
+
+(unique-triple 4)
+;; '((1 2 3)
+;;   (1 2 4)
+;;   (1 3 2)
+;;   (1 3 4)
+;;   (1 4 2)
+;;   (1 4 3)
+;;   (2 1 3)
+;;   (2 1 4)
+;;   (2 3 1)
+;;   (2 3 4)
+;;   (2 4 1)
+;;   (2 4 3)
+;;   (3 1 2)
+;;   (3 1 4)
+;;   (3 2 1)
+;;   (3 2 4)
+;;   (3 4 1)
+;;   (3 4 2)
+;;   (4 1 2)
+;;   (4 1 3)
+;;   (4 2 1)
+;;   (4 2 3)
+;;   (4 3 1)
+;;   (4 3 2))
+
+
+(define (unique-triple-sum n s)
+  (filter (lambda (x) (= s (accumulate + 0 x)))
+	  (unique-triple n)))
+
+(unique-triple-sum 4 7)
+;; '((1 2 4) (1 4 2) (2 1 4) (2 4 1) (4 1 2) (4 2 1))
+
+;;;--------------------------< ex 2.42 >--------------------------
+;;; p162,3,4
+
