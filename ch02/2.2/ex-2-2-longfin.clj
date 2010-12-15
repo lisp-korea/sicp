@@ -741,3 +741,79 @@
 (get-consists 10 6)
 (get-consists 10 7)
 (get-consists 10 8)
+
+;; ex 2.42
+
+(defn make-position [r c]
+  (list c r))
+(defn get-row [p]
+  (last p))
+(defn get-col [p]
+  (first p))
+(defn move [p r c]
+  (make-position (+ (get-row p) r)
+		 (+ (get-col p) c)))
+(defn capture? [p1 p2]
+  (and
+   (= (get-row p1) (get-row p2))
+   (= (get-col p1) (get-col p2))))
+(def empty-board (list))
+(defn safe? [k positions]
+  (if (= k 1)
+    true
+    (let [q (first positions)
+	  restq (rest positions)]
+      (null?
+       (filter
+	(fn [p]
+	  (or
+	   (= (get-row p) (get-row q))
+	   (diagonal? p q k 1 1)
+	   (diagonal? p q k -1 1)))
+	restq)))))
+(defn diagonal? [p1 p2 k rv cv]
+  (let [r (get-row p1)
+	c (get-col p1)]
+    (cond (capture? p1 p2) true
+	  (or (= r 0) (= c 0)) false
+	  (or (> c k)) false
+	  :else (diagonal? (move p1 rv cv) p2 k rv cv))))
+
+(defn adjoin-position [new-row k rest-of-queens]
+  (cons (make-position new-row k) rest-of-queens))
+
+(defn queens [board-size]
+  (defn queen-cols [k]
+    (if (= k 0)
+      (list empty-board)
+      (filter
+       (fn [positions](safe? k positions))
+      (flatmap
+       (fn [rest-of-queens]
+	 (map (fn [new-row]
+		(adjoin-position new-row k rest-of-queens))
+	      (enumerate-interval 1 board-size)))
+       (queen-cols (- k 1))))))
+    (queen-cols board-size))
+
+;; ex 2.43 solving... ??
+
+;; (flatmap
+;;  (fn [nr]
+;;    (map (fn [rq])
+;; -----this function is factorial(board-size) time called------
+;; 	(queen-cols (- k 1))))
+;; -------------------------------------------------------------
+;;  (enumerate-interval 1 board-size))
+
+;; (flatmap
+;;  (fn [rest-of-queens]
+;;    (map (fn [new-row]
+;; 	  (adjoin-position new-row k rest-of-queens))
+;; 	(enumerate-interval 1 board-size)))
+;;  ------this function is k(=board-size time called--------
+;; (queen-cols (- k 1))))))
+;;  --------------------------------------------------------
+
+
+;; Board-Size vs factorial(Board-Size)
