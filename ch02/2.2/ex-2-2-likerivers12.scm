@@ -1719,3 +1719,415 @@ s4 ;; 4
 ;;;--------------------------< ex 2.42 >--------------------------
 ;;; p162,3,4
 
+(define (queens board-size)
+  (define empty-board
+    (map (lambda (r) 
+	   (map (lambda (c) (list r c 0))
+		(enumerate-interval 1 board-size))) 
+	 (enumerate-interval 1 board-size)))
+  (define (queen-cols k)
+    (if (= k 0)
+	(list empty-board)
+	(filter 
+	 (lambda (positions) (safe? k positions))
+	 (flatmap
+	  (lambda (rest-of-queens)
+	    (map (lambda (new-row)
+		   (adjoin-position new-row k rest-of-queens))
+		 (enumerate-interval 1 board-size)))
+	  (queen-cols (- k 1))))))
+  (queen-cols board-size))
+
+;; 대각선 대응 안됨 OTL
+(queens 3)
+;; '((((1 1 1) (1 2 0) (1 3 0))
+;;    ((2 1 0) (2 2 1) (2 3 0))
+;;    ((3 1 0) (3 2 0) (3 3 1)))
+;;   (((1 1 1) (1 2 0) (1 3 0))
+;;    ((2 1 0) (2 2 0) (2 3 1))
+;;    ((3 1 0) (3 2 1) (3 3 0)))
+;;   (((1 1 0) (1 2 1) (1 3 0))
+;;    ((2 1 1) (2 2 0) (2 3 0))
+;;    ((3 1 0) (3 2 0) (3 3 1)))
+;;   (((1 1 0) (1 2 0) (1 3 1))
+;;    ((2 1 1) (2 2 0) (2 3 0))
+;;    ((3 1 0) (3 2 1) (3 3 0)))
+;;   (((1 1 0) (1 2 1) (1 3 0))
+;;    ((2 1 0) (2 2 0) (2 3 1))
+;;    ((3 1 1) (3 2 0) (3 3 0)))
+;;   (((1 1 0) (1 2 0) (1 3 1))
+;;    ((2 1 0) (2 2 1) (2 3 0))
+;;    ((3 1 1) (3 2 0) (3 3 0))))
+
+(define (adjoin-position new-row k rest-of-queens)
+  (map (lambda (r)
+	 (if (= (caar r) new-row)          ; (caar r) : 행번호 추출
+	     (map (lambda (c)
+	     	    (if (= (cadr c) k)     ; (cadr c) : 열번호 추출
+	     		(list new-row k 1) ; (new-row행, k열)에 퀸을 놓음.
+	     		c))                ; 나머지 행렬은 그대로
+	     	  r)
+	     r))
+       rest-of-queens))
+
+(define (safe? k positions)
+  (if (null?
+   (filter (lambda (x) (not x))
+   (accumulate append nil
+   (accumulate append nil
+      (map 
+       (lambda (r)
+
+	 (map 
+	  (lambda (c)
+	    
+	    (if (> k 1)
+		(map 
+		 (lambda (j)
+		   ;; 현재 (행,열)이 1이고
+		   ;; 현재행, 이전열이 1 이면 #f
+		   (let ((rn (caar r)))
+		     (cond ((and (= (rc-val rn k positions) 1)
+				 (= (rc-val rn j positions) 1))
+			    #f)
+			   (else #t))))
+		 (enumerate-interval 1 (- k 1)))   ; 1열부터 k-1열까지
+		(list #t)))
+	  r))
+       
+       positions))
+   )
+   )
+   )
+  #t
+  #f))
+
+
+
+
+;;;------------------------------------------------
+(safe? 1 empty-board)
+(safe? 2 empty-board)
+(safe? 3 empty-board)
+;; '(((1 1 0) (1 2 0) (1 3 0))
+;;   ((2 1 0) (2 2 0) (2 3 0))
+;;   ((3 1 0) (3 2 0) (3 3 0)))
+
+(define test-board 
+  '(((1 1 1) (1 2 1) (1 3 0))
+    ((2 1 1) (2 2 0) (2 3 1))
+    ((3 1 0) (3 2 1) (3 3 0))))
+
+(safe? 1 test-board)
+(safe? 2 test-board)
+(safe? 3 test-board)
+
+(define board-size 3)
+
+
+(define empty-board
+  (map (lambda (r) 
+	 (map (lambda (c) (list r c 0))
+	      (enumerate-interval 1 board-size))) 
+       (enumerate-interval 1 board-size)))
+
+empty-board
+;; ((1행 : (1행 1열 0값) (...) (...))
+;;  (2행 : ...)
+;;  (3행 : ...) )
+;;=>
+;; '(((1 1 0) (1 2 0) (1 3 0))
+;;   ((2 1 0) (2 2 0) (2 3 0))
+;;   ((3 1 0) (3 2 0) (3 3 0)))
+
+
+
+;; i행 뽑아내기
+(define (filter-rows i positions)
+  (accumulate append nil
+	      (filter (lambda (r)
+			(if (= (caar r) i)
+			    #t
+			    #f))
+		      positions)))
+
+(filter-rows 1 empty-board)
+;; '((1 1 0) (1 2 0) (1 3 0))
+
+;; j열 뽑아내기
+(define (filter-cols j positions)
+  (flatmap (lambda (r)
+	 (filter (lambda (c)
+		   (if (= (cadr c) j)
+		       #t
+		       #f))
+		 r))
+       positions))
+
+(filter-cols 1 empty-board)
+;; '((1 1 0) (2 1 0) (3 1 0))
+
+(filter-cols 2 empty-board)
+;; '((1 2 0) (2 2 0) (3 2 0))
+
+(accumulate append nil (filter-cols 1 (list (filter-rows 1 empty-board))))
+;; '(1 1 0)
+
+;; i행 j열 뽑아내기
+(define (filter-rc i j positions)
+  (accumulate append nil 
+	      (filter-cols j 
+			   (list (filter-rows i positions)))))
+
+(filter-rc 1 1 empty-board) ; '(1 1 0)
+(filter-rc 2 1 empty-board) ; '(2 1 0)
+(filter-rc 1 2 empty-board) ; '(1 2 0)
+
+;; i행 j열의 값 얻기
+(define (rc-val i j positions)
+  (caddr (filter-rc i j positions)))
+
+(rc-val 1 1 empty-board) ; 0
+(rc-val 1 1 test-board) ; 1
+
+
+
+
+;;;----------------------------------------------------
+;;; empty-board, adjoin-position, queen-cols 테스트, 실험
+;;;
+
+(define board-size 3)
+
+(define (queen-cols k)
+  (if (= k 0)
+      (list empty-board)
+      (flatmap
+       (lambda (rest-of-queens)
+	 (map (lambda (new-row)  ;; new-row : 1,2,...,borad-size
+		(adjoin-position new-row k rest-of-queens))
+	      (enumerate-interval 1 board-size)))
+       (queen-cols (- k 1)))))
+
+(define empty-board
+  (map (lambda (r) 
+	 (map (lambda (c) (list r c 0))
+	      (enumerate-interval 1 board-size))) 
+       (enumerate-interval 1 board-size)))
+
+empty-board
+;; ((1행 : (1행 1열 0값) (...) (...))
+;;  (2행 : ...)
+;;  (3행 : ...) )
+;;=>
+;; '(((1 1 0) (1 2 0) (1 3 0))
+;;   ((2 1 0) (2 2 0) (2 3 0))
+;;   ((3 1 0) (3 2 0) (3 3 0)))
+
+;; 최초에 empty-board값이 rest-of-queens에
+;; 최초에 new-row 1, k 1
+(define (adjoin-position new-row k rest-of-queens)
+  (map (lambda (r)
+	 (if (= (caar r) new-row)          ; (caar r) : 행번호 추출
+	     (map (lambda (c)
+	     	    (if (= (cadr c) k)     ; (cadr c) : 열번호 추출
+	     		(list new-row k 1) ; new-row행, k열에 퀸을 놓음.
+	     		c))                ; 나머지 행렬은 그대로
+	     	  r)
+	     r))
+       rest-of-queens))
+
+
+(adjoin-position 1 1 empty-board)
+;; '(((1 1 1) (1 2 0) (1 3 0))
+;;   ((2 1 0) (2 2 0) (2 3 0))
+;;   ((3 1 0) (3 2 0) (3 3 0)))
+;; 1행 1열의 값이 1로 설정됨
+
+(adjoin-position 1 2 empty-board)
+;; '(((1 1 0) (1 2 1) (1 3 0))
+;;   ((2 1 0) (2 2 0) (2 3 0))
+;;   ((3 1 0) (3 2 0) (3 3 0)))
+;; 1행 2열의 값이 1로 설정됨
+
+;; k=0 일 때
+(queen-cols 0)
+;; empty-board
+
+;; k=1 일 때
+(queen-cols 1)
+;; '((((1 1 1) (1 2 0) (1 3 0))
+;;         ^^^
+;;    ((2 1 0) (2 2 0) (2 3 0))
+;;    ((3 1 0) (3 2 0) (3 3 0)))
+;;   (((1 1 0) (1 2 0) (1 3 0))
+;;    ((2 1 1) (2 2 0) (2 3 0))
+;;         ^^^
+;;    ((3 1 0) (3 2 0) (3 3 0)))
+;;   (((1 1 0) (1 2 0) (1 3 0))
+;;    ((2 1 0) (2 2 0) (2 3 0))
+;;    ((3 1 1) (3 2 0) (3 3 0))))
+;;         ^^^
+;; 1행 1열의 값이 1로 설정된 board
+;; 2행 1열의 값이 1로 설정된 board
+;; 3행 1열의 값이 1로 설정된 board
+;; => 
+;; 1열에서 각 행에 퀸을 위치시켜보는 셈이다.
+
+
+;; k열의 r행이 1일 때
+;; k-1열의 r행이 0이고,
+;;        r-1행이 0이고,
+;;        r+1행이 0이면 안전하다
+;; (2열 이전, 대각선에 대해서 완전하지 않다.)
+(define (safe? k positions)
+  ;; (if (null?
+  ;; (filter (lambda (x) (not x))
+  ;; (accumulate append nil
+      (map 
+       (lambda (r)
+	 (map 
+	  (lambda (c)
+	    (let ((rn (caar r)))
+	      ;; 현재 행,열이 1이고
+	      ;; 현재행, 이전열이 1 이면 #f
+	      (cond ((and (> k 1)
+			  (= (rc-val rn k positions) 1)
+			  (= (rc-val rn (- k 1) positions) 1))
+		     #f)
+		    (else #t))))
+	  r))
+       positions))
+  ;; ))
+  ;; #t
+  ;; #f))
+
+;;;
+;;;-----------------------------------------------
+
+
+;;;--------------------------< ex 2.43 >--------------------------
+;;; p164,5
+
+;;; 나중에..
+
+
+
+;;;;==============<ch 2.2.4 연습 : 그림 언어>==================
+;;; p165
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; 그림 언어
+
+;; wave ; 그림
+
+;; beside ; 좌,우
+;; below  ; 위,아래
+;; flip-vert   ; 위아래 뒤집기
+;; flip-horiz  ; 옆으로 뒤집기
+
+;;-----------------------------
+(define (beside pa1 pa2)
+  nil)
+
+(define (below pa1 pa2)
+  nil)
+
+(define (flip-vert pa)
+  nil)
+
+(define (flip-horiz pa)
+  nil)
+
+(define wave nil)
+;;-----------------------------
+
+(define wave2 (beside wave (flip-vert wave)))
+(define wave4 (below wave2 wave2))
+
+;; p170
+(define (flipped-pairs painter)
+  (let ((painter2 (beside painter (flip-vert painter))))
+    (below painter2 painter2)))
+
+(define wave4 (flipped-pairs wave))
+
+;; p171
+(define (right-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (right-split painter (- n 1))))
+	(beside painter (below smaller smaller)))))
+
+;; p172
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+	    (right (right-split painter (- n 1))))
+	(let ((top-left (beside up up))
+	      (bottom-right (below right right))
+	      (corner (corner-split painter (- n 1))))
+	  (beside (below painter top-left)
+		  (below bottom-right corner))))))
+
+(define (square-limit painter n)
+  (let ((quarter (corner-split painter n)))
+    (let ((half (beside (flip-horiz quarter) quarter)))
+      (below (flip-vert half) half))))
+
+
+
+;;;--------------------------< ex 2.44 >--------------------------
+;;; p172
+
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (up-split painter (- n 1))))
+	(below (beside smaller smaller) painter))))
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 차수 높은 연산
+;;; p172
+
+;;; p173
+
+;;; 페인터 연산 네 개를 받아서 제각기 페인터에 적용한 다음
+;;; 그 결과를 네모 안에 채우기
+(define (square-of-four tl tr bl br)
+  (lambda (painter)
+    (let ((top (beside (tl painter) (tr painter)))
+	  (bottom (beside (bl painter) (br painter))))
+      (below bottom top))))
+
+;; square-of-four를 써서 filpped-pairs, square-limit 재정의
+(define (flipped-pairs painter)
+  (let ((combine4 (square-of-four identity flip-vert
+				  identity flip-vert)))
+    (combine4 painter)))
+
+(define (square-limit painter n)
+  (let ((combine4 (square-of-four flip-horiz identity
+				  rotate180 flip-vert)))
+    (combine4 (corner-split painter n))))
+
+
+;;;--------------------------< ex 2.44 >--------------------------
+;;; p173,4
+
+(define (split p1 p2)
+  (define n 10)
+  (define (split-inner painter p1 p2 k)
+    (if (= k 0)
+	painter
+	(let ((smaller (split-inner painter p1 p2 (- k 1))))
+	  (p1 painter (p2 smaller smaller)))))
+  (lambda (painter)
+    (split-inner painter p1 p2 n)))
+
+(define right-split (split beside below))
+(define up-split (split below beside))
+
