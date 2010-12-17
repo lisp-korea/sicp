@@ -311,10 +311,10 @@
   (= n (smallest-divisor n)))
 
 (define (search-for-primes min max)
-  (cond ((> min max) #f)
+  (cond ((> min max) false)
         (else
          (if (even? min)
-             #f
+             false
              (timed-prime-test min))
          (search-for-primes (+ min 1) max))))
 
@@ -392,3 +392,72 @@
 
 
 ;; ex-1.26
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+	((even? exp)
+	 (remainder (* (expmod base (/ exp 2) m)
+		       (expmod base (/ exp 2) m))
+		    m))
+	(else
+	 (remainder (* base (expmod base (- exp 1) m))
+		    m))))
+
+;; It calculates (expmod base (/ exp 2) m) twice.
+
+
+;; ex-1.27
+(define (test n)
+  (define (test-iter a n)
+    (cond ((>= a n) false)
+	  (else (cond ((not (= a (expmod a n n)))
+		       (display a)
+		       (newline)))
+		(test-iter (+ a 1) n))))
+  (test-iter 1 n))
+
+(test 561)
+(test 1105)
+(test 1729)
+(test 2465)
+(test 2821)
+(test 6601)
+
+
+;; ex-1.28
+(define (miller-rabin-test n)
+  (define (try-it a)
+    (= (expmod a (- n 1) n) 1))
+  (try-it (+ 1 (random (- n 1)))))
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+	 (miller-rabin-remainder (expmod base (/ exp 2) m) m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m)) m))))
+
+(define (miller-rabin-remainder x m)
+  (define square (* x x))
+  (define modulo (remainder square m))
+  (if (and (not (= x 1))
+	   (not (= x (- m 1)))
+	   (= modulo 1))
+      0
+      modulo))
+
+(define (fast-prime? n times)
+  (cond ((= times 0) true)
+        ((miller-rabin-test n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(fast-prime?  7 5)
+(fast-prime? 11 5)
+(fast-prime? 13 5)
+(fast-prime? 17 5)
+
+(fast-prime?  561 100)
+(fast-prime? 1105 100)
+(fast-prime? 1729 100)
+(fast-prime? 2465 100)
+(fast-prime? 2821 100)
+(fast-prime? 6601 100)
