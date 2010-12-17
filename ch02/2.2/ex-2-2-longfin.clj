@@ -810,22 +810,157 @@
 
 ;; ex 2.43 solving... ??
 
+;; a.
 ;; (flatmap
-;;  (fn [nr]
-;;    (map (fn [rq])
-;; -----this function is factorial(board-size) time called------
-;; 	(queen-cols (- k 1))))
-;; -------------------------------------------------------------
-;;  (enumerate-interval 1 board-size))
+;;  (fn [rest-of-queens]
+;;   (map (fn [new-row]
+;; 	    (adjoin-position new-row k rest-of-queens))
+;; 	  (enumerate-interval 1 board-size)))
+;;   (queen-cols (- k 1)))
 
+
+;; if k = 4
+;; (flatmap (1,2,3,4) (queen-cols 3))
+;; (flatmap (1,2,3,4) ((safe?) (flatmap (1,2,3,4) (queen-cols 2))))
+;; (flatmap (1,2,3,4) ((safe?) (flatmap (1,2,3,4) ((safe?) (flatmap (1,2,3,4) (queen-cols 1))))))
+;; (flatmap (1,2,3,4) ((safe?) (flatmap (1,2,3,4) (flatmap (1,2,3,4) (flatmap (1,2,3,4) (queen-cols 0))))))
+;; (flatmap (1,2,3,4) ((safe?) (flatmap (1,2,3,4) (flatmap (1,2,3,4) (flatmap (1,2,3,4) ())))))
+
+;; b.
 ;; (flatmap
 ;;  (fn [rest-of-queens]
 ;;    (map (fn [new-row]
 ;; 	  (adjoin-position new-row k rest-of-queens))
-;; 	(enumerate-interval 1 board-size)))
-;;  ------this function is k(=board-size time called--------
-;; (queen-cols (- k 1))))))
-;;  --------------------------------------------------------
+;; 	(queen-cols (- k 1)))
+;;    (enumerate-interval 1 board-size)))
+
+;; if k=4
+;; (flatmap (queen-cols 3) (1, 2, 3, 4))
+;; (flatmap (flatmap (queen-cols 2) (1,2,3)) (1, 2, 3, 4)) 
+;; (flatmap (flatmap (flatmap (queen-cols 1) (1, 2)) (1,2,3)) (1, 2, 3, 4))
+;; (flatmap (flatmap (flatmap (flatmap (queen-cols 0) (1)) (1, 2)) (1,2,3)) (1, 2, 3, 4))
+;; (flatmap (flatmap (flatmap (flatmap () (1)) (1, 2)) (1,2,3)) (1, 2, 3, 4))
 
 
-;; Board-Size vs factorial(Board-Size)
+;; 2.2.4
+
+(defn wave [])
+(defn beside [w1 w2])
+(defn below [w1 w2])
+(defn flip-vert [w])
+
+(def wave2 (beside wave (flip-vert wave)))
+(def wave4 (below wave2 wave2))
+
+(defn flipped-pairs [painter]
+  (let [painter2 (beside painter (flip-vert painter))]
+    (below painter2 painter2)))
+(def wave4 (flipped-pairs wave))
+
+(defn right-split [painter n]
+  (if (= n 0)
+    painter
+    (let [smaller (right-split painter (- n 1))]
+      (beside painter (below smaller smaller)))))
+
+;; ex 2.44
+
+(defn up-split [painter n]
+  (if (= n 0)
+    painter
+    (let [smaller (up-split painter (- n 1))]
+      (below (beside smaller smaller) painter))))
+
+
+(defn corner-split [painter n]
+  (if (= n 0)
+    painter
+    (let [up (up-split painter (- n 1))
+	  right (right-split painter (- n 1))]
+      (let [top-left (beside up up)
+	    bottom-right (below right right)
+	    corner (corner-split painter (- n 1))]
+	(beside (below painter top-left)
+		(below bottom-right corner))))))
+
+(defn square-of-four [tl tr bl br]
+  (fn [painter]
+    (let [top (beside (tl painter) (tr painter))
+	  bottom (beside (bl painter) (br painter))]
+      (below bottom top))))
+
+(defn flipped-pairs [painter]
+  (let [combine4 (square-of-four identity flip-vert
+				 identity flip-vert)]
+    (combine4 painter)))
+
+(defn square-limit [painter n]
+  (let [combine4 (square-of-four flip-horiz identity
+				 rotate180 flip-vert)]
+    (combine4 (corner-split painter n))))
+
+;; ex 2.45
+
+(defn split [dir1 dir2]
+  (fn [painter n]
+    (if (= n 0)
+      painter
+      (let [smaller ((split dir1 dir2) painter (- n 1))]
+	(dir1 (dir2 smaller smaller) painter)))))
+(def right-split (split beside below))
+(def up-split (split below beside))
+
+
+(defn frame-coord-map [frame]
+  (fn [v]
+    (add-vect
+     (origin-frame frame)
+     (add-vect (scale-vect (xcor-vect v)
+			   (edge1-frame frame))
+	       (scale-vect (ycor-vect v)
+			   (edge2-frame frame))))))
+
+;; ex 2.46
+
+(defn make-vect [x y]
+  (cons x y))
+(defn xcor-vect [v]
+  (first v))
+(defn ycor-vect [v]
+  (last v))
+
+(defn add-vect [v1 v2]
+  (make-vect (+ (xcor-vect v1) (xcor-vect v2))
+	     (+ (ycor-vect v1) (ycor-vect v2))))
+(defn sub-vect [v1 v2]
+  (make-vect (- (xcor-vect v1) (xcor-vect v2))
+	     (- (ycor-vect v1) (ycor-vect v2))))
+(defn scale-vect [s v]
+  (make-vect (* s (xcor-vect v))
+	     (* s (ycor-vect v))))
+
+;; ex 2.47
+
+(defn make-frame [origin edge1 edge2]
+  (list origin edge1 edge2))
+
+(defn origin-frame [f]
+  (first f))
+
+(defn edge1-frame [f]
+  (first (rest f)))
+
+(defn edge2-frame [f]
+  (first (rest (rest f))))
+
+(defn make-frame [origin edge1 edge2]
+  (cons origin (cons edge1 edge2)))
+
+(defn origin-frame [f]
+  (first f))
+
+(defn edge1-frame [f]
+  (first (last f)))
+
+(defn edge2-frame [f]
+  (last (last f)))
