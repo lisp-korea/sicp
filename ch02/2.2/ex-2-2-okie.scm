@@ -548,3 +548,316 @@
               (filter even?
                       (map fib
                            (enumerate-interval 0 n)))))
+
+
+(define (list-fib-squares n)
+  (accumulate cons
+              '()
+              (map (lambda (x) (* x x))
+                   (map fib
+                        (enumerate-interval 0 n)))))
+
+(list-fib-squares 10)
+
+(define (product-of-squares-odd-elements sequence)
+  (accumulate *
+              1
+              (map (lambda (x) (* x x))
+                   (filter odd? sequence))))
+
+(product-of-squares-odd-elements (list 1 2 3 4 5))
+
+(define (salary-of-highest-paid-programmer records)
+  (accumulate max
+              0
+              (map salary
+                   (filter programmer? records)
+
+; ex 2.33
+(define (map p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) '() sequence))
+
+(map (lambda (x) (+ x 1)) (list 1 2 3 4 5))
+
+(define (append seq1 seq2)
+  (accumulate cons seq2 seq1))
+
+(append (list 1 2 3 4 5) (list 6 7 8 9 10))
+
+(define (length sequence)
+  (accumulate (lambda (x y) (+ 1 y)) 0 sequence))
+
+(length (list 1 2 3 4 5))
+
+; ex 2.34
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms) (+ (* higher-terms x) this-coeff))
+              0
+              coefficient-sequence))
+
+(horner-eval 2 (list 1 3 0 5 0 1))
+; 79
+((lambda (x) (+ 1 (* 3 x) (* 5 (* x x x)) (* x x x x x))) 2)
+; 79
+
+; ex 2.35
+(define x (cons (list 1 2) (list 3 4)))
+
+(define y (cons (cons (list 1 2) (list 3 4)) (cons (list 5 6) (list 7 8))))
+
+(define (count-leaves x)
+  (cond ((null? x) 0)
+        ((not (pair? x)) 1)
+        (else (+ (count-leaves (car x))
+                 (count-leaves (cdr x))))))
+
+(define (count-leaves t)
+  (accumulate +
+              0 
+              (map (lambda (seq)
+                     (if (pair? seq) (accumulate (lambda (x y) (+ 1 y)) 0 seq)
+                         1))
+                   t)))
+
+;; (define (count-leaves t)
+;;   (accumulate (lambda (x y) (+ 1 y))
+;;               0
+;;               (map (lambda (seq)
+;;                      (if (pair? seq) (enumerate-tree t)
+;;                          seq))
+;;                    t)))
+
+;; (define (count-leaves t)
+;;   (accumulate (lambda (x y) (+ 1 y))
+;;               0
+;;               (map enumerate-tree t)))
+
+(count-leaves x)
+(count-leaves y)
+
+; ex 2.36
+(define s (list (list 1 2 3) (list 4 5 6) (list 7 8 9) (list 10 11 12)))
+
+;; (define (pick seq)
+;;   (if (null? seq)
+;;       '()
+;;       (cons (car (car seq)) (pick (cdr seq)))))
+
+;; (define (pick2 seq)
+;;   (if (null? seq)
+;;       '()
+;;       (cons (cdr (car seq)) (pick2 (cdr seq)))))
+
+;; (pick s)
+;; (pick2 s)
+
+(accumulate cons '() (map car s))
+(accumulate cons '() (map cdr s))
+
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      '()
+      (cons (accumulate op init (accumulate cons '() (map car seqs)))
+            (accumulate-n op init (accumulate cons '() (map cdr seqs))))))
+
+(accumulate-n + 0 s)
+
+; ex 2.37
+
+(define m (list (list 1 2 3 4) (list 5 6 7 8) (list 9 10 11 12)))
+
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+
+;; (define (matrix-*-vector m v)
+;;   (map 
+;;    (lambda (seq) 
+;; ;     (display (cons seq (list v)))
+;; ;     (newline)
+;;      (accumulate-n * 1 (cons seq (list v)))) m))
+
+(define (matrix-*-vector m v)
+  (map 
+   (lambda (seq) 
+     (accumulate + 0 
+                 (accumulate-n * 1 (cons seq (list v))))) m))
+
+(matrix-*-vector m (list 1 2 3 4))
+
+;; 1 2 3  a    1a + 2b + 3c
+;; 4 5 6  b  = 4a + 5b + 6c
+;; 7 8 9  c    7a + 8b + 9c
+
+(define (transpose mat)
+  (accumulate-n cons '() mat))
+
+;; ((1 2 3) (4 5 6) (7 8 9))
+;; ==> ((1 4 7) (2 5 8) (3 6 9))
+
+(transpose m)
+
+;; 1 2 3  a b c    
+;; 4 5 6  d e f  = 
+;; 7 8 9  g h i
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map 
+     (lambda (v) (matrix-*-vector cols v)) m)))
+
+(define m1 (list (list 1 2 3) (list 4 5 6) (list 7 8 9)))
+(define m2 (list (list 7 8 9) (list 4 5 6) (list 1 2 3)))
+
+;; by wolfram alpha 
+;; 3(6 | 8 | 10
+;; 18 | 23 | 28
+;; 30 | 38 | 46) 
+
+(matrix-*-vector m1 (list 7 8 9))
+(matrix-*-matrix m1 m2)
+
+;; ((18 24 30) (54 69 84) (90 114 138))
+
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
+(define (fold-right op initial sequence)
+  (accumulate op initial sequence))
+
+(fold-right / 1 (list 1 2 3))
+; 3/2
+(fold-left / 1 (list 1 2 3))
+; 1/6
+(fold-right list '() (list 1 2 3))
+; (((() 1) 2) 3)
+(fold-left list '() (list 1 2 3))
+; (((() 1) 2) 3)
+    
+; ex 2.39
+(define (reverse sequence)
+  (fold-right (lambda (x y) (append y (list x))) '() sequence))
+
+(reverse (list 1 2 3 4))
+
+(define (reverse sequence)
+  (fold-left (lambda (x y) (append (list y) x)) '() sequence))
+
+;; nested mapping
+(define (pairmap n)
+  (accumulate append
+              '()
+              (map (lambda (i)
+                     (map (lambda (j) (list i j))
+                          (enumerate-interval 1 (- i 1))))
+                   (enumerate-interval 1 n))))
+
+(pairmap 10)
+
+(define (square n)
+  (* n n))
+
+(define (smallest-divisor n)
+  (define (divides? a b)
+    (= (remainder b a) 0))
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+	  ((divides? test-divisor n) test-divisor)
+	  (else (find-divisor n (+ test-divisor 1)))))
+  (find-divisor n 2))
+
+(define (prime? n)
+  (= n (smallest-divisor n)))
+
+(define (flatmap proc seq)
+  (accumulate append '() (map proc seq)))
+
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+
+(define (make-pair-sum pair)
+  (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum?
+               (flatmap
+                (lambda (i)
+                  (map (lambda (j) (list i j))
+                       (enumerate-interval 1 (- i 1))))
+                (enumerate-interval 1 n)))))
+
+(prime-sum-pairs 10)
+
+(define (permutations s)
+  (if (null? s)
+      (list '())
+      (flatmap (lambda (x)
+                 (map (lambda (p) (cons x p))
+                      (permutations (remove x s))))
+               s)))
+
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence))
+
+(permutations (list 1 2 3))
+
+; ex 2.40
+(define (unique-pairs n)
+  (flatmap
+   (lambda (i)
+     (map (lambda (j) (list i j))
+          (enumerate-interval 1 (- i 1))))
+   (enumerate-interval 1 n)))
+
+(unique-pairs 10)
+
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum? (unique-pairs n))))
+
+(prime-sum-pairs 10)
+
+; ex 2.41
+(define (triples n)
+  (flatmap
+   (lambda (i)
+     (flatmap (lambda (j)
+            (map (lambda (k) (list i j k))
+                 (enumerate-interval 1 (- j 1))))
+          (enumerate-interval 1 (- i 1))))
+   (enumerate-interval 1 n)))
+
+(triples 10)
+  
+
+; ex 2.42
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) (safe? k positions))
+         (flatmap
+          (lambda (rest-of-queens)
+            (map (lambda (new-row)
+                   (adjoin-position new-row k rest-of-queens))
+                 (enumerate-interval 1 board-size)))
+          (queen-cols (- k 1))))))
+  (queen-cols board-size))
+
+(define (adjoin-position new-row k rest-of-queens)
+  (display new-row)
+  (display ",")
+  (display k)
+  (display ",")
+  (display rest-of-queens))
+
+(define empty-board '())
+
+(queens 4)
