@@ -1738,26 +1738,6 @@ s4 ;; 4
 	  (queen-cols (- k 1))))))
   (queen-cols board-size))
 
-;; 대각선 대응 안됨 OTL
-(queens 3)
-;; '((((1 1 1) (1 2 0) (1 3 0))
-;;    ((2 1 0) (2 2 1) (2 3 0))
-;;    ((3 1 0) (3 2 0) (3 3 1)))
-;;   (((1 1 1) (1 2 0) (1 3 0))
-;;    ((2 1 0) (2 2 0) (2 3 1))
-;;    ((3 1 0) (3 2 1) (3 3 0)))
-;;   (((1 1 0) (1 2 1) (1 3 0))
-;;    ((2 1 1) (2 2 0) (2 3 0))
-;;    ((3 1 0) (3 2 0) (3 3 1)))
-;;   (((1 1 0) (1 2 0) (1 3 1))
-;;    ((2 1 1) (2 2 0) (2 3 0))
-;;    ((3 1 0) (3 2 1) (3 3 0)))
-;;   (((1 1 0) (1 2 1) (1 3 0))
-;;    ((2 1 0) (2 2 0) (2 3 1))
-;;    ((3 1 1) (3 2 0) (3 3 0)))
-;;   (((1 1 0) (1 2 0) (1 3 1))
-;;    ((2 1 0) (2 2 1) (2 3 0))
-;;    ((3 1 1) (3 2 0) (3 3 0))))
 
 (define (adjoin-position new-row k rest-of-queens)
   (map (lambda (r)
@@ -1771,75 +1751,257 @@ s4 ;; 4
        rest-of-queens))
 
 (define (safe? k positions)
-  (if (null?
-   (filter (lambda (x) (not x))
-   (accumulate append nil
-   (accumulate append nil
-      (map 
-       (lambda (r)
+  (and (safe-row? k positions)
+       (safe-diag? k positions)))
 
-	 (map 
-	  (lambda (c)
+
+;; 성공!
+(queens 3)
+;; '()
+
+(queens 4)
+;; '((((1 1 0) (1 2 0) (1 3 1) (1 4 0))
+;;    ((2 1 1) (2 2 0) (2 3 0) (2 4 0))
+;;    ((3 1 0) (3 2 0) (3 3 0) (3 4 1))
+;;    ((4 1 0) (4 2 1) (4 3 0) (4 4 0))))
+
+(queens 5)
+;; '((((1 1 1) (1 2 0) (1 3 0) (1 4 0) (1 5 0))
+;;    ((2 1 0) (2 2 0) (2 3 0) (2 4 1) (2 5 0))
+;;    ((3 1 0) (3 2 1) (3 3 0) (3 4 0) (3 5 0))
+;;    ((4 1 0) (4 2 0) (4 3 0) (4 4 0) (4 5 1))
+;;    ((5 1 0) (5 2 0) (5 3 1) (5 4 0) (5 5 0)))
+;;   (((1 1 0) (1 2 0) (1 3 1) (1 4 0) (1 5 0))
+;;    ((2 1 1) (2 2 0) (2 3 0) (2 4 0) (2 5 0))
+;;    ((3 1 0) (3 2 0) (3 3 0) (3 4 1) (3 5 0))
+;;    ((4 1 0) (4 2 1) (4 3 0) (4 4 0) (4 5 0))
+;;    ((5 1 0) (5 2 0) (5 3 0) (5 4 0) (5 5 1)))
+;;   (((1 1 0) (1 2 0) (1 3 0) (1 4 0) (1 5 1))
+;;    ((2 1 0) (2 2 0) (2 3 1) (2 4 0) (2 5 0))
+;;    ((3 1 1) (3 2 0) (3 3 0) (3 4 0) (3 5 0))
+;;    ((4 1 0) (4 2 0) (4 3 0) (4 4 1) (4 5 0))
+;;    ((5 1 0) (5 2 1) (5 3 0) (5 4 0) (5 5 0)))
+;;   (((1 1 0) (1 2 1) (1 3 0) (1 4 0) (1 5 0))
+;;    ((2 1 0) (2 2 0) (2 3 0) (2 4 0) (2 5 1))
+;;    ((3 1 0) (3 2 0) (3 3 1) (3 4 0) (3 5 0))
+;;    ((4 1 1) (4 2 0) (4 3 0) (4 4 0) (4 5 0))
+;;    ((5 1 0) (5 2 0) (5 3 0) (5 4 1) (5 5 0)))
+;;   (((1 1 0) (1 2 0) (1 3 0) (1 4 1) (1 5 0))
+;;    ((2 1 0) (2 2 1) (2 3 0) (2 4 0) (2 5 0))
+;;    ((3 1 0) (3 2 0) (3 3 0) (3 4 0) (3 5 1))
+;;    ((4 1 0) (4 2 0) (4 3 1) (4 4 0) (4 5 0))
+;;    ((5 1 1) (5 2 0) (5 3 0) (5 4 0) (5 5 0))))
+
+;;;--------------------------------
+;;; 출력용
+(define (display-all-boards boards)
+  (if (null? boards)
+      (display "no boards")
+      (begin
+	(let ((size (length (car boards))))
+	  (map (lambda (b)
+		 (begin
+		   (display-board size b)
+		   (newline)))
+	       (rc-val-all-boards boards))))))
+
+(display-all-boards (queens 5))
+;; 1 0 0 0 0 
+;; 0 0 0 1 0 
+;; 0 1 0 0 0 
+;; 0 0 0 0 1 
+;; 0 0 1 0 0 
+
+;; 0 0 1 0 0 
+;; 1 0 0 0 0 
+;; 0 0 0 1 0 
+;; 0 1 0 0 0 
+;; 0 0 0 0 1 
+
+;; 0 0 0 0 1 
+;; 0 0 1 0 0 
+;; 1 0 0 0 0 
+;; 0 0 0 1 0 
+;; 0 1 0 0 0 
+
+;; 0 1 0 0 0 
+;; 0 0 0 0 1 
+;; 0 0 1 0 0 
+;; 1 0 0 0 0 
+;; 0 0 0 1 0 
+
+;; 0 0 0 1 0 
+;; 0 1 0 0 0 
+;; 0 0 0 0 1 
+;; 0 0 1 0 0 
+;; 1 0 0 0 0 
+
+;; '(#<void> #<void> #<void> #<void> #<void>)		 
+
+(define (display-board size board)
+  (if (null? board)
+      (display "no board")
+      (map (lambda (row)
+	     (begin
+	       (map (lambda (cv)
+		      (begin
+			(display cv)
+			(display " ")))
+		    row)
+	       (newline)))
+	   board)))
+
+(display-board 5 (rc-val-board 5 (car (queens 5))))	     
+;; 1 0 0 0 0 
+;; 0 0 0 1 0 
+;; 0 1 0 0 0 
+;; 0 0 0 0 1 
+;; 0 0 1 0 0 
+;; '(#<void> #<void> #<void> #<void> #<void>)
+
+
+(define (rc-val-board size board)
+  (if (null? board)
+      nil
+      (map (lambda (r)
+	     (map (lambda (c)
+		    (rc-val r c board))
+		  (enumerate-interval 1 size)))
+	   (enumerate-interval 1 size))))
+	     
+(define (rc-val-all-boards boards)
+  (if (null? boards)
+      nil
+      (let ((size (length (car boards))))
+	(map (lambda (b)
+	       (rc-val-board size b))
+	     boards))))
+
+(rc-val-all-boards (queens 5))
+;; '(((1 0 0 0 0) (0 0 0 1 0) (0 1 0 0 0) (0 0 0 0 1) (0 0 1 0 0))
+;;   ((0 0 1 0 0) (1 0 0 0 0) (0 0 0 1 0) (0 1 0 0 0) (0 0 0 0 1))
+;;   ((0 0 0 0 1) (0 0 1 0 0) (1 0 0 0 0) (0 0 0 1 0) (0 1 0 0 0))
+;;   ((0 1 0 0 0) (0 0 0 0 1) (0 0 1 0 0) (1 0 0 0 0) (0 0 0 1 0))
+;;   ((0 0 0 1 0) (0 1 0 0 0) (0 0 0 0 1) (0 0 1 0 0) (1 0 0 0 0)))
+
+
+(rc-val-board 5 (car (queens 5)))
+;; '((1 0 0 0 0) (0 0 0 1 0) (0 1 0 0 0) (0 0 0 0 1) (0 0 1 0 0))
+
+
+;;;---------------------------------
+
+;;-----------------------------
+;; safe 정의용 함수들
+
+(define (occupied-row j positions)
+  (let ((row (filter (lambda (r)
+		       (= (caddr r) 1))
+		     (filter-cols j positions))))
+    (if (null? row)
+	0
+	(caar row))))
+
+;; 테스트    
+;; (occupied-row 3 empty-board)
+
+;; (occupied-row 3 test-board)
+;; ;; 2
+
+(define (safe-diag? k positions)
+  (let ((cr (occupied-row k positions))
+	(cc k)
+	(size (length positions)))
+    (and (safe-all-diag? 1 size (- cr 1) (- cc 1) positions)
+	 (safe-all-diag? 2 size (+ cr 1) (- cc 1) positions))))
+
+(define (safe-all-diag? dir size cr cc positions)
+  (cond ((or (<= cr 0) (<= cc 0) (> cr size)) #t)
+	((= (rc-val cr cc positions) 1) #f)
+	(else
+	 (if (= dir 1) 
+	     (safe-all-diag? 1 size (- cr 1) (- cc 1) positions)
+	     (safe-all-diag? 1 size (+ cr 1) (- cc 1) positions)))))
+
+;; (define test-board 
+;;   '(((1 1 1) (1 2 1) (1 3 1))
+;;     ((2 1 1) (2 2 0) (2 3 0))
+;;     ((3 1 1) (3 2 1) (3 3 0))))
+
+;; (safe-diag? 3 test-board)
+
+(define (safe-row? k positions)
+  (let ((cr (occupied-row k positions))
+	(cc k))
+    (if (<= cr 0)
+	#t
+	(safe-all-row? cr (- cc 1) positions))))
+
+
+(define (safe-all-row? cr cc positions)
+  (cond ((<= cc 0) #t)
+	((= (rc-val cr cc positions) 1) #f)
+	(else (safe-all-row? cr (- cc 1) positions))))
+
+;; 테스트    
+;; (define test-board 
+;;   '(((1 1 1) (1 2 1) (1 3 0))
+;;     ((2 1 1) (2 2 0) (2 3 1))
+;;     ((3 1 1) (3 2 1) (3 3 0))))
+
+;; (safe-row? 3 test-board)
+
+;;; 아래 코드도 제대로 동작함.
+;; (define (safe-row? k positions)
+;;   (if (null?
+;;    (filter (lambda (x) (not x))
+;;    (accumulate append nil
+;;    (accumulate append nil
+;;       (map 
+;;        (lambda (r)
+
+;; 	 (map 
+;; 	  (lambda (c)
 	    
-	    (if (> k 1)
-		(map 
-		 (lambda (j)
-		   ;; 현재 (행,열)이 1이고
-		   ;; 현재행, 이전열이 1 이면 #f
-		   (let ((rn (caar r)))
-		     (cond ((and (= (rc-val rn k positions) 1)
-				 (= (rc-val rn j positions) 1))
-			    #f)
-			   (else #t))))
-		 (enumerate-interval 1 (- k 1)))   ; 1열부터 k-1열까지
-		(list #t)))
-	  r))
+;; 	    (if (> k 1)
+;; 		(map 
+;; 		 (lambda (j)
+;; 		   ;; 현재 (행,열)이 1이고
+;; 		   ;; 현재행, 이전열이 1 이면 #f
+;; 		   (let ((rn (caar r)))
+;; 		     (cond ((and (= (rc-val rn k positions) 1)
+;; 				 (= (rc-val rn j positions) 1))
+;; 			    #f)
+;; 			   (else #t))))
+;; 		 (enumerate-interval 1 (- k 1)))   ; 1열부터 k-1열까지
+;; 		(list #t)))
+;; 	  r))
        
-       positions))
-   )
-   )
-   )
-  #t
-  #f))
-
-
-
+;;        positions))
+;;    )
+;;    )
+;;    )
+;;   #t
+;;   #f))
+;;-----------------------------
 
 ;;;------------------------------------------------
-(safe? 1 empty-board)
-(safe? 2 empty-board)
-(safe? 3 empty-board)
-;; '(((1 1 0) (1 2 0) (1 3 0))
-;;   ((2 1 0) (2 2 0) (2 3 0))
-;;   ((3 1 0) (3 2 0) (3 3 0)))
+;;; 행,열,값 추출 함수들
 
-(define test-board 
-  '(((1 1 1) (1 2 1) (1 3 0))
-    ((2 1 1) (2 2 0) (2 3 1))
-    ((3 1 0) (3 2 1) (3 3 0))))
+;; (define empty-board
+;;   (map (lambda (r) 
+;; 	 (map (lambda (c) (list r c 0))
+;; 	      (enumerate-interval 1 board-size))) 
+;;        (enumerate-interval 1 board-size)))
 
-(safe? 1 test-board)
-(safe? 2 test-board)
-(safe? 3 test-board)
-
-(define board-size 3)
-
-
-(define empty-board
-  (map (lambda (r) 
-	 (map (lambda (c) (list r c 0))
-	      (enumerate-interval 1 board-size))) 
-       (enumerate-interval 1 board-size)))
-
-empty-board
-;; ((1행 : (1행 1열 0값) (...) (...))
-;;  (2행 : ...)
-;;  (3행 : ...) )
-;;=>
-;; '(((1 1 0) (1 2 0) (1 3 0))
-;;   ((2 1 0) (2 2 0) (2 3 0))
-;;   ((3 1 0) (3 2 0) (3 3 0)))
-
+;; empty-board
+;; ;; ((1행 : (1행 1열 0값) (...) (...))
+;; ;;  (2행 : ...)
+;; ;;  (3행 : ...) )
+;; ;;=>
+;; ;; '(((1 1 0) (1 2 0) (1 3 0))
+;; ;;   ((2 1 0) (2 2 0) (2 3 0))
+;; ;;   ((3 1 0) (3 2 0) (3 3 0)))
 
 
 ;; i행 뽑아내기
@@ -1851,8 +2013,9 @@ empty-board
 			    #f))
 		      positions)))
 
-(filter-rows 1 empty-board)
-;; '((1 1 0) (1 2 0) (1 3 0))
+;; 테스트    
+;; (filter-rows 1 empty-board)
+;; ;; '((1 1 0) (1 2 0) (1 3 0))
 
 ;; j열 뽑아내기
 (define (filter-cols j positions)
@@ -1864,32 +2027,43 @@ empty-board
 		 r))
        positions))
 
-(filter-cols 1 empty-board)
-;; '((1 1 0) (2 1 0) (3 1 0))
+;; 테스트    
+;; (filter-cols 1 empty-board)
+;; ;; '((1 1 0) (2 1 0) (3 1 0))
+;; ;;=>
+;; ;; '( (1 1 0) 
+;; ;;    (2 1 0) 
+;; ;;    (3 1 0) )
 
-(filter-cols 2 empty-board)
-;; '((1 2 0) (2 2 0) (3 2 0))
+;; (filter-cols 2 empty-board)
+;; ;; '((1 2 0) (2 2 0) (3 2 0))
+;; ;;=>
+;; ;; '( (1 2 0) 
+;; ;;    (2 2 0) 
+;; ;;    (3 2 0) )
 
-(accumulate append nil (filter-cols 1 (list (filter-rows 1 empty-board))))
-;; '(1 1 0)
+;; (accumulate append nil (filter-cols 1 (list (filter-rows 1 empty-board))))
+;; ;; '(1 1 0)
 
-;; i행 j열 뽑아내기
+;; (i행, j열) 뽑아내기
 (define (filter-rc i j positions)
   (accumulate append nil 
 	      (filter-cols j 
 			   (list (filter-rows i positions)))))
-
-(filter-rc 1 1 empty-board) ; '(1 1 0)
-(filter-rc 2 1 empty-board) ; '(2 1 0)
-(filter-rc 1 2 empty-board) ; '(1 2 0)
+;; 테스트    
+;; (filter-rc 1 1 empty-board) ; '(1 1 0)
+;; (filter-rc 2 1 empty-board) ; '(2 1 0)
+;; (filter-rc 1 2 empty-board) ; '(1 2 0)
 
 ;; i행 j열의 값 얻기
 (define (rc-val i j positions)
   (caddr (filter-rc i j positions)))
 
-(rc-val 1 1 empty-board) ; 0
-(rc-val 1 1 test-board) ; 1
+;; 테스트    
+;; (rc-val 1 1 empty-board) ; 0
+;; (rc-val 1 1 test-board) ; 1
 
+;;;----------------------------------------------------
 
 
 
