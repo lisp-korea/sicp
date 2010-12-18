@@ -851,13 +851,256 @@
           (queen-cols (- k 1))))))
   (queen-cols board-size))
 
+(define (queens-cases board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (flatmap
+         (lambda (rest-of-queens)
+           (map (lambda (new-row)
+                  (adjoin-position new-row k rest-of-queens))
+                (enumerate-interval 1 board-size)))
+         (queen-cols (- k 1)))))
+  (queen-cols board-size))
+
+(queens-cases 4)
+
+(map (lambda (new-row)
+       (adjoin-position new-row 3 '()))
+     (enumerate-interval 1 4))
+
 (define (adjoin-position new-row k rest-of-queens)
-  (display new-row)
-  (display ",")
-  (display k)
-  (display ",")
-  (display rest-of-queens))
+  (list k new-row))
+;  (list rest-of-queens (cons new-row k))
 
 (define empty-board '())
 
+(define (safe? q seqs)
+;  (display seqs)
+  (not (or (= (car seqs) q) (= (cadr seqs) q))))
+
+(safe? 2 (list (list 4 4) (list 4 3) (list 4 2) (list 4 1)))
+
 (queens 4)
+
+; ex 2.25
+(define (queens board-size)
+  (define (queen-cols k)
+    (if (= k 0)
+        (list empty-board)
+        (filter
+         (lambda (positions) (safe? k positions))
+         (flatmap
+          (lambda (new-row)
+            (map (lambda (rest-of-queens)
+                   (adjoin-position new-row k rest-of-queens))
+                 (queens-cols (- k 1))))
+          (enumerate-interval 1 board-size)))))
+  (queen-cols board-size))
+
+;; picture language
+(define wave
+  (segments->painter
+    (list (make-segment (make-vect 0.35 0.85) (make-vect 0.40 1.00))
+          (make-segment (make-vect 0.65 0.85) (make-vect 0.60 1.00))
+          (make-segment (make-vect 0.35 0.85) (make-vect 0.40 0.65))
+          (make-segment (make-vect 0.65 0.85) (make-vect 0.60 0.65))
+          (make-segment (make-vect 0.50 0.75) (make-vect 0.42 0.78)) ;; 口
+          (make-segment (make-vect 0.50 0.75) (make-vect 0.58 0.78)) ;; 口
+          (make-segment (make-vect 0.60 0.65) (make-vect 0.75 0.65))
+          (make-segment (make-vect 0.40 0.65) (make-vect 0.30 0.65))
+          (make-segment (make-vect 0.75 0.65) (make-vect 1.00 0.35))
+          (make-segment (make-vect 0.60 0.45) (make-vect 1.00 0.15))
+          (make-segment (make-vect 0.60 0.45) (make-vect 0.75 0.00))
+          (make-segment (make-vect 0.50 0.30) (make-vect 0.60 0.00))
+          (make-segment (make-vect 0.30 0.65) (make-vect 0.15 0.60))
+          (make-segment (make-vect 0.30 0.60) (make-vect 0.15 0.40))
+          (make-segment (make-vect 0.15 0.60) (make-vect 0.00 0.85))
+          (make-segment (make-vect 0.15 0.40) (make-vect 0.00 0.65))
+          (make-segment (make-vect 0.30 0.60) (make-vect 0.35 0.50))
+          (make-segment (make-vect 0.35 0.50) (make-vect 0.25 0.00))
+          (make-segment (make-vect 0.50 0.30) (make-vect 0.40 0.00)))))
+
+(wave canvas-frame)
+
+(require (planet soegaard/sicp:2:1/sicp)) 
+
+(define wave einstein)
+(define wave2
+  (beside wave (flip-vert wave)))
+
+;(paint wave2)
+
+(define wave4 (below wave2 wave2))
+
+;(paint wave4)
+
+(define (flipped-pairs painter)
+  (let ((painter2 (beside painter (flip-vert painter))))
+    (below painter2 painter2)))
+
+(define wave4 (flipped-pairs wave))
+
+;(paint wave4)
+
+; recursion
+(define (right-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (right-split painter (- n 1))))
+        (beside painter (below smaller smaller)))))
+
+;(paint (right-split wave 1))
+
+(define (corner-split painter n)
+  (if (= n 0)
+      painter
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter (- n 1))))
+        (let ((top-left (beside up up))
+          (bottom-right (below right right))
+          (corner (corner-split painter (- n 1))))
+          (beside (below painter top-left)
+                  (below bottom-right corner))))))
+  
+(define (square-limit painter n)
+  (let ((quarter (corner-split painter n)))
+    (let ((half (beside (flip-horiz quarter) quarter)))
+      (below (flip-vert half) half))))
+
+;(paint (right-split wave 4))
+;(paint (corner-split wave 4))
+
+; ex 2.44
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (up-split painter (- n 1))))
+        (below painter (beside smaller smaller)))))
+
+;(paint (up-split wave 2))
+
+; high order
+;(paint (square-limit wave 0))
+;(paint (flipped-pairs wave))
+
+(define (square-of-four tl tr bl br)
+  (lambda (painter)
+    (let ((top (beside (tl painter) (tr painter)))
+          (bottom (beside (bl painter) (br painter))))
+      (below bottom top))))
+
+(define (flipped-pairs painter)
+  (let ((combine4 (square-of-four identity flip-vert
+                                  identity flip-vert)))
+    (combine4 painter)))
+
+;(paint (flipped-pairs wave))
+
+(define (square-limit painter n)
+  (let ((combine4 (square-of-four flip-horiz identity
+                                  rotate180 flip-vert)))
+    (combine4 (corner-split painter n))))
+
+;(paint (square-limit wave 0))
+
+; ex 2.45
+(define (split first second)
+  (lambda (painter n)
+    (define (split-inner painter n)
+      (if (= n 0)
+          painter
+          (let ((smaller (split-inner painter (-n 1))))
+            (first painter (second painter painter)))))
+    (split-inner painter n)))
+
+(define right-split2 (split beside below))
+
+(define up-split2 (split below beside))
+  
+;(paint (right-split wave 1))  
+;(paint (right-split2 wave 1))
+
+;(paint (up-split wave 1))
+;(paint (up-split2 wave 1))
+
+; frame
+
+(define (frame-coord-map frame)
+  (lambda (v)
+    (add-vert
+     (origin-frame frame)
+     (add-vert (scale-vert (xcor-vect v)
+                           (edge1-frame frame))
+               (scale-vert (ycor-vect v)
+                           (edge2-frame frame))))))
+
+((frame-coord-map a-frame) (make-vect 0 0))
+
+(origin-frame a-frame)
+
+; ex 2.46
+(define (make-vect x y)
+  (cons x y))
+
+(define (xcor-vect v) 
+  (car v))
+
+(define (ycor-vect v)
+  (cdr v))
+
+(define (add-vect v1 v2)
+  (make-vect (+ (xcor-vect v1) (xcor-vect v2)) (+ (ycor-vect v1) (ycor-vect v2))))
+
+(define (sub-vect v1 v2)
+  (make-vect (- (xcor-vect v1) (xcor-vect v2)) (- (ycor-vect v1) (ycor-vect v2))))
+  
+(define (scale-vect s v)
+  (make-vect (* (xcor-vect v1) s) (* (ycor-vect v1) s)))
+
+; ex 2.47
+(define (make-frame origin edge1 edge2)
+  (list origin edge1 edge2))
+
+(define (origin-frame frame)
+  (car frame))
+
+(define (edge1-frame frame)
+  (cadr frame))
+
+(define (edge1-frame frame)
+  (caddr frame))
+
+(define (make-frame origin edge1 edge2)
+  (cons origin (cons edge1 edge2)))
+
+(define (origin-frame frame)
+  (car frame))
+
+(define (edge1-frame frame)
+  (cadr frame))
+
+(define (edge2-frame frame)
+  (cddr frame))
+  
+; painter
+(define (segments->painter segment-list)
+  (lambda (frame)
+    (for-each
+     (lambda (segment)
+       (draw-line
+        ((frame-coord-map frame) (start-segment segment))
+        ((frmae-coord-map frame) (end-segment segment))))))
+  segment-list)
+
+; ex 2.48
+(define (make-segment v1 v2)
+  (cons v1 v2))
+
+(define (start-segment segment)
+  (car segment))
+
+(define (end-segment segment)
+  (cdr segment))
+
+; ex 2.49

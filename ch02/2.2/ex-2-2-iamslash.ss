@@ -427,3 +427,114 @@
       (cons (accumulate op init (map car seqs))
             (accumulate-n op init (map cdr seqs)))))
 (accumulate-n + 0 l)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.37
+(define m1 `((1 2 3 4) (4 5 6 6) (6 7 8 9 )))
+(define m2 `((1 2 3) (4 5 6) (6 7 8) (7 8 9)))
+(define v  `(1 2 3 4))
+(define (dot-product v w)
+  (accumulate + 0 (map * v w)))
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      null
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
+
+(define (matrix-*-vector m v)
+  (map (lambda (m-row) (dot-product m-row v)) 
+        m))
+(matrix-*-vector m1 v)
+
+(define (transpose mat)
+  (accumulate-n cons null mat))
+(transpose m1)
+
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map (lambda (m-row) (matrix-*-vector cols m-row)) 
+          m)))
+(matrix-*-matrix m1 m2)
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.38
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+(define (fold-right op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+  
+(fold-right / 1 (list 1 2 3))
+(fold-left / 1 (list 1 2 3))
+(fold-right list null (list 1 2 3))
+(fold-left list null (list 1 2 3))
+;; 교환법칙이 성립하는 op를 사용하면 결과는 같다.
+(fold-right + 1 (list 1 2 3))
+(fold-left + 1 (list 1 2 3))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.39
+(define (reverse sequence)
+  (fold-right (lambda (x y) (append y (list x))) null sequence))
+(reverse `(1 2 3 4))
+(define (reverse sequence)
+  (fold-left (lambda (x y) (cons y x)) null sequence))
+(reverse `(1 2 3 4))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 겹친 매핑
+(define (enumerate-interval low high)
+  (if (> low high)
+      null
+      (cons low (enumerate-interval (+ low 1) high))))
+(enumerate-interval 2 7)
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+(accumulate append
+            null
+            (map (lambda (i)
+                   (map (lambda (j) (list i j))
+                        (enumerate-interval 1 (- i 1))))
+                 (enumerate-interval 1 n)))
+(define (flatmap proc seq)
+  (accumulate append null (map proc seq)))
+(define (prime-sum? pair)
+  (prime? (+ (car pair) (cadr pair))))
+(define (make-pair-sum pair)
+  (list (car pair) (cadr pair) (+ (car pair) (cadr pair))))
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum?
+               (flatmap
+                (lambda (i)
+                  (map (lambda (j) (list i j))
+                       (enumerate-interval 1 (- i 1))))
+                (enumerate-interval 1 n)))))
+(prime-sum-pairs 10)
+
+(define (permutations s)
+  (if (null? s)
+      (list null)
+      (flatmap (lambda (x)
+                 (map (lambda (p) (cons x p))
+                      (permutations (remove x s))))
+               s)))
+(define (remove item sequence)
+  (filter (lambda (x) (not (= x item)))
+          sequence))
