@@ -21,3 +21,28 @@
 (memq 'red '(red shoes blue socks))
 
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.54
+(define (equal? l1 l2)
+  (define (eq? a b)
+    (= a b))
+  (cond ((and (null? l1) (null? l2))
+         #t)
+        ((and (pair? l1) (pair? l2))
+         (if (and (eq? (car l1) (car l2))
+                  (equal? (cdr l1) (cdr l2)))
+             #t
+             #f))
+        ((and (not (pair? l1)) (not (pair? l2)))
+         (eq? l1 l2))
+        (else #f)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.55
+(car ''abracadabra) ; 'abracadabra 는 pair이다. 
+
+
+
+
+
+       
