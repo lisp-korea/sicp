@@ -1,3 +1,4 @@
+(def length count)
 (def a 1)
 (def b 2)
 
@@ -206,3 +207,113 @@
 ;; xy(x + 3) => x^2y + 3x
 (deriv '(* x y (+ x 3)) 'x)
 ;; (+ (* x y) (* y (+ x 3))) => xy + (y(x +3)) => xy + xy + 3y
+
+
+;;ex 2.58
+
+;;a
+
+(defn addend [e]
+  (first e))
+(defn augend [e]
+  (first (rest (rest e))))
+(defn sum? [e]
+  (and (seq? e)
+       (= (first (rest e)) '+)))
+(defn make-sum [a b]
+  (cond (=number? a 0) b
+	(=number? b 0) a
+	(and (number? a) (number? b)) (+ a b)
+	:else (list a '+ b)))
+(defn product? [e]
+  (and (seq? e)
+       (= (first (rest e)) '*)))
+(defn multiplier [e]
+  (first e))
+(defn multiplicand [e]
+  (first (rest (rest e))))
+(defn make-product [a b]
+  (cond (or (=number? a 0) (=number? b 0)) 0
+	(=number? a 1) b
+	(=number? b 1) a
+	(and (number? a) (number? b)) (* a b)
+	:else (list a '* b)))
+
+;; x+(3(x+(y+2)))
+;; x+(3x+3y+6)
+;; 4x+3y+6
+(deriv '(x + (3 * (x + (y + 2)))) 'x)
+;;4
+
+;; b ???
+
+(defn element-of-set? [x set]
+  (cond (null? set) false
+	(eq? x (first set)) true
+	:else (element-of-set? x (rest set))))
+
+(defn adjoin-set [x set]
+  (if (element-of-set? x set)
+    set
+    (cons x set)))
+
+(defn intersection-set [set1 set2]
+  (cond (or (null? set1) (null? set2)) '()
+	(element-of-set? (first set1) set2) (cons (first set1)
+						  (intersection-set (rest set1) set2))
+	:else (intersection-set (rest set1) set2)))
+
+;; ex 2.59
+
+(defn union-set [set1 set2]
+  (cond (null? set1) set2
+	(null? set2) set1
+	(element-of-set? (first set1) set2) (union-set (rest set1) set2)
+	:else (union-set (rest set1) (cons (first set1) set2))))
+
+(union-set '(a b c) '(d e f))
+;; (a b c d e f)
+(union-set '() '(d e f))
+;; (d e f)
+(union-set '() '())
+;; ()
+(union-set '(a b c) '())
+;; (a b c)
+(union-set '(a b c) '(c d e))
+;; (a b c d e)
+
+
+;; ex 2.60
+
+;; if we allow duplicates on set...
+
+(def element-of-set? element-of-set?) ;; same
+
+(defn adjoin-set [x set]
+  (cons x set))
+;; theta(1)
+
+(defn union-set [set1 set2]
+  (if (null? set1)
+    set2
+    (union-set
+     (rest set1)
+     (cons (first set1) set2))))
+;; theta(n)
+
+
+(defn without-set [e set]
+  (loop [result '()
+	 s set]
+    (cond (null? s) result
+	  (not (eq? e (first s))) (recur (cons (first s) result) (rest s))
+	  :else (recur result (rest s)))))
+;;theta(n)
+
+(defn intersection-set [set1 set2]
+  (cond (or (null? set1) (null? set2)) '()
+	(element-of-set? (first set1) set2) (cons (intersection-set (rest set1) (without-set (first set1) set2)))
+	:else (intersection-set (rest set1) set2)))
+;;theta(n^3)?
+  
+	       
