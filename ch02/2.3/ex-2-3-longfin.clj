@@ -316,4 +316,159 @@
 	:else (intersection-set (rest set1) set2)))
 ;;theta(n^3)?
   
-	       
+
+(defn element-of-set? [x set]
+  (cond (null? set) false
+	(= x (first set)) true
+	(< x (first set)) false
+	:else (element-of-set? x (rest set))))
+
+(defn intersection-set [set1 set2]
+  (if (or (null? set1) (null? set2))
+    '()
+    (let [x1 (first set1)
+	  x2 (first set2)]
+      (cond (= x1 x2) (cons x1 (intersection-set (rest set1)
+						 (rest set2)))
+	    (< x1 x2) (intersection-set (rest set1) set2)
+	    (< x2 x1) (intersection-set set1 (rest set2))))))
+
+
+;; ex 2.61
+(defn adjoin-set [x set]
+  (cond
+   (null? set) (cons x set)
+   (< x (first set)) (cons x set)
+   :else (cons (first set) (adjoin-set x (rest set)))))
+;; theta(n)
+
+
+(adjoin-set 5 []) ;;(5)
+(adjoin-set 3 [1 2 3]) ;;(1 2 3 3)
+(adjoin-set 3 [1 2 5]) ;;(1 2 3 5)
+
+
+;; ex 2.62
+
+(defn union-set [set1 set2]
+  (loop [result '()
+	 s1 set1
+	 s2 set2]
+    (let [x1 (first s1)
+	  x2 (first s2)]
+      (cond (and (null? s1) (null? s2)) (reverse result)
+	    (null? s1) (recur (cons x2 result) s1 (rest s2)) ;; s2 isn't empty.
+	    (null? s2) (recur (cons x1 result) (rest s1) s2) ;; s1 isn't empty.
+	    (= x1 x2) (recur (cons x1 result) (rest s1) (rest s2))
+	    (< x1 x2) (recur (cons x1 result) (rest s1) s2)
+	    (> x1 x2) (recur (cons x2 result) s1 (rest s2))))))
+
+(union-set '() '())
+;;()
+
+(union-set '(1 2 3) '())
+;;(1 2 3)
+
+(union-set '() '(1 2 3))
+;;(1 2 3)
+
+(union-set '(1 2 3) '(4 5 6))
+;;(1 2 3 4 5 6)
+
+(union-set '(1 2) '(2 3 4))
+;;(1 2 3 4)
+
+
+(defn entry [tree]
+  (first tree))
+(defn left-branch [tree]
+  (first (rest tree)))
+(defn right-branch [tree]
+  (first (rest (rest tree))))
+(defn make-tree [entry left right]
+  (list entry left right))
+
+(defn element-of-set? [x set]
+  (cond (null? set) false
+	(= x (entry set)) true
+	(< x (entry set)) (element-of-set? x (left-branch set))
+	(> x (entry set)) (element-of-set? x (right-branch set))))
+
+(defn adjoin-set [x set]
+  (cond (null? set) (make-tree x '() '())
+	(= x (entry set)) set
+	(< x (entry set)) (make-tree (entry set)
+				     (adjoin-set x (left-branch set))
+				     (right-branch set))
+	(> x (entry set)) (make-tree (entry set)
+				     (left-branch set)
+				     (adjoin-set x (right-branch set)))))
+
+;; ex 2.63
+(def append concat)
+
+(def tree-a
+     (make-tree 7
+		(make-tree 3
+			   (make-tree 1 '() '())
+			   (make-tree 5 '() '()))
+		(make-tree 9
+			   '()
+			   (make-tree 11 '() '()))))
+
+(def tree-b
+     (make-tree 3
+		(make-tree 1 '() '())
+		(make-tree 7
+			   (make-tree 5 '() '())
+			   (make-tree 9
+				      '()
+				      (make-tree 11 '() '())))))
+
+(def tree-c
+     (make-tree 5
+		(make-tree 3
+			   (make-tree 1 '() '())
+			   '())
+		(make-tree 9
+			   (make-tree 7 '() '())
+			   (make-tree 11 '() '()))))
+(defn tree->list-1 [tree]
+  (if (null? tree)
+    '()
+    (append (tree->list-1 (left-branch tree))
+	    (cons (entry tree)
+		  (tree->list-1 (right-branch tree))))))
+
+(defn tree->list-2 [tree]
+  (defn copy-to-list [tree result-list]
+    (if (null? tree)
+      result-list
+      (copy-to-list (left-branch tree)
+		    (cons (entry tree)
+			  (copy-to-list (right-branch tree)
+					result-list)))))
+  (copy-to-list tree '()))
+
+(tree->list-1 tree-a)
+;; (1 3 5 7 9 11)
+
+(tree->list-1 tree-b)
+;; (1 3 5 7 9 11)
+
+(tree->list-1 tree-c)
+;; (1 3 5 7 9 11)
+
+(tree->list-2 tree-a)
+;; (1 3 5 7 9 11)
+
+(tree->list-2 tree-b)
+;; (1 3 5 7 9 11)
+
+(tree->list-2 tree-c)
+;; (1 3 5 7 9 11)
+
+;; a. all results are same.
+;; b.
+;; tree->list-1 : f(tree) = append(f(left), entry, f(right)) => theta(nlogn)
+;; tree->list-2 : f(tree) = f'(left, entry + f'(right, result)) => theta(n)
