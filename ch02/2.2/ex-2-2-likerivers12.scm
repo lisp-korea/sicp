@@ -2140,10 +2140,14 @@ empty-board
 ;;         ^^^
 ;;    ((2 1 0) (2 2 0) (2 3 0))
 ;;    ((3 1 0) (3 2 0) (3 3 0)))
+;;
+;;
 ;;   (((1 1 0) (1 2 0) (1 3 0))
 ;;    ((2 1 1) (2 2 0) (2 3 0))
 ;;         ^^^
 ;;    ((3 1 0) (3 2 0) (3 3 0)))
+;;
+;;
 ;;   (((1 1 0) (1 2 0) (1 3 0))
 ;;    ((2 1 0) (2 2 0) (2 3 0))
 ;;    ((3 1 1) (3 2 0) (3 3 0))))
@@ -2295,7 +2299,7 @@ empty-board
     (combine4 (corner-split painter n))))
 
 
-;;;--------------------------< ex 2.44 >--------------------------
+;;;--------------------------< ex 2.45 >--------------------------
 ;;; p173,4
 
 (define (split p1 p2)
@@ -2310,4 +2314,219 @@ empty-board
 
 (define right-split (split beside below))
 (define up-split (split below beside))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 그림틀
+;;; p174
+
+
+(define (frame-coord-map frame)
+  (lambda (v)
+    (add-vect
+     (origin-frame frame)
+     (add-vect (scale-vect (xcor-vect v)
+			   (edge1-frame frame))
+	       (scale-vect (ycor-vect v)
+			   (edge2-frame frame))))))
+
+((frame-coord-map a-frame) (make-vect 0 0))
+
+(origin-frame a-frame)
+
+
+
+;;;--------------------------< ex 2.46 >--------------------------
+;;; p176
+(define (make-rect x y)
+  (cons x y))
+
+(define (xcor-vect v)
+  (car v))
+
+(define (ycor-vect v)
+  (cdr v))
+
+(define (add-vect v1 v2)
+  (make-rect (+ (xcor-vect v1)
+		(xcor-vect v2))
+	     (+ (ycor-vect v1)
+		(ycor-vect v2))))
+
+(define (sub-vect v1 v2)
+  (make-rect (- (xcor-vect v1)
+		(xcor-vect v2))
+	     (- (ycor-vect v1)
+		(ycor-vect v2))))
+
+(define (scale-vect s v)
+  (make-rect (* s (xcor-vect v))
+	     (* s (ycor-vect v))))
+
+
+;;;--------------------------< ex 2.47 >--------------------------
+;;; p176
+
+;;;------------
+(define (make-frame origin edge1 edge2)
+  (list origin edge1 edge2))
+
+
+(define (origin-frame frame)
+  (car frame))
+
+(define (edge1-frame frame)
+  (cadr frame))
+
+(define (edge2-frame frame)
+  (caddr frame))
+
+;;;------------
+(define (make-frame origin edge1 edge2)
+  (cons origin (cons edge1 edge2)))
+
+(define (origin-frame frame)
+  (car frame))
+
+(define (edge1-frame frame)
+  (cadr frame))
+
+(define (edge2-frame frame)
+  (cddr frame))
+;;;------------
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 페인터
+;;; p176
+
+(define (segments->painter segment-list)
+  (lambda (frame)
+    (for-each
+     (lambda (segment)
+       (draw-line
+	((frame-coord-map frame) (start-segment segment))
+	((frame-coord-map frame) (end-segment segment))))
+     segment-list)))
+
+
+
+
+
+;;;--------------------------< ex 2.48 >--------------------------
+;;; p178
+
+(define (make-segment sx sy ex ey)
+  (list (make-rect sx sy) (make-rect ex ey)))
+
+(make-segment 0 1 1 2) ; '((0 . 1) (1 . 2))
+
+(define (start-segment seg)
+  (car seg))
+
+(start-segment (make-segment 0 1 1 2)) ; '(0 . 1)
+
+(define (end-segment seg)
+  (cadr seg))
+
+(end-segment (make-segment 0 1 1 2)) ; '(1 . 2)
+
+
+;;;--------------------------< ex 2.49 >--------------------------
+;;; p178
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 페인터를 변환해서 엮어쓰는 방법
+;;; p178
+
+(define (transform-painter painter origin corner1 corner2)
+  (lambda (frame)
+    (let ((m (frame-coord-map frame)))
+      (let ((new-origin (m origin)))
+	(painter
+	 (make-frame new-origin
+		     (sub-vect (m corner1) new-origin)
+		     (sub-vect (m corner2) new-origin)))))))
+
+;;; 페인터 그림을 수직으로 뒤집기
+(define (flip-vert painter)
+  (transform-painter painter
+		     (make-vect 0.0 1.0)   ; 새 origin
+		     (make-vect 1.0 1.0)   ; edge1의 새 끝점
+		     (make-vect 0.0 1.0))) ; edge2의 새 끝점
+
+;;; 1 사분면에 맞추어 줄이는 페인터
+(define (shrink-to-upper-right painter)
+  (transform-painter painter
+		     (make-vect 0.5 0.5)
+		     (make-vect 1.0 0.5)
+		     (make-vect 0.5 1.0)))
+
+;;; 시계 방향으로 90도 돌리는 연산
+(define (rotate90 painter)
+  (transform-painter painter
+		     (make-vect 1.0 0.0)
+		     (make-vect 1.0 1.0)
+		     (make-vect 0.0 0.0)))
+
+
+;;; 정해진 틀 가운데로 그림을 찌그러뜨리는 연산
+(define (squash-inwards painter)
+  (transform-painter painter
+		     (make-vect 0.0 0.0)
+		     (make-vect 0.65 0.35)
+		     (make-vect 0.35 0.65)))
+
+;;; beside 다시
+(define (beside painter1 painter2)
+  (let ((split-point (make-vect 0.5 0.0)))
+    (let ((paint-left
+	   (transform-painter painter1
+			     (make-vect 0.0 0.0)
+			     split-point
+			     (make-vect 0.0 1.0)))
+	  (paint-right
+	   (transform-painter painter2
+			      split-point
+			      (make-vect 1.0 0.0)
+			      (make-vect 0.5 1.0))))
+      (lambda (frame)
+	(paint-left frame)
+	(paint-right frame)))))
+
+
+;;;--------------------------< ex 2.50 >--------------------------
+;;; p181
+
+;;; flip-horiz
+
+;;; 180도 회전
+
+
+;;; 270도 회전
+
+
+;;;--------------------------< ex 2.51 >--------------------------
+;;; p181
+;;; below
+
+;;;1. beside 처럼
+
+;;;2. beside 와  돌리는 연산을 써서\
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; 단단하게 설계할 때 쓰는 언어 계층
+;;; p181
+
+
+
+;;;--------------------------< ex 2.52 >--------------------------
+;;; p183
+
+
+
 
