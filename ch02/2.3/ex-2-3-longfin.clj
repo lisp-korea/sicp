@@ -533,4 +533,175 @@
 			  (tree->list-2 set2))))
 (defn intersection-set [set1 set2]
   (list->tree (intersection-list (tree->list-2 set1)
-				(tree->list-2 set2))))
+				 (tree->list-2 set2))))
+
+
+
+;; 2.3.4 huffman encoding example
+
+(defn make-leaf [symbol weight]
+  (list 'leaf symbol weight))
+
+(defn leaf? [object]
+  (= (first object) 'leaf))
+
+(defn symbol-leaf [x]
+  (first (rest x)))
+
+(defn weight-leaf [x]
+  (first (rest (rest x))))
+
+(defn left-branch [tree]
+  (first tree))
+(defn right-branch [tree]
+  (first (rest tree)))
+(defn symbols[tree]
+  (if (leaf? tree)
+    (list (symbol-leaf tree))
+    (first (rest (rest tree)))))
+(defn weight[tree]
+  (if (leaf? tree)
+    (weight-leaf tree)
+    (first (rest (rest (rest tree))))))
+(defn make-code-tree [left right]
+  (list left
+	right
+	(append (symbols left) (symbols right))
+	(+ (weight left) (weight right))))
+
+(defn choose-branch [bit branch]
+  (cond (= bit 0) (left-branch branch)
+	(= bit 1) (right-branch branch)
+	:else (println "bad bit -- CHOOSE-BRANCH" bit)))
+	
+
+(defn decode [bits tree]
+  (defn decode-1 [bits current-branch]
+    (if (null? bits)
+      '()
+      (let [next-branch (choose-branch (first bits) current-branch)]
+	(if (leaf? next-branch)
+	  (cons (symbol-leaf next-branch)
+		(decode-1 (rest bits) tree))
+	  (decode-1 (rest bits) next-branch)))))
+  (decode-1 bits tree))
+
+
+(defn adjoin-set [x set]
+  (cond (null? set) (list x)
+	(< (weight x) (weight (first set))) (cons x set)
+	:else (cons (first set)
+		    (adjoin-set x (rest set)))))
+
+(defn make-leaf-set [pairs]
+  (if (null? pairs)
+    '()
+    (let [pair (first pairs)]
+      (adjoin-set (make-leaf (first pair)		;; symbol
+			     (first (rest pair)))	;; weight
+		  (make-leaf-set (rest pairs))))))
+
+
+;; ex 2.67
+
+(def sample-tree
+     (make-code-tree (make-leaf 'A 4)
+		     (make-code-tree
+		      (make-leaf 'B 2)
+		      (make-code-tree (make-leaf 'D 1)
+				      (make-leaf 'C 1)))))
+(def sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+
+(decode sample-message sample-tree)
+;; A 0
+;; B 1 0
+;; C 1 1 1
+;; D 1 1 0
+;;(A D A B B C A)
+
+
+;; ex 2.68
+
+(defn encode-symbol [symbol tree]
+  (loop [t tree
+	 result '()]
+    (cond (or (null? t) (leaf? t)) (reverse result)
+	  (= (symbol-leaf (left-branch t)) symbol) (reverse (cons 0 result))
+	  :else (recur (right-branch t) (cons 1 result)))))
+	  
+      
+    
+(defn encode [message tree]
+  (if (null? message)
+    '()
+    (append (encode-symbol (first message) tree)
+	    (encode (rest message) tree))))
+
+(encode-symbol 'D sample-tree)
+
+(encode '(A D A B B C A) sample-tree)
+
+;; ex 2.69
+
+(defn successive-merge [set]
+  (loop [s set]
+    (if (<= (count s) 1)
+      (first s)
+      (let [s1 (first s)
+	    s2 (first (rest s))]
+	(recur (cons (make-code-tree s2 s1) (rest (rest s))))))))
+
+(defn generate-huffman-tree [pairs]
+  (successive-merge (make-leaf-set pairs)))
+
+
+(generate-huffman-tree '((A 5) (B 4) (C 2) (D 3)))
+
+
+;; ex 2.70
+
+(def htree (generate-huffman-tree
+	    '((A 2)
+	      (BOOM 1)
+	      (GET 2)
+	      (JOB 2)
+	      (NA 16)
+	      (SHA 3)
+	      (YIP 9)
+	      (WAH 1))))
+(def message '(
+	       GET A JOB SHA
+		   NA NA NA NA NA NA NA NA
+		   GET A JOB SHA NA NA NA NA NA NA NA NA
+		   WAH YIP YIP YIP YIP YIP YIP YIP YIP YIP
+		   SHA BOOM))
+
+(count (encode message htree))
+;; 87
+
+;; if using fixed length code...
+;; fixed length is 3 (because 8 = 2 ^ 3)
+(* 3 (count message))
+;; 108
+
+
+;; ex 2.71
+;; most frequent symbol's code = 0
+;; least frequent symbol's code = 1 (n-1) times. 
+(defn generate-pairs [n]
+  (loop [pairs '()
+	 i 1]
+    (if (> i n) pairs
+	(recur (cons (list i (int (Math/pow 2 (- i 1)))) pairs) (+ i 1)))))
+
+(encode-symbol 5 (generate-huffman-tree (generate-pairs 5))) ;; 0 
+(encode-symbol 1 (generate-huffman-tree (generate-pairs 5))) ;; 1 1 1 1
+
+(encode-symbol 10 (generate-huffman-tree (generate-pairs 10))) ;; 0
+(encode-symbol 1 (generate-huffman-tree (generate-pairs 10))) ;; 1 1 1 1 1 1 1 1 1
+
+
+;; ex 2.72
+;; most frequent symbol's order of growth = theta(1)[constant]
+;; least frequent symbol's order of growth = theta(n)[because huffman tree is scewed]
+
