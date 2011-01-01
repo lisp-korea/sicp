@@ -472,3 +472,65 @@
 ;; b.
 ;; tree->list-1 : f(tree) = append(f(left), entry, f(right)) => theta(nlogn)
 ;; tree->list-2 : f(tree) = f'(left, entry + f'(right, result)) => theta(n)
+
+
+;; ex 2.64
+(defn quotient [x d]
+  (int (/ x d)))
+(defn partial-tree [elts n]
+  (if (= n 0)
+    (cons '() elts)
+    (let [left-size (quotient (- n 1) 2)]
+      (let [left-result (partial-tree elts left-size)]
+	(let [left-tree (first left-result)
+	      non-left-elts (rest left-result)
+	      right-size (- n (+ left-size 1))]
+	  (let [this-entry (first non-left-elts)
+		right-result (partial-tree (rest non-left-elts)
+					   right-size)]
+	    (let [right-tree (first right-result)
+		  remaining-elts (rest right-result)]
+	      (cons (make-tree this-entry left-tree right-tree) remaining-elts))))))))
+(defn list->tree [elements]
+  (first (partial-tree elements (count elements))))
+
+(list->tree '(1 2 3 4 5))
+
+;; a.
+(list->tree '(1 2 3 4 5))
+;; choose medain entry of list, and divide remaining element[left and right, remaining-elts for build right tree]. then apply left and right too. 
+
+(cons (make-tree 3 (first (partial-tree '(1 2 3 4 5) 2)) (first (partial-tree '(4 5) 2))) '())
+(cons (make-tree 3
+		 (cons (make-tree 1 (first (partial-tree '(1 2) 0)) (first (partial-tree '(2) 1))) nil)
+		 (cons (make-tree 4 (first (partial-tree '(4 5) 0)) (first (partial-tree '(5) 1))) nil)) nil)
+
+;; b. T(n) = T(n/2) + 1 + T(n/2) => theta(n)
+
+
+;; ex 2.65
+
+(defn union-list [list1 list2]
+  (loop [result '()
+	 l1 list1
+	 l2 list2]
+    (cond (and (null? l1) (null? l2)) (reverse result)
+	  (null? l1) (recur (cons (first l2) result) l1 (rest l2))
+	  (null? l2) (recur (cons (first l1) result) (rest l1) l2)
+	  (= (first l1) (first l2)) (recur (cons (first l1) result) (rest l1) (rest l2))
+	  (> (first l1) (first l2)) (recur (cons (first l2) result) l1 (rest l2))
+	  (< (first l1) (first l2)) (recur (cons (first l1) result) (rest l1) l2))))
+(defn intersection-list [list1 list2]
+  (loop [result '()
+	 l1 list1
+	 l2 list2]
+    (cond (or (null? l1) (null? l2)) result
+	  (= (first l1) (first l2)) (recur (cons (first l1) result) (rest l1) (rest l2))
+	  (> (first l1) (first l2)) (recur result l1 (rest l2))
+	  (< (first l1) (first l2)) (recur result (rest l1) l2))))
+(defn union-set [set1 set2]
+  (list->tree (union-list (tree->list-2 set1)
+			  (tree->list-2 set2))))
+(defn intersection-set [set1 set2]
+  (list->tree (intersection-list (tree->list-2 set1)
+				(tree->list-2 set2))))
