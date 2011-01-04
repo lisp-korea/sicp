@@ -879,6 +879,44 @@
 ;;;--------------------------< ex 2.69 >--------------------------
 ;;; p218,9
 
+(define (generate-huffman-tree pairs)
+  (successive-merge (make-leaf-set pairs)))
+
+(define pairs '((A 4) (B 2) (C 1) (D 1)))
+
+;; pairs가 빈도의 내림차순으로 입력되면
+;; leaf-set은 빈도의 오름차순으로 구성된다.
+(make-leaf-set pairs) ; '((leaf D 1) (leaf C 1) (leaf B 2) (leaf A 4))
+
+;; leaf-set은 빈도의 오름차순이라고 가정한다.
+(define (successive-merge leaf-set)
+  (cond ((null? leaf-set) '())
+	((null? (cdr leaf-set)) '())
+	(else
+	 (let ((t1 (car leaf-set))
+	       (t2 (cadr leaf-set))
+	       (rest (cddr leaf-set)))
+	   (let ((m (merge-two t1 t2)))
+	     (if (null? rest)
+		 m
+		 (successive-merge (adjoin-set m rest))))))))
+	  
+(define (merge-two t1 t2)
+  (make-code-tree t1 t2))
+
+
+(generate-huffman-tree pairs)
+;; '((leaf A 4)
+;;   ((leaf B 2) ((leaf D 1) (leaf C 1) (D C) 2) (B D C) 4)
+;;   (A B D C)
+;;   8)
+
+(encode '(A D A B B C A) (generate-huffman-tree pairs))
+;; '(0 1 1 0 0 1 0 1 0 1 1 1 0)
+
+(decode '(0 1 1 0 0 1 0 1 0 1 1 1 0) (generate-huffman-tree pairs))
+;; '(A D A B B C A)
+
 
 ;;;--------------------------< ex 2.70 >--------------------------
 ;;; p219,20
