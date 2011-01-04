@@ -680,3 +680,213 @@
 ;;; 집합에서 정보 찾아내기
 ;;; p207
 
+;; (define (lookup given-key set-of-records)
+;;   (cond ((null? set-of-records) false)
+;; 	((equal? given-key (key (car set-of-records)))
+;; 	 (car set-of-records))
+;; 	(else (lookup given-key (cdr set-of-records)))))
+
+
+;;;--------------------------< ex 2.66 >--------------------------
+;;; p209
+
+(define (lookup-bt given-key tree)
+  (cond ((null? tree) false)
+	((< given-key (tree-key tree))
+	 (lookup-bt given-key (left-branch tree)))
+	((> given-key (tree-key tree))
+	 (lookup-bt given-key (right-branch tree)))
+	((equal? given-key (tree-key tree))
+	 (tree-val tree))))  
+
+;;-------------------
+;; 키와 값이 같은 tree
+(define (tree-key tree)
+  (entry tree))
+
+(define (tree-val tree)
+  (entry tree))
+;;-------------------
+
+;;-----------------------
+;;           7(t6)
+;;           ^
+;;         /   \ 
+;;    (t5)3     9(t4)
+;;       /  \      \
+;;  (t3)1    5(t2)  11(t1)
+
+(define t1 (make-tree 11 '() '()))
+(define t2 (make-tree 5 '() '()))
+(define t3 (make-tree 1 '() '()))
+(define t4 (make-tree 9 '() t1))
+(define t5 (make-tree 3 t3 t2))
+(define t6 (make-tree 7 t5 t4))
+;; '(7 (3 (1 () ()) (5 () ())) (9 () (11 () ())))
+;;-----------------------
+
+(lookup-bt 3 t6)
+
+
+
+;;;;=================<ch 2.3.4 연습 : 허프만 인코딩 나무>=====================
+;;; p209
+
+
+;;;--------------------------------
+;;; 허프만 나무 만들기
+;;; p213
+;;; 1) 나뭇잎 집합 - {(글자, 빈도수) , ... }
+;;; 2) 가장 가벼운 잎 둘을 찾아서,
+;;;     두 잎을 오른쪽 가지와 왼쪽 가지로 삼고
+;;;     마디로 묶어낸다. 
+;;;     마디의 무게는 두 잎의 무게의 합.
+;;; 3) 되풀이
+
+;;;--------------------------------
+;;; 허프만 나무를 표현하는 방법
+;;; p214
+
+(define (make-leaf symbol weight)
+  (list 'leaf symbol weight))
+
+(define (leaf? object)
+  (eq? (car object) 'leaf))
+
+(define (symbol-leaf x) (cadr x))
+
+(define (weight-leaf x) (caddr x))
+
+;;; 두 집합을 합할 때
+(define (make-code-tree left right)
+  (list left
+	right
+	(append (symbols left) (symbols right))
+	(+ (weight left) (weight right))))
+
+(define (left-branch tree) (car tree))
+
+(define (right-branch tree) (cadr tree))
+
+(define (symbols tree)
+  (if (leaf? tree)
+      (list (symbol-leaf tree))
+      (caddr tree)))
+
+(define (weight tree)
+  (if (leaf? tree)
+      (weight-leaf tree)
+      (cadddr tree)))
+
+;;;--------------------------------
+;;; 디코딩 프로시저
+;;; p216
+
+(define (decode bits tree)
+  (define (decode-1 bits current-branch)
+    (if (null? bits)
+	'()
+	(let ((next-branch
+	       (choose-branch (car bits) current-branch)))
+	  (if (leaf? next-branch)
+	      (cons (symbol-leaf next-branch)
+		    (decode-1 (cdr bits) tree))
+	      (decode-1 (cdr bits) next-branch)))))
+  (decode-1 bits tree))
+
+(define (choose-branch bit branch)
+  (cond ((= bit 0) (left-branch branch))
+	((= bit 1) (right-branch branch))
+	(else (error "bad bit -- CHOOSE-BRANCH" bit))))
+
+;;;--------------------------------
+;;; 무게가 있는 원소들의 집합
+;;; p217
+
+(define (adjoin-set x set)
+  (cond ((null? set) (list x))
+	((< (weight x) (weight (car set))) (cons x set))
+	(else (cons (car set)
+		    (adjoin-set x (cdr set))))))
+
+(define (make-leaf-set pairs)
+  (if (null? pairs)
+      '()
+      (let ((pair (car pairs)))
+	(adjoin-set (make-leaf (car pair)   ; 글자
+			       (cadr pair)) ; 빈도
+		    (make-leaf-set (cdr pairs))))))
+
+
+;;;--------------------------< ex 2.67 >--------------------------
+;;; p218
+
+(define sample-tree
+  (make-code-tree (make-leaf 'A 4)
+		  (make-code-tree
+		   (make-leaf 'B 2)
+		   (make-code-tree (make-leaf 'D 1)
+				   (make-leaf 'C 1)))))
+
+(define sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+	  
+(decode sample-message sample-tree)
+;; -> '(A D A B B C A)
+
+;;;--------------------------< ex 2.68 >--------------------------
+;;; p218
+
+(define (encode message tree)
+  (if (null? message)
+      '()
+      (append (encode-symbol (car message) tree)
+	      (encode (cdr message) tree))))
+
+(define (encode-symbol symbol tree)
+  (if (null? tree) 
+      (error "not contained symbol") ;#f
+      (if (leaf? tree)
+	 (let ((sym1 (symbol-leaf tree)))
+	   (if (eq? symbol sym1)
+	       '()
+	       (error "not contained symbol"))) ;#f))
+	 (let ((lt (left-branch tree))
+	       (rt (right-branch tree)))
+	   (if (element-of-set? symbol (symbols lt))
+	       (cons 0 (encode-symbol symbol lt))
+	       (cons 1 (encode-symbol symbol rt)))))))
+	   
+
+;;;---
+;;; 차례없는 집합의 원소 확인
+;;; p197
+(define (element-of-set? x set)
+  (cond ((null? set) false)
+	((equal? x (car set)) true)
+	(else (element-of-set? x (cdr set)))))
+;;;---
+
+(encode-symbol 'A sample-tree) ; '(0)
+(encode-symbol 'B sample-tree) ; '(1 0)
+(encode-symbol 'I sample-tree) ; error
+
+(encode '(A D A B B C A) sample-tree)
+;; '(0 1 1 0 0 1 0 1 0 1 1 1 0)
+;; sample message와 같은 결과가 나온다.
+
+
+
+;;;--------------------------< ex 2.69 >--------------------------
+;;; p218,9
+
+
+;;;--------------------------< ex 2.70 >--------------------------
+;;; p219,20
+
+
+;;;--------------------------< ex 2.71 >--------------------------
+;;; p220
+
+
+;;;--------------------------< ex 2.72 >--------------------------
+;;; p220
