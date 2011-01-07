@@ -282,6 +282,27 @@
 (union-set '(1 2 3) '(1 4 5))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.60
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.61
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.62
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.63
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.64
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.65
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.2.66
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 2.3.4. 연습: 허프만 인코딩 나무
 (define (make-leaf symbol weight)
   (list 'leaf symbol weight))
@@ -351,7 +372,7 @@
 (decode sample-message sample-tree)
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 2.68
+;; 2.68 
 (define (encode message tree)
   (if (null? message)
       '()
@@ -362,14 +383,92 @@
   (define (encode-symbol-core branch)
     (cond ((leaf? branch) '())
           ((element-of-set? x (symbols (left-branch branch)))
-           (cons 0 (encode-symbol-core (left-branch))))
-          ((element-of-set? x (symbols (right-branch branch)))
-           (cons 1 (encode-symbol-core (right-branch))))))
-  (cond ((null? tree)
-         (error "tree is null"))
-        ((eq? (intersection-set x (symbols tree))
-              (symbols tree))
-         (error "tree is not related to symbols" x))
-        (else (encode-symbol-core tree))))
-(encode-symbol '(A D A B B C A) sample-tree)
+           (cons 0 (encode-symbol-core (left-branch branch))))
+          (else
+           (cons 1 (encode-symbol-core (right-branch branch))))))
+  (if (element-of-set? x (symbols tree))
+      (encode-symbol-core tree)
+      (error "tree is not related to symbols" x)))
+(encode '(A D A B B C A) sample-tree)
 (symbols sample-tree)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2.69 
+(define (generate-huffman-tree pairs)
+  (successive-merge (make-leaf-set pairs)))
+(define (successive-merge set)
+  (define (core set)
+    (cond ((null? (cdr set)) (car set))
+          (else (core (adjoin-set
+                       (make-code-tree (car set) (cadr set))
+                       (cddr set))))))
+  (core set))
+(make-leaf-set '((A 4) (B 2) (C 1) (D 1)))
+(successive-merge '((leaf D 1) (leaf C 1) (leaf B 2) (leaf A 4)))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2.70 
+(define lyrics-tree
+  (generate-huffman-tree '((BOOM 1) (WAH 1) (A 2) (GET 2) (JOB 2)
+                           (SHA 3) (YIP 9) (NA 16))))
+(define lyrics-msg
+  '(GET A JOB
+
+SHA NA NA NA NA NA NA NA NA
+
+GET A JOB
+
+SHA NA NA NA NA NA NA NA NA
+
+WAH YIP YIP YIP YIP YIP YIP YIP YIP YIP
+
+SHA BOOM))
+
+(encode lyrics-msg lyrics-tree)
+(symbols lyrics-tree)
+
+;; 8낱말로 이루어진 글 집합을 길이가 정해진 코드로 인코딩한다고 하면
+;; lyrics-msg를 인코딩하는데 드는 가장 적은 비트는 "108"비트 이다.
+;; (+ (* (* 3 1) 2) (* 3 (* 3 2)) (* 3 3) (* 3 9) (* 3 16) )
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2.71
+
+;; n=5
+;; 가장많이 나오는 글자 인코딩 비트수 1
+;; 가장많이 나오는 글자 인코딩 비트수 4
+(generate-huffman-tree
+ '((A 1) (B 2) (C 4) (D 8 ) (E 16)))
+
+(define t1 (generate-huffman-tree
+ '((A 1) (B 2) (C 4) (D 8 ) (E 16))))
+(define m1 '(E))
+(define m2 '(A))
+
+(encode m1 t1)
+(encode m2 t1)
+        
+;; n=10
+;; 가장많이 나오는 글자 인코딩 비트수 1
+;; 가장많이 나오는 글자 인코딩 비트수 9
+(generate-huffman-tree
+ '((A 1) (B 2) (C 4) (D 8 ) (E 16)
+   (F 32) (G 64) (H 128) (I 256) (J 512)))
+(define t2 (generate-huffman-tree
+ '((A 1) (B 2) (C 4) (D 8 ) (E 16)
+   (F 32) (G 64) (H 128) (I 256) (J 512))))
+(define m3 '(E))
+(define m4 '(A))
+
+(encode m3 t2)
+(encode m4 t2)
+
+;; 결론
+;; 가장많이 나오는 글자 인코딩 비트수 1
+;; 가장많이 나오는 글자 인코딩 비트수 n-1
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 2.72
+Θ(1) ;; 가장많이 나오는 글자 인코딩 비트수 1
+Θ(n) ;; 가자많이 나오는 글자 인코딩 비트수 n-1
