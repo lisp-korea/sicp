@@ -38,6 +38,8 @@
 					  (filter predicate (cdr sequence))))
 	(else (filter predicate (cdr sequence)))))
 
+
+
 (define (accumulate op initial sequence)
   (if (null? sequence) initial
       (op (car sequence)
@@ -45,6 +47,10 @@
 
 (accumulate + 0 (list 1 2 3 4 5))
 (accumulate * 1 (list 1 2 3 4 5))
+
+(* 1 (* 2 (* 3 (* 4 (* 5 1)))))
+
+
 (accumulate cons nil (list 1 2 3 4 5))
 
 
@@ -59,7 +65,7 @@
 		      (enumerate-tree (cdr tree))))))
 
 (enumerate-tree '(1 2 (3 (4) 5) (6)))
-
+(enumerate-interval 5 10)
 
 
 
@@ -71,6 +77,7 @@
 
 (sum-odd-squares '(1 2 (3 (4) 5) ((6))))
 
+(map square (filter odd? '(1 2 3 4 5 6)))
 
 
 (define (even-fibs n)
@@ -110,11 +117,16 @@
 (define (my-map p sequence)
   (accumulate (lambda (x y) (cons (p x) y)) nil sequence))
 
+(my-map square '(1 2 3))
+
+
+
 (my-map square (list 1 2 3 4))
 
 (define (my-append seq1 seq2)
-  (accumulate cons <??> <????>))
+  (accumulate cons seq2 seq1))
 
+ '(2 4)
 
 (if (null? <????>) <??>
     (cons (car <????>)
