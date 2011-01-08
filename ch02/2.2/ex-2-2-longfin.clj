@@ -595,13 +595,7 @@
       result
       (recur (op result (first arr))
 	     (rest arr)))))
-(defn fold-right [op initial sequence]
-  (loop [result initial
-	 arr sequence]
-    (if (null? arr)
-      result
-      (recur (op (first arr) result)
-	     (rest arr)))))
+(def fold-right accumulate)
 
 (fold-right / 1 (list 1 2 3))
 ;; 3/2
@@ -923,7 +917,7 @@
 ;; ex 2.46
 
 (defn make-vect [x y]
-  (cons x y))
+  (list x y))
 (defn xcor-vect [v]
   (first v))
 (defn ycor-vect [v]
@@ -964,3 +958,25 @@
 
 (defn edge2-frame [f]
   (last (last f)))
+
+
+(defn esegments->painter [segment-list]
+  (fn [frame]
+    (for-each
+     (fn [segment]
+       (draw-line
+	((frame-coord-map frame) (start-segment segment))
+	((frame-coord-map frame) (end-segment segment))))
+     segment-list)))
+
+;; ex 2.48
+
+(defn make-segment [start end]
+  (list start end))
+
+(defn start-segment [segment]
+  (first segment))
+
+(defn end-segment [segment]
+  (last segment))
+

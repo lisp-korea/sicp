@@ -517,6 +517,7 @@
 (accumulate + 0 (list 1 2 3 4 5))
 
 (accumulate * 1 (list 1 2 3 4 5))
+(* 1 (* 2 (* 3 (* 4 (* 5 1)))))
 
 (accumulate cons '() (list 1 2 3 4 5))
 
@@ -603,7 +604,7 @@
 ; ex 2.35
 (define x (cons (list 1 2) (list 3 4)))
 
-(define y (cons (cons (list 1 2) (list 3 4)) (cons (list 5 6) (list 7 8))))
+(define y (cons (cons (list 1 (list 1 2)) (list 3 4)) (cons (list 5 6) (list 7 8))))
 
 (define (count-leaves x)
   (cond ((null? x) 0)
@@ -616,6 +617,15 @@
               0 
               (map (lambda (seq)
                      (if (pair? seq) (accumulate (lambda (x y) (+ 1 y)) 0 seq)
+                         1))
+                   t)))
+; ==> error!!
+
+(define (count-leaves t)
+  (accumulate +
+              0 
+              (map (lambda (seq)
+                     (if (pair? seq) (count-leaves seq)
                          1))
                    t)))
 
@@ -654,11 +664,18 @@
 (accumulate cons '() (map car s))
 (accumulate cons '() (map cdr s))
 
+;; (define (accumulate-n op init seqs)
+;;   (if (null? (car seqs))
+;;       '()
+;;       (cons (accumulate op init (accumulate cons '() (map car seqs)))
+;;             (accumulate-n op init (accumulate cons '() (map cdr seqs))))))
+
+;; more concise
 (define (accumulate-n op init seqs)
   (if (null? (car seqs))
       '()
-      (cons (accumulate op init (accumulate cons '() (map car seqs)))
-            (accumulate-n op init (accumulate cons '() (map cdr seqs))))))
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
 
 (accumulate-n + 0 s)
 
@@ -722,21 +739,40 @@
   (define (iter result rest)
     (if (null? rest)
         result
-        (iter (op result (car rest))
+        (iter (op result (car rest)) ; <---
+              (cdr rest))))
+  (iter initial sequence))
+
+(define (fold-right op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op (car rest) result) ; <---
               (cdr rest))))
   (iter initial sequence))
 
 (define (fold-right op initial sequence)
   (accumulate op initial sequence))
 
+; more concise
+(define fold-right accumulate)
+
 (fold-right / 1 (list 1 2 3))
+;(/ 1 (/ 2 (/ 3 1))) ; 쭉늘여놓고 더이상 늘어날때가 없을때 뒤에서 부터 초기값이용 계산
 ; 3/2
 (fold-left / 1 (list 1 2 3))
+;(/ (/ (1 1) 2) 3) ; 초기값 부터 계산하고 뒤로 계산
 ; 1/6
+
 (fold-right list '() (list 1 2 3))
+;(list 1 (list 2 (list 3 nil)))
 ; (((() 1) 2) 3)
 (fold-left list '() (list 1 2 3))
+;(list (list (list nil 1) 2) 3)
 ; (((() 1) 2) 3)
+
+; fold-right 와 fold-left는 연산순서가 다르고
+; fold-left가 성능상 더 우수
     
 ; ex 2.39
 (define (reverse sequence)
@@ -813,7 +849,7 @@
    (lambda (i)
      (map (lambda (j) (list i j))
           (enumerate-interval 1 (- i 1))))
-   (enumerate-interval 1 n)))
+   (enumerate-interval 2 n))) ; <--- 1 <= j < i <= n
 
 (unique-pairs 10)
 
@@ -1104,3 +1140,15 @@
   (cdr segment))
 
 ; ex 2.49
+; a. painter darwing the boundary of frame
+(define (boundary->painter frame)
+  
+
+; b. draw two diagonals
+; c. draw diamond with 4 midpoints
+; d. wave painter
+
+
+;QuickLisp
+;Reddit
+;LispM
