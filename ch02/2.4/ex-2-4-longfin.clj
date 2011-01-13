@@ -334,3 +334,67 @@
 (nput 'deriv '** deriv-exponent)
 
 ;; d nothing.
+
+;; ex 2.74
+
+;; a
+
+(defn get-record [key file]
+  (apply-genric 'get-record (list key file)))
+
+;; sample file : '(RND {key1 value1 key2 value2})[must include department tag]
+;; what to know : how to determine record by key.
+
+;; b
+
+(defn get-salary [key file]
+  (apply-genric 'get-salary (get-record key file)))
+
+;; c
+
+(defn find-employee-record [key files]
+  (loop [fs files]
+    (let [file (first fs)
+	  record (get-record key file)]
+      (cond (not (nil? record)) record
+	    (empty? rest) nil
+	    :else (recur (rest fs))))))
+
+;; d. add new company's get-record and get-salary to generic table
+
+
+;; message passing
+
+(defn make-from-real-imag [x y]
+  (defn dispatch [op]
+    (cond (= op 'real-part) x
+	  (= op 'imag-part) y
+	  (= op 'magnitude) (sqrt (+ (square x) (square y)))
+	  (= op 'angle) (atan y x)
+	  :else (throw (Exception. (str "Unknown op -- MAKE-FROM-REAL-IMAG" op))))))
+
+;; ex 2.75
+
+(defn make-from-mag-ang [x y]
+  (defn dispatch [op]
+    (cond (= op 'magnitude) x
+	  (= op 'angle) y
+	  (= op 'real-part) (* x (cos y))
+	  (= op 'imag-part) (* x (sin y))
+	  :else (throw (Exception. (str "Unknown op -- MAKE-FROM-MAG-ANG" op)))))
+  dispatch)
+
+;; ex 2.76
+
+;; Explicit dispatch programming
+;; Add new data type - must change all operation and constructor
+;; Add new operation - add new operation and generic operation
+
+;; Data directed programming
+;; Add new data type - no change to generic operation. but must put all operation for new data type to op table
+;; Add new operation - add generic operation and put new operation to op table
+
+
+;; Message passing programming
+;; Add new data type - create only constructor for new data type
+;; Add new operation - add new operation to all constructor
