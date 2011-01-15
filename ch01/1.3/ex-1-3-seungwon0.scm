@@ -250,3 +250,110 @@
 
 
 ;; ex-1.40
+(define (deriv g)
+  (lambda (x)
+    (/ (- (g (+ x dx)) (g x))
+       dx)))
+
+(define dx 0.00001)
+
+(define (newtons-transform g)
+  (lambda (x)
+    (- x (/ (g x) ((deriv g) x)))))
+
+(define (newtons-method g guess)
+  (fixed-point (newton-transform g) guess))
+
+(newtons-method (cubic a b c) 1)
+
+(define (cubic a b c)
+  (lambda (x)
+    (+ (* x x x)
+       (* a (* x x))
+       (* b x)
+       c)))
+
+
+;; ex-1.41
+(define (double proc)
+  (lambda (x) (proc (proc x))))
+
+(define (inc x) (+ x 1))
+
+(((double (double double)) inc) 5)      ;21
+
+
+;; ex-1.42
+(define (compose f g)
+  (lambda (x) (f (g x))))
+
+((compose square inc) 6)                ;49
+
+
+;; ex-1.43
+(define (repeated f n)
+  (if (= n 1)
+      f
+      (compose f (repeated f (- n 1)))))
+
+((repeated square 2) 5)                 ;625
+
+
+;; ex-1.44
+(define (smooth f)
+  (lambda (x)
+    (/ (+ (f (- x dx))
+          (f x)
+          (f (+ x dx)))
+       3)))
+
+(repeated smooth n)
+
+
+;; ex-1.45
+(define (average a b) (/ (+ a b) 2))
+
+(define (average-damp f)
+  (lambda (x) (average x (f x))))
+
+(define (pow x n)
+  (if (= n 1)
+      x
+      (* x (pow x (- n 1)))))
+
+(define (nth-root n x)
+  (fixed-point ((repeated average-damp 2)
+                (lambda (y) (/ x (pow y (- n 1)))))
+               1.0))
+
+(nth-root 5 32)                         ;2.0000015129957607
+
+
+;; ex-1.46
+(define (iterative-improve good-enough? improve)
+  (define (iter guess)
+    (if (good-enough? guess)
+        guess
+        (iter (improve guess))))
+  (lambda (guess) (iter guess)))
+
+(define (sqrt x)
+  (define (square a) (* a a))
+  (define (good-enough? guess)
+    (< (abs (- (square guess) x)) 0.001))
+  (define (improve guess)
+    (average guess (/ x guess)))
+  ((iterative-improve good-enough? improve) 1.0))
+
+(sqrt 4)                                ;2.0000000929222947
+(sqrt 9)                                ;3.00009155413138
+(sqrt 16)                               ;4.000000636692939
+
+(define (fixed-point f)
+  (define (close-enough? x y)
+    (< (abs (- x y)) 0.001))
+  (define (good-enough? guess)
+    (close-enough? guess (f guess)))
+  ((iterative-improve good-enough? f) 1.0))
+
+(fixed-point cos)                       ;.7395672022122561
