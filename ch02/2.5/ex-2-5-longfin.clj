@@ -209,8 +209,13 @@
 
 ;; ex 2.77
 (def z (make-complex-from-real-imag 3 4))
+
+(nput 'angle '(complex) angle)
 (nput 'magnitude '(complex) magnitude)
-(magnitude z)
+(nput 'real-part '(complex) real-part)
+(nput 'imag-part '(complex) imag-part)
+
+ (magnitude z)
 (apply-generic 'magnitude z)
 (let [type-tags '(complex)]
   (let [proc (nget 'magnitude type-tags)]
@@ -242,3 +247,184 @@
 
 
 ;; apply-generic was invoked twice.
+
+
+;; ex 2.78
+
+(defn attach-tag [type-tag contents]
+  (if (number? contents)
+    contents
+    (cons type-tag contents)))
+(defn type-tag [datum]
+  (cond
+   (number? datum) 'scheme-number
+   (seq? datum) (first datum)
+   :else (println "Bad tagged datum -- TYPE-TAG" datum)))
+
+(defn contents [datum]
+  (cond
+   (number? datum) datum
+   (seq? datum) (rest datum)
+   :else (println "Bad tagged datum -- TYPET-AG" datum)))
+
+(install-scheme-number-package)
+((nget 'add '(scheme-number scheme-number)) 3 (make-scheme-number 10))
+
+;; ex 2.79 & 2.80
+(defn equ? [a b]
+  (apply-generic 'equ? a b))
+
+(defn =zero? [a]
+  (apply-generic '=zero? a))
+
+;; add to scheme-number
+
+
+(defn install-scheme-number-package []
+  (letfn [(tag [x]
+	       (attach-tag 'scheme-number x))
+	  (equ? [a b]
+		(= a b))
+	  (=zero? [a] (= a 0))]
+    (nput 'add '(scheme-number scheme-number)
+	  (fn [x y] (tag (+ x y))))
+    (nput 'sub '(scheme-number scheme-number)
+	  (fn [x y] (tag (- x y))))
+    (nput 'mul '(scheme-number scheme-number)
+	  (fn [x y] (tag (* x y))))
+    (nput 'div '(scheme-number scheme-number)
+	  (fn [x y] (tag (/ x y))))
+    (nput 'make 'scheme-number
+	  (fn [x] (tag x)))
+    (nput 'equ? '(scheme-number scheme-number) equ?)
+    (nput '=zero? '(scheme-number) =zero?))
+  'done)
+
+(install-scheme-number-package)
+(equ? 3 5) ;;false
+(equ? 3 3) ;;true
+(equ? 3 (make-scheme-number 4)) ;; false
+(equ? 3 (make-scheme-number 3)) ;; true
+
+(=zero? 0)
+(=zero? (make-scheme-number 0))
+;; true
+
+(=zero? 1)
+(=zero? (make-scheme-number 3))
+;; false
+
+;; add to rational
+(defn install-rational-package []
+  (letfn [(numer [x]
+		 (first x))
+	  (denom [x]
+		 (first (rest x)))
+	  (make-rat [n d]
+		    (let [g (gcd n d)]
+		      (list (/ n g) (/ d g))))
+	  (add-rat [x y]
+		   (make-rat (+ (* (numer x) (denom y))
+				(* (numer y) (denom x)))
+			     (* (denom x) (denom y))))
+	  (sub-rat [x y]
+		   (make-rat (- (* (numer x) (denom y))
+				(* (numer y) (denom x)))
+			     (* (denom x) (denom y))))
+	  (mul-rat [x y]
+		   (make-rat (* (numer x) (numer y))
+			     (* (denom x) (denom y))))
+	  (div-rat [x y]
+		   (make-rat (* (numer x) (denom y))
+			     (* (denom x) (numer y))))
+	  (equ? [x y]
+		(and (= (numer x) (numer y))
+		     (= (denom x) (denom y))))
+	  (=zero? [x]
+		  (= (numer x) 0))
+	  (tag [x] (attach-tag 'rational x))]
+    (nput 'add '(rational rational)
+	  (fn [x y] (tag (add-rat x y))))
+    (nput 'sub '(rational rational)
+	  (fn [x y] (tag (sub-rat x y))))
+    (nput 'mul '(rational rational)
+	  (fn [x y] (tag (mul-rat x y))))
+    (nput 'div '(rational rational)
+	  (fn [x y] (tag (div-rat x y))))
+    (nput 'equ? '(rational rational) equ?)
+    (nput '=zero? '(rational) =zero?)
+    (nput 'make 'rational
+	  (fn [n d] (tag (make-rat n d)))))
+  'done)
+
+(install-rational-package)
+
+(equ? (make-rational 4 1) (make-rational 16 3)) ;;false
+(equ? (make-rational 4 1) (make-rational 16 4)) ;;true
+
+(=zero? (make-rational 1 10)) ;; false
+(=zero? (make-rational 0 15)) ;; true
+
+;; add to complex
+(defn install-complex-package []
+  (letfn [(make-from-real-imag [x y]
+			       ((nget 'make-from-real-imag 'rectangular) x y))
+	  (make-from-mag-ang [r a]		      
+			     ((nget 'make-from-mag-ang 'polar) r a))
+	  (add-complex [z1 z2]
+		       (make-from-real-imag (+ (real-part z1) (real-part z2))
+					    (+ (imag-part z1) (imag-part z2))))
+	  (sub-complex [z1 z2]
+		       (make-from-real-imag (+ (real-part z1) (real-part z2))
+					    (+ (imag-part z1) (imag-part z2))))
+	  (mul-complex [z1 z2]
+		       (make-from-mag-ang (* (magnitude z1) (magnitude z2))
+					  (+ (angle z1) (angle z2))))
+	  (div-complex [z1 z2]
+		       (make-from-mag-ang (/ (magnitude z1) (magnitude z2))
+					  (- (angle z1) (angle z2))))
+	  (enough-close? [x y]
+			 (< (Math/abs (- x y)) 0.001))
+	  (equ? [z1 z2]
+		(and (enough-close? (real-part z1) (real-part z2))
+		     (enough-close? (imag-part z1) (imag-part z2))))
+	  (=zero? [z]
+		  (and (enough-close? (real-part z) 0)
+		       (enough-close? (imag-part z) 0)))
+	  (tag [z] (attach-tag 'complex z))]
+    (nput 'add '(complex complex)
+	  (fn [z1 z2] (tag (add-complex z1 z2))))
+    (nput 'sub '(complex complex)
+	  (fn [z1 z2] (tag (sub-complex z1 z2))))
+    (nput 'mul '(complex complex)
+	  (fn [z1 z2] (tag (mul-complex z1 z2))))
+    (nput 'div '(complex complex)
+	  (fn [z1 z2] (tag (div-complex z1 z2))))
+    (nput 'make-from-real-imag 'complex
+	  (fn [x y] (tag (make-from-real-imag x y))))
+    (nput 'equ? '(complex complex) equ?)
+    (nput '=zero? '(complex) =zero?)
+    (nput 'make-from-mag-ang 'complex
+	  (fn [r a] (tag (make-from-mag-ang r a)))))
+  'done) 
+
+(install-complex-package)
+
+(equ? (make-complex-from-real-imag 5 10)
+      (make-complex-from-real-imag 5 11))
+;;false
+
+(equ? (make-complex-from-real-imag 5 10)
+      (make-complex-from-real-imag 5 10))
+;;true
+
+(equ? (make-complex-from-mag-ang 5 0.9272)
+      (make-complex-from-real-imag 3 4))
+;;true
+
+(=zero? (make-complex-from-real-imag 1 10)) ;; false
+(=zero? (make-complex-from-real-imag 0 0)) ;; true
+
+(=zero? (make-complex-from-mag-ang 0 0)) ;; true
+(=zero? (make-complex-from-mag-ang 0 10)) ;; true
+
