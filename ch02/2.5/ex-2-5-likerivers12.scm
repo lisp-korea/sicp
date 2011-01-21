@@ -268,8 +268,9 @@
   ;; ex 2.80
   (put 'zero? '(rectangular)
        (lambda (x)
-	 (and (= (real-part x) 0)
-	      (= (imag-part x) 0))))
+       	 (and (= (real-part x) 0)
+       	      (= (imag-part x) 0))))
+;;       (lambda (x) (print "rectangular!")))
 
   'done)
 
@@ -313,7 +314,7 @@
   ;; ex 2.80
   (put 'zero? '(polar)
        (lambda (x)
-	 (= (magnitude 0))))
+	 (= (magnitude x) 0)))
 
   'done)
 
