@@ -428,3 +428,146 @@
 (=zero? (make-complex-from-mag-ang 0 0)) ;; true
 (=zero? (make-complex-from-mag-ang 0 10)) ;; true
 
+
+;; 2.5.2 Combining Data of Different Types
+
+(defn add-complex-to-schemenum [z x]
+  (make-complex-from-real-imag (+ (real-part z) x)
+			       (imag-part z)))
+
+(nput 'add '(complex scheme-number)
+      (fn [z x] (tag (add-complex-to-schemenum z x))))
+
+;; coercion
+
+(def coercion (atom {}))
+(defn put-coercion [from to proc]
+  (reset! coercion (assoc @coercion (list from to) proc)))
+(defn get-coercion [from to]
+  (get @coercion (list from to)))
+
+(defn scheme-number->complex [n]
+  (make-complex-from-real-imag (contents n) 0))
+
+(put-coercion 'scheme-number 'complex scheme-number->complex)
+
+(defn apply-generic [op & args]
+  (let [type-tags (map type-tag args)]
+    (let [proc (nget op type-tags)]
+      (if proc
+	(apply proc (map contents args))
+	(if (= (count args) 2)
+	  (let [type1 (first type-tags)
+		type2 (first (rest type-tags))
+		a1 (first args)
+		a2 (first (rest args))]
+	    (let [t1->t2 (get-coercion type1 type2)
+		  t2->t1 (get-coercion type2 type1)]
+	      (cond (not (= t1->t2 nil)) (apply-generic op (t1->t2 a1) a2)
+		    (not (= t2->t1 nil)) (apply-generic op a1 (t2->t1 a2))
+		    :else (throw (Exception. (str "no method for thease types" (list op type-tags)))))))
+	  (throw (Exception. (str "No method for these types" (list op type-tags)))))))))
+						   
+
+;; ex 2.81
+
+(defn scheme-number->scheme-number [n] n)
+(defn complex->complex [z] z)
+
+(put-coercion 'scheme-number 'scheme-number scheme-number->scheme-number)
+(put-coercion 'complex 'complex complex->complex)
+
+;;a
+(defn expt [x n]
+  (loop [i 0
+	 result 1]
+    (if (= i n)
+      result
+      (recur (inc i) (* result x)))))
+(defn exp [x y]
+  (apply-generic 'exp x y))
+
+(nput 'exp '(scheme-number scheme-number)
+      (fn [x y] (cons 'scheme-number (expt x y))))
+
+(exp (make-complex-from-real-imag 3 4)
+     (make-complex-from-real-imag 1 10))
+
+;; stack overflow
+;; type switch infinite.
+
+;;b. change apply-generic to avoid switch loop
+
+;;c.
+
+(defn apply-generic [op & args]
+  (let [type-tags (map type-tag args)]
+    (let [proc (nget op type-tags)]
+      (if proc
+	(apply proc (map contents args))
+	(if (= (count args) 2)
+	  (let [type1 (first type-tags)
+		type2 (first (rest type-tags))
+		a1 (first args)
+		a2 (first (rest args))]
+	    (if (= type1 type2)
+	      (throw (Exception. (str "No method for these types" (list op type-tags))))
+	      (let [t1->t2 (get-coercion type1 type2)
+		    t2->t1 (get-coercion type2 type1)]
+		(cond (not (= t1->t2 nil)) (apply-generic op (t1->t2 a1) a2)
+		      (not (= t2->t1 nil)) (apply-generic op a1 (t2->t1 a2))
+		      :else (throw (Exception. (str "no method for thease types" (list op type-tags)))))))
+	    (throw (Exception. (str "No method for these types" (list op type-tags))))))))))
+
+(exp (make-complex-from-real-imag 3 1) (make-complex-from-real-imag 1 10))
+
+
+;;ex 2.82
+
+
+(defn apply-generic [op & args]
+  (let [type-tags (map type-tag args)]
+    (let [proc (nget op type-tags)]
+      (if proc
+	(apply proc (map contents args))
+	(apply-generic op 
+		       ((fn [args tags]
+			  (loop [arr args
+				 converted '()
+				 type (first tags)]
+			    (if (empty? arr)
+			      converted
+			      (let [type1 (first type-tags)
+				    type2 (first (rest type-tags))
+				    v (first args)]
+				(if (= type1 type2)
+				(throw (Exception. (str "No method for these types" (list op type-tags))))
+				(let [t1->t2 (get-coercion type1 type2)
+				      t2->t1 (get-coercion type2 type1)]
+				  (cond (not (= t1->t2 nil)) (recur (rest arr) (cons (t1->t2 v) converted) type2)
+					(not (= t2->t1 nil)) (recur (rest arr) (cons (t2->t1 v) converted) type1)
+					:else (throw (Exception. (str "no method for thease types" (list op type-tags))))))))))) args type-tags))))))
+
+;; if type is (scheme-number complex complex), converting rules are complex->scheme-number and scheme-number->complex, and generic op is only (scheme-number scheme-number)
+
+;; first type scheme-number
+;; second type complex
+;; third conversion is failed because there isn't exist generic op.(if second type is scheme-number, it doesn't matter)
+
+
+;; ex 2.83
+
+(defn raise [x]
+  (apply-generic 'raise x))
+
+(nput 'raise '(scheme-number) (fn [x] x))
+
+(raise 3) ;; 3
+
+
+(nput 'raise '(rational) (fn [x] (int (/ (first x) (last x)))))
+
+(raise (make-rational 3 1)) ;;3
+(raise (make-rational 3 2)) ;;1
+
+;; ex 2.84
