@@ -571,3 +571,103 @@
 (raise (make-rational 3 1)) ;;(real 3.0)
 
 ;; ex 2.84
+
+(def type-tree (atom {}))
+(defn set-parent [child parent]
+  (reset! type-tree (assoc @type-tree child parent)))
+(defn choose-parent [t1 t2]
+  (let [p1 (get @type-tree t1)
+	p2 (get @type-tree t2)]
+    (cond (= t1 p2) t1
+	  (= t2 p1) t2
+	  (not (nil? p1)) (choose-parent p1 t2)
+	  (not (nil? p2)) (choose-parent t1 p2)
+	  :else nil)))
+       
+(defn apply-generic [op & args]
+  (let [type-tags (map type-tag args)]
+    (let [proc (nget op type-tags)]
+      (if proc
+	(apply proc (map contents args))
+	(apply-generic op 
+		       ((fn [args tags]
+			  (loop [arr args
+				 converted '()
+				 type (first tags)]
+			    (if (empty? arr)
+			      converted
+			      (let [type1 (first type-tags)
+				    type2 (first (rest type-tags))
+				    parent (choose-parent type1 type2)
+				    v (first args)]
+				(if (= type1 type2)
+				  (throw (Exception. (str "No method for these types" (list op type-tags))))
+				  (let [t1->t2 (get-coercion type1 type2)
+					t2->t1 (get-coercion type2 type1)
+					t1->p (get-coercion type1 parent)
+					t2->p (get-coercion type2 parent)]
+				    (cond (not (= t1->t2 nil)) (recur (rest arr) (cons (t1->t2 v) converted) type2)
+					  (not (= t2->t1 nil)) (recur (rest arr) (cons (t2->t1 v) converted) type1)
+					  (and (= type1 parent) (not (= t2->p nil))) (recur (rest arr) (cons (t2->p v) converted) parent)
+					  (and (= type2 parent) (not (= t1->p nil))) (recur (rest arr) (cons (t1->p v) converted) parent)
+					  :else (throw (Exception. (str "no method for thease types" (list op type-tags))))))))))) args type-tags))))))
+
+
+;; ex 2.85
+;; skip real package...
+(defn project [n]
+  (apply-generic 'project n))
+
+(nput 'project '(complex) (fn [z]
+			  (make-rational (real-part z) 1)))
+
+(project (make-complex-from-real-imag 3 1))
+
+(nput 'project '(rational) (fn [z]
+			     (int (/ (first z) (last z)))))
+
+(project (make-rational 3 1))
+(project (make-rational 3 2))
+
+
+(defn equ? [a b]
+  (let [pt (choose-parent (type-tag a) (type-tag b))]
+    (let [parent (if (= pt (type-tag a)) a b)
+	  child (if (= pt (type-tag a)) b a)]
+      (let [raised (raise child)]
+	(if (= (type-tag raised) pt)
+	  (equ? raised parent)
+	  (apply-generic 'equ raised pt))))))
+
+(defn ndrop [n]
+  (let [p (project n)]
+    (if (equ? p n)
+      (ndrop p)
+      p)))
+
+(defn apply-generic [op & args]
+  (let [type-tags (map type-tag args)]
+    (let [proc (nget op type-tags)]
+      (if proc
+	(ndrop (apply proc (map contents args)))
+	(apply-generic op 
+		       ((fn [args tags]
+			  (loop [arr args
+				 converted '()
+				 type (first tags)]
+			    (if (empty? arr)
+			      converted
+			      (let [type1 (first type-tags)
+				    type2 (first (rest type-tags))
+				    v (first args)]
+				(if (= type1 type2)
+				(throw (Exception. (str "No method for these types" (list op type-tags))))
+				(let [t1->t2 (get-coercion type1 type2)
+				      t2->t1 (get-coercion type2 type1)]
+				  (cond (not (= t1->t2 nil)) (recur (rest arr) (cons (t1->t2 v) converted) type2)
+					(not (= t2->t1 nil)) (recur (rest arr) (cons (t2->t1 v) converted) type1)
+					:else (throw (Exception. (str "no method for thease types" (list op type-tags))))))))))) args type-tags))))))
+
+;; ex 2.86
+
+;;edit complex package to accept generic type for arguments of constructor....
