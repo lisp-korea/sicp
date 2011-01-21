@@ -560,14 +560,14 @@
 (defn raise [x]
   (apply-generic 'raise x))
 
-(nput 'raise '(scheme-number) (fn [x] x))
+(nput 'raise '(scheme-number) (fn [x] (make-rational x 1)))
 
-(raise 3) ;; 3
+(raise 3) ;; (rational 3 1)
 
 
-(nput 'raise '(rational) (fn [x] (int (/ (first x) (last x)))))
+;; assume real package is exists.
+(nput 'raise '(rational) (fn [x] (list 'real (float (/ (first x) (last x))))))
 
-(raise (make-rational 3 1)) ;;3
-(raise (make-rational 3 2)) ;;1
+(raise (make-rational 3 1)) ;;(real 3.0)
 
 ;; ex 2.84
