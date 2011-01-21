@@ -32,6 +32,17 @@
        (lambda (x y) (tag (/ x y))))
   (put 'make 'scheme-number
        (lambda (x) (tag x)))
+
+  ;; ex 2.79
+  (put 'equ? '(scheme-number scheme-number)
+       (lambda (x y)
+	 (= x y)))
+
+  ;; ex 2.80
+  (put 'zero? '(scheme-number)
+       (lambda (x)
+	 (= x 0)))
+
   'done)
 
 (define (make-scheme-number n)
@@ -74,6 +85,20 @@
        (lambda (x y) (tag (div-rat x y))))
   (put 'make 'rational
        (lambda (n d) (tag (make-rat n d))))
+
+  ;; ex 2.79
+  (define (equ? r1 r2)
+    (and (= (numer r1) (numer r2))
+	 (= (denom r1) (denom r2))))
+  (put 'equ? '(rational rational)
+       (lambda (r1 r2)
+	 (equ? r1 r2)))
+
+  ;; ex 2.80
+  (put 'zero? '(rational)
+       (lambda (x)
+	 (= (numer x) 0)))
+
   'done)
 
 (define (make-rational n d)
@@ -116,6 +141,17 @@
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'complex
        (lambda (r a) (tag (make-from-mag-ang r a))))
+
+  ;; ex 2.79
+  (put 'equ? '(complex complex)
+       (lambda (z1 z2) 
+	 (apply-generic 'equ? z1 z2)))
+
+  ;; ex 2.80
+  (put 'zero? '(complex)
+       (lambda (x)
+	 (apply-generic 'zero? x)))
+
   'done)
 
 (define (make-complex-from-real-imag x y)
@@ -166,7 +202,7 @@
 ;;------------
 
 ;;--------------------------------
-;;
+;; 여기서 타입 태그를 떼어낸다.
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
     (let ((proc (get op type-tags)))
@@ -175,7 +211,6 @@
 	  (error
 	   "No method for these types -- APPLY-GENERTIC"
 	   (list op type-tags))))))
-
 
 (define (real-part z) (apply-generic 'real-part z))
 (define (imag-part z) (apply-generic 'imag-part z))
@@ -221,6 +256,21 @@
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'rectangular
        (lambda (r a) (tag (make-from-mag-ang r a))))
+
+  ;; ex 2.79
+  (define (equ? z1 z2)
+    (and (= (real-part z1) (real-part z2))
+	 (= (imag-part z1) (imag-part z2))))
+  (put 'equ? '(rectangular rectangular)
+       (lambda (z1 z2) 
+	 (equ? z1 z2)))
+
+  ;; ex 2.80
+  (put 'zero? '(rectangular)
+       (lambda (x)
+	 (and (= (real-part x) 0)
+	      (= (imag-part x) 0))))
+
   'done)
 
 
@@ -250,6 +300,21 @@
        (lambda (x y) (tag (make-from-real-imag x y))))
   (put 'make-from-mag-ang 'polar
        (lambda (r a) (tag (make-from-mag-ang r a))))
+
+
+  ;; ex 2.79
+  (define (equ? z1 z2)
+    (and (= (magnitude z1) (magnitude z2))
+	 (= (angle z1) (angle z2))))
+  (put 'equ? '(polar polar)
+       (lambda (z1 z2) 
+	 (equ? z1 z2)))
+
+  ;; ex 2.80
+  (put 'zero? '(polar)
+       (lambda (x)
+	 (= (magnitude 0))))
+
   'done)
 
 ;;
@@ -299,7 +364,18 @@
   (put 'angle '(complex) angle)
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+  ;; ex 2.79
+  (put 'equ? '(complex complex)
+       (lambda (z1 z2) 
+	 (apply-generic 'equ? z1 z2)))
+
+  ;; ex 2.80
+  (put 'zero? '(complex)
+       (lambda (x)
+	 (apply-generic 'zero? x)))
+
   'done)
+
 
 
 ;;;
@@ -357,16 +433,137 @@
 (make-complex-from-mag-ang 1 1)   ; '(complex polar 1 . 1)
 
 ;;;--------------------------< ex 2.78 >--------------------------
-;;; 2
+;;; 250
+(add (make-scheme-number 1) (make-scheme-number 2)) ; '(scheme-number . 3)
+(sub (make-scheme-number 1) (make-scheme-number 2)) ; '(scheme-number . -1)
+(mul (make-scheme-number 1) (make-scheme-number 2)) ; '(scheme-number . 2)
+(div (make-scheme-number 1) (make-scheme-number 2)) ; '(scheme-number . 1/2)
+
+;;->
+;;------------
+(define (attach-tag type-tag contents)
+  (if (number? contents) 
+      contents
+      (cons type-tag contents)))
+
+(define (type-tag datum)
+  (if (number? datum)
+      'scheme-number
+      (if (pair? datum)
+	  (car datum)
+	  (error "Bad tagged datum -- TYPE-TAG" datum))))
+
+(define (contents datum)
+  (if (number? datum)
+      datum
+      (if (pair? datum)
+	  (cdr datum)
+	  (error "Bad tagged datum -- CONTENTS" datum))))
+;;------------
+
+(add 1 2) ; 3
+(sub 1 2) ; -1
+(mul 1 2) ; 2
+(div 1 2) ; 1/2
+
 
 ;;;--------------------------< ex 2.79 >--------------------------
-;;; 2
+;;; 251
+
+;;; 각 패키지 속에 
+;;; equ? 함수와
+;;; (put 'equ? '(타입 타입) ...) 추가함
+;;; ex 2.79 로 검색
+
+;; (define (install-general-package)
+;;   ;; 인터페이스
+;;   (put 'equ? '(scheme-number scheme-number)
+;;        (lambda (x y) (print "scheme-number")))
+;;   (put 'equ? '(rational rational) 
+;;        (lambda (x y) (print "rational")))
+;;   (put 'equ? '(complex complex)
+;;        (lambda (x y) (print "complex")))
+  
+;;   'done)
+;; (install-general-package)
+
+(define (equ? x y) (apply-generic 'equ? x y))
+
+
+;;;-- [[test
+(install-scheme-number-package)
+(install-rational-package)
+(install-rectangular-package)
+(install-polar-package)
+(install-complex-package)
+;;; 위 패키지 모두 다시 평가 후 연산 등록. 
+
+(equ? (make-scheme-number 1) (make-scheme-number 2))
+
+(equ? (make-scheme-number 1) (make-scheme-number 1))
+
+(equ? 1 2)
+
+(equ? 1 1)
+
+(equ? (make-rational 1 2) (make-rational 2 3))
+
+(equ? (make-rational 1 2) (make-rational 1 2))
+
+(equ? (make-complex-from-real-imag 1 2) (make-complex-from-real-imag 2 3))
+
+(equ? (make-complex-from-real-imag 1 2) (make-complex-from-real-imag 1 2))
+
+(equ? (make-complex-from-mag-ang 1 2) (make-complex-from-mag-ang 2 3))
+
+(equ? (make-complex-from-mag-ang 1 2) (make-complex-from-mag-ang 1 2))
+
+;;;--]]
+
 
 ;;;--------------------------< ex 2.80 >--------------------------
-;;; 2
+;;; 251
+
+;;; 각 패키지 속에 
+;;; zero? 함수와
+;;; (put 'zero? ('타입) ...) 추가함
+;;; ex 2.80 로 검색
+
+(define (zero? x) (apply-generic 'zero? x))
+
+;;;-- [[test
+(install-scheme-number-package)
+(install-rational-package)
+(install-rectangular-package)
+(install-polar-package)
+(install-complex-package)
+;;; 위 패키지 모두 다시 평가 후 연산 등록. 
+
+(zero? (make-scheme-number 1))
+
+(zero? (make-scheme-number 0))
+
+(zero? 1)
+
+(zero? 0)
+
+(zero? (make-rational 2 3))
+
+(zero? (make-rational 0 2))
+
+(zero? (make-complex-from-real-imag 2 3))
+
+(zero? (make-complex-from-real-imag 0 0))
+
+(zero? (make-complex-from-mag-ang 1 2))
+
+(zero? (make-complex-from-mag-ang 0 0))
+
+;;;--]]
 
 
-;;;;=================<ch 2.5.2 타입이 다른 데이터를 엮어 쓰는 방법 >=====================
+
+;;;;================<ch 2.5.2 타입이 다른 데이터를 엮어 쓰는 방법 >=====================
 ;;; p251
 
 ;;;--------------------------< ex 2.81 >--------------------------
