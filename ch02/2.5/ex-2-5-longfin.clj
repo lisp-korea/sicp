@@ -207,6 +207,11 @@
 (defn make-complex-from-mag-ang [r a]
   ((nget 'make-from-mag-ang 'complex) r a))
 
+(install-scheme-number-package)
+(install-rational-package)
+(install-rectangular-package)
+(install-polar-package)
+(install-complex-package)
 ;; ex 2.77
 (def z (make-complex-from-real-imag 3 4))
 
@@ -215,7 +220,7 @@
 (nput 'real-part '(complex) real-part)
 (nput 'imag-part '(complex) imag-part)
 
- (magnitude z)
+(magnitude z)
 (apply-generic 'magnitude z)
 (let [type-tags '(complex)]
   (let [proc (nget 'magnitude type-tags)]
@@ -671,3 +676,171 @@
 ;; ex 2.86
 
 ;;edit complex package to accept generic type for arguments of constructor....
+
+
+
+
+;; 2.5.3 Example Symbolic Algebra
+;; Arithmetic on polynomials
+(defn variable? [x] (symbol? x))
+(defn same-variable? [v1 v2]
+  (and (variable? v1)
+       (variable? v2)
+       (= v1 v2)))
+
+
+(defn make-term [order coeff] (list order coeff))
+(defn order [term] (first term))
+(defn coeff [term] (first (rest term)))
+
+(defn the-empty-termlist [] '())
+(defn first-term [term-list] (first term-list))
+(defn rest-terms [term-list] (rest term-list))
+(defn empty-termlist? [term-list] (empty? term-list))
+
+(defn adjoin-term [term term-list]
+  (if (=zero? (coeff term))
+    term-list
+    (cons term term-list)))
+
+
+
+(defn add-terms [l1 l2]
+  (cond (empty-termlist? l1) l2
+	(empty-termlist? l2) l1
+	:else (let [t1 (first-term l1)
+		    t2 (first-term l2)]
+		(cond (> (order t1) (order t2)) (adjoin-term t1
+							     (add-terms (rest-terms l1) l2))
+		      (< (order t1) (order t2)) (adjoin-term t2
+							     (add-terms l1 (rest-terms l2)))
+		      :else (adjoin-term
+			     (make-term (order t1)
+					(add (coeff t1) (coeff t2)))
+			     (add-terms (rest-terms l1)
+					(rest-terms l2)))))))
+
+(defn mul-term-by-all-terms [t1 l]
+  (if (empty-termlist? l)
+    (the-empty-termlist)
+    (let [t2 (first-term l)]
+      (adjoin-term
+       (make-term (+ (order t1) (order t2))
+		  (* (coeff t1) (coeff t2)))
+       (mul-term-by-all-terms t1 (rest-terms l))))))
+
+(defn mul-terms [l1 l2]
+  (if (empty-termlist? l1)
+    (the-empty-termlist)
+    (add-terms (mul-term-by-all-terms (first-term l1) l2)
+	       (mul-terms (rest-terms l1) l2))))
+
+(defn add-poly [p1 p2]
+  (if (same-variable? (variable p1) (variable p2))
+    (make-poly (variable p1)
+	       (add-terms (term-list p1)
+			  (term-list p2)))
+    (throw (Exception. (str "Polys not in same var --ADD-POLY " (list p1 p2))))))
+
+(defn mul-poly [p1 p2]
+  (if (same-variable? (variable p1) (variable p2))
+    (make-poly (variable p1)
+	       (mul-terms (term-list p1)
+			  (term-list p2)))
+    (throw (Exception. (str "Polys not in same var --MUL-POLY " (list p1 p2))))))
+
+(defn install-polynomial-package []
+  (letfn [(make-poly [variable term-list]
+		     (cons variable term-list))
+	  (variable [p] (first p))
+	  (term-list [p] (first (rest p)))
+	  (variable? [p] (symbol? p))
+	  (same-variable? [v1 v2]	  
+			  (and (variable? v1)
+			       (variable? v2)
+			       (= v1 v2)))
+	  (adjoin-term [])
+	  (coeff [])
+	  (add-poly [p1 p2]
+		    (if (same-variable? (variable p1) (variable p2))
+		      (make-poly (variable p1)
+				 (add-terms (term-list p1)
+					    (term-list p2)))
+		      (throw (Exception. (str "Polys not in same var --ADD-POLY " (list p1 p2))))))
+	  (mul-poly [p1 p2]		  
+		    (if (same-variable? (variable p1) (variable p2))
+		      (make-poly (variable p1)
+				 (mul-terms (term-list p1)
+					    (term-list p2)))
+		      (throw (Exception. (str "Polys not in same var --MUL-POLY " (list p1 p2))))))
+
+	  (tag [p] (attach-tag 'polynomial p))]
+    (nput 'add '(polynomial polynomial)
+	  (fn [p1 p2] (tag (add-poly p1 p2))))
+    (nput 'mul '(polynomial polynomial)
+	  (fn [p1 p2] (tag (mul-poly p1 p2))))
+    (nput 'make 'polynomial
+	  (fn [var terms] (tag (make-poly var terms)))))
+  'done)
+
+(install-polynomial-package)
+
+(defn make-polynomial [variable term-list]
+  ((nget 'make 'polynomial) variable term-list))
+
+;; ex 2.87
+(defn install-polynomial-package []
+  (letfn [(make-poly [variable term-list]
+		     (cons variable term-list))
+	  (variable [p] (println "p" p) (first p))
+	  (term-list [p] (rest p))
+	  (variable? [p] (symbol? p))
+	  (same-variable? [v1 v2]	  
+			  (and (variable? v1)
+			       (variable? v2)
+			       (= v1 v2)))
+	  (adjoin-term [])
+	  (coeff [term] (first (rest term)))
+	  (add-poly [p1 p2]
+		    (if (same-variable? (variable p1) (variable p2))
+		      (make-poly (variable p1)
+				 (add-terms (term-list p1)
+					    (term-list p2)))
+		      (throw (Exception. (str "Polys not in same var --ADD-POLY " (list p1 p2))))))
+	  (mul-poly [p1 p2]		  
+		    (if (same-variable? (variable p1) (variable p2))
+		      (make-poly (variable p1)
+				 (mul-terms (term-list p1)
+					    (term-list p2)))
+		      (throw (Exception. (str "Polys not in same var --MUL-POLY " (list p1 p2))))))
+	  (=zero-poly? [p]
+		       (cond (= 0 (variable p)) true
+			     (empty-termlist? (term-list p)) true
+			     :else ((fn [term-list]
+				 (println "term-list" term-list)
+				 (loop [arr term-list]
+				   (cond (empty-termlist? arr) true
+					 (not (=zero? (coeff (first-term arr)))) false
+					 :else (recur (rest-terms arr)))))
+				    (term-list p))))
+	  
+
+	  (tag [p] (attach-tag 'polynomial p))]
+    (nput 'add '(polynomial polynomial)
+	  (fn [p1 p2] (tag (add-poly p1 p2))))
+    (nput 'mul '(polynomial polynomial)
+	  (fn [p1 p2] (tag (mul-poly p1 p2))))
+    (nput 'make 'polynomial
+	  (fn [var terms] (tag (make-poly var terms))))
+    (nput '=zero? '(polynomial)
+	  (fn [p] (=zero-poly? p))))
+  'done)
+
+(install-polynomial-package)
+(def p1 (make-polynomial 'y '((1 2) (0 1))))
+(def p2 (make-polynomial 'y '((1 2) (0 0))))
+(def p3 (make-polynomial 'y '((1 0) (0 0))))
+
+(=zero? p1)
+(=zero? p2)
+(=zero? p3)
