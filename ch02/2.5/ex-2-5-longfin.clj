@@ -227,7 +227,7 @@
     (if proc
       (apply proc (map contents (list z)))
       (throw (Exception. (str "No method for these type --APPLY-GENERIC "
-			      'magnitude " " type-tags)))))))
+			      'magnitude " " type-tags))))))
 (apply magnitude (map contents (list z)))
 
 (magnitude (first (map contents (list z))))
@@ -440,8 +440,8 @@
   (make-complex-from-real-imag (+ (real-part z) x)
 			       (imag-part z)))
 
-(nput 'add '(complex scheme-number)
-      (fn [z x] (tag (add-complex-to-schemenum z x))))
+;;(nput 'add '(complex scheme-number)
+;;      (fn [z x] (tag (add-complex-to-schemenum z x))))
 
 ;; coercion
 
@@ -773,7 +773,6 @@
 				 (mul-terms (term-list p1)
 					    (term-list p2)))
 		      (throw (Exception. (str "Polys not in same var --MUL-POLY " (list p1 p2))))))
-
 	  (tag [p] (attach-tag 'polynomial p))]
     (nput 'add '(polynomial polynomial)
 	  (fn [p1 p2] (tag (add-poly p1 p2))))
@@ -792,14 +791,17 @@
 (defn install-polynomial-package []
   (letfn [(make-poly [variable term-list]
 		     (cons variable term-list))
-	  (variable [p] (println "p" p) (first p))
+	  (variable [p] (first p))
 	  (term-list [p] (rest p))
 	  (variable? [p] (symbol? p))
 	  (same-variable? [v1 v2]	  
 			  (and (variable? v1)
 			       (variable? v2)
 			       (= v1 v2)))
-	  (adjoin-term [])
+	  (adjoin-term [term term-list]
+		       (if (=zero? (coeff term))
+			 term-list
+			 (cons term term-list)))
 	  (coeff [term] (first (rest term)))
 	  (add-poly [p1 p2]
 		    (if (same-variable? (variable p1) (variable p2))
@@ -817,11 +819,10 @@
 		       (cond (= 0 (variable p)) true
 			     (empty-termlist? (term-list p)) true
 			     :else ((fn [term-list]
-				 (println "term-list" term-list)
-				 (loop [arr term-list]
-				   (cond (empty-termlist? arr) true
-					 (not (=zero? (coeff (first-term arr)))) false
-					 :else (recur (rest-terms arr)))))
+				      (loop [arr term-list]
+					(cond (empty-termlist? arr) true
+					      (not (=zero? (coeff (first-term arr)))) false
+					      :else (recur (rest-terms arr)))))
 				    (term-list p))))
 	  
 
@@ -844,3 +845,97 @@
 (=zero? p1)
 (=zero? p2)
 (=zero? p3)
+
+;; ex 2.88
+
+(defn neg [x]
+  (apply-generic 'neg x))
+
+(defn install-polynomial-package []
+  (letfn [(make-poly [variable term-list]
+		     (cons variable term-list))
+	  (variable [p] (first p))
+	  (term-list [p] (rest p))
+	  (variable? [p] (symbol? p))
+	  (same-variable? [v1 v2]	  
+			  (and (variable? v1)
+			       (variable? v2)
+			       (= v1 v2)))
+	  (adjoin-term [term term-list]
+		       (if (=zero? (coeff term))
+			 term-list
+			 (cons term term-list)))
+	  (coeff [term] (first (rest term)))
+	  (add-poly [p1 p2]
+		    (if (same-variable? (variable p1) (variable p2))
+		      (make-poly (variable p1)
+				 (add-terms (term-list p1)
+					    (term-list p2)))
+		      (throw (Exception. (str "Polys not in same var --ADD-POLY " (list p1 p2))))))
+	  (mul-poly [p1 p2]		  
+		    (if (same-variable? (variable p1) (variable p2))
+		      (make-poly (variable p1)
+				 (mul-terms (term-list p1)
+					    (term-list p2)))
+		      (throw (Exception. (str "Polys not in same var --MUL-POLY " (list p1 p2))))))
+	  (=zero-poly? [p]
+		       (cond (= 0 (variable p)) true
+			     (empty-termlist? (term-list p)) true
+			     :else ((fn [term-list]
+				 (loop [arr term-list]
+				   (cond (empty-termlist? arr) true
+					 (not (=zero? (coeff (first-term arr)))) false
+					 :else (recur (rest-terms arr)))))
+				    (term-list p))))
+	  (neg-poly [p]
+		    (make-poly (variable p)
+			       (map (fn [term]
+				      (list (order term) (neg (coeff term))))
+				    (term-list p))))
+	  (sub-poly [p1 p2]
+		    (if (same-variable? (variable p1) (variable p2))
+		      (add-poly p1 (neg-poly p2))
+		      (throw (Exception. (str "Polys not in same var --SUB-POLY " (list p1 p2))))))
+	  (tag [p] (attach-tag 'polynomial p))]
+    (nput 'add '(polynomial polynomial)
+	  (fn [p1 p2] (tag (add-poly p1 p2))))
+    (nput 'mul '(polynomial polynomial)
+	  (fn [p1 p2] (tag (mul-poly p1 p2))))
+    (nput 'make 'polynomial
+	  (fn [var terms] (tag (make-poly var terms))))
+    (nput '=zero? '(polynomial)
+	  (fn [p] (=zero-poly? p)))
+    (nput 'neg '(polynomial)
+	  (fn [p] (tag (neg-poly p))))
+    (nput 'sub '(polynomial polynomial)
+	  (fn [p1 p2] (tag (sub-poly p1 p2)))))
+  'done)
+
+
+(defn install-scheme-number-package []
+  (letfn [(tag [x]
+	       (attach-tag 'scheme-number x))]
+    (nput 'add '(scheme-number scheme-number)
+	  (fn [x y] (tag (+ x y))))
+    (nput 'sub '(scheme-number scheme-number)
+	  (fn [x y] (tag (- x y))))
+    (nput 'mul '(scheme-number scheme-number)
+	  (fn [x y] (tag (* x y))))
+    (nput 'div '(scheme-number scheme-number)
+	  (fn [x y] (tag (/ x y))))
+    (nput 'make 'scheme-number
+	  (fn [x] (tag x)))
+    (nput 'neg '(scheme-number)
+	  (fn [x] (* -1 x))))
+  'done)
+(install-scheme-number-package)
+(install-polynomial-package)
+
+(def p1 (make-polynomial 'y '((1 2) (0 1))))
+(def p2 (make-polynomial 'y '((1 2) (0 0))))
+
+(neg p1)
+;; (polynomial y (1 -2) (0 -1))
+
+(sub-poly p1 p2)
+;; (polynomial y (0 1))
