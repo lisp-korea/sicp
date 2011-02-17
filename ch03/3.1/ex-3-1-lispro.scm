@@ -1,0 +1,46 @@
+ (define (make-accumulator initial-value) 
+   (let ((sum initial-value)) 
+     (lambda (n) 
+       (set! sum (+ sum n)) 
+       sum))) 
+
+--------------------------------------------------------------------------------
+ (define (make-account balance password) 
+   (let ((bad-passwords 0)) 
+     (define (withdraw amount) 
+       (if (>= balance amount) 
+           (begin (set! balance (- balance amount)) 
+                  balance) 
+           (print "Insufficient funds"))) 
+     (define (deposit amount) 
+       (set! balance (+ balance amount)) 
+       balance) 
+     (define (dispatch p m) 
+       (if (good-password? p) 
+           (cond ((eq? m 'withdraw) withdraw) 
+                 ((eq? m 'deposit) deposit) 
+                 (else (error "Unknown request -- MAKE-ACCOUNT" m))) 
+           (lambda (x) (print "Incorrect password") (newline)))) 
+     (define (good-password? p) 
+       (cond ((eq? p password) 
+              (set! bad-passwords 0) 
+              true) 
+             ((< bad-passwords 7) 
+              (set! bad-passwords (+ bad-passwords 1)) 
+              false) 
+             (else 
+              (call-the-cops)))) 
+     (define (call-the-cops) 
+       (print "Cops called!") 
+       false) 
+     dispatch)) 
+
+--------------------------------------------------------------------------------
+ (define (make-joint account old-pass new-pass) 
+   (and (number? ((account old-pass 'withdraw) 0)) 
+        (lambda (pass msg) 
+          (if (eq? pass new-pass) 
+              (account old-pass msg) 
+              (account 'bad-pass 'foo))))) ;increment bad-passwords 
+
+--------------------------------------------------------------------------------
