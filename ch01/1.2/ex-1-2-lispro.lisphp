@@ -1,4 +1,7 @@
+<<<<<<< HEAD
+=======
 (echo "You can test at 'http://archi.ssu.ac.kr/lisphp/'")
+>>>>>>> f6fb261a6c9d80b65966c8dbd628298cc93fc342
 (echo "ex 1.9<br />")
 
 (define (p1inc x)
@@ -41,6 +44,8 @@
 (p1 4 5)
 (echo "<br />p2 result : <br />")
 (echo (p2 4 5))
+<<<<<<< HEAD
+=======
 (define eval*
 	[macro (eval (car #arguments))])
 (define cdr*
@@ -135,3 +140,4 @@
 	(= n (smallest-divisor n))
 )
 
+>>>>>>> f6fb261a6c9d80b65966c8dbd628298cc93fc342
