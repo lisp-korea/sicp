@@ -305,10 +305,17 @@
 ;;     +--+--+
 ;;(2,4) 
 
+;; ;; 책에 있는 구현
+;; ;; racket에서 정수만 대응되는 문제가 있음.
+;; (define (random-in-range low high)
+;;   (let ((range (- high low)))
+;;     (+ low (random range))))
+
+;; 별파란님 구현
+;; : 이 구현이 더 좋다.
 (define (random-in-range low high)
   (let ((range (- high low)))
-;;    (print range)))
-    (+ low (random range))))
+    (+ low (* range (random)))))
 
 ;;--
 (define (square x) (* x x))
@@ -345,10 +352,11 @@
     (* area (monte-carlo trials in-circle?))))
 
 ;;
-(* 1.0 (estimate-integral P 2 4 8 10 100000))
+(* 1.0 (estimate-integral P 2 8 4 10 100000))
 ;; 반지름 : 3
-;; -> 원의 넓이 : 3.14 * 3^2 = 28.25999999
-;; 원의 크기가 너무 작아서 정수 계산으로는 오차가 크다.
+;; -> 원의 넓이 : 3.14 * 3^2 = 28.26
+;; 비슷하게 나옴. 기존에 좌표 오류. 그래도 정수만 다루므로 오차가 크다.
+;; randdom-in-range를 별파란님 구현으로하면 더 정확하게 나온다.
 
 ;; 더 큰 원에 대해서
 (* 1.0 (estimate-integral P 1 101 1 101 100000))
@@ -537,7 +545,7 @@
 	      (else (error "Unknown request -- MAKE-ACCOUNT"
 			   m)))
 	(error "Incorrect password")))
-  (set! password-list (cons st-password password-list))
+  (add-password st-password)
   dispatch)
 
 (define (make-joint acc passwd1 passwd2)
