@@ -184,3 +184,76 @@
 ((acc 'some-other-password 'deposit) 50)
 ((acc 'some-other-password 'deposit) 50)
 ((acc 'some-other-password 'deposit) 50)
+
+;; 3.2 The Benefits of Introducing Assignment
+
+(def random-init (atom 0))
+(defn rand-update [n])
+(defn gcd [a b]
+  (loop [x a
+	 y b]
+    (if (= y 0)
+      x
+      (recur y (mod x y)))))
+  
+(def random
+     (let [x random-init]
+       (fn []
+	 (reset! x (rand-update @x))
+	 @x)))
+
+(defn cesaro-test []
+  (= (gcd (random) (random)) 1))
+(defn estimate-pi [trials]
+  (sqrt (/ 6 (monte-carlo tirals cesaro-test))))
+(defn monte-carlo [trials experiment]
+  (loop [trials-remaining trials
+	 trials-passed 0]
+    (cond (= trials-remaining 0) (/ trials-passed trials)
+	  (experiment) (recur (- trials-remaining 1) (+ trials-passed 1))
+	  :else (recur (- trials-remaining 1) trials-passed))))
+
+
+;; without assignemnt...
+
+(defn random-gcd-test [trials initial-x]
+  (loop [trials-remaining trials
+	 trials-passed 0
+	 x initial-x]
+    (let [x1 (rand-update x)]
+      (let [x2 (rand-update x1)]
+	(cond (= trials-remaining 0) (/ trials-passed trials)
+	      (= (gcd x1 x2) 1) (recur (- trials-remaining 0)
+				       (+ trials-passed 1)
+				       x2)
+	      :else (recur (- trials-remaining 1)
+			   trials-passed
+			   x2))))))
+(defn estimate-pi [trials]
+  (sqrt (/ 6 (random-gcd-test trials random-init))))
+
+
+;; ex 3.5
+
+(defn random-in-range [low high]
+  (let [range (- high low)]
+    (+ low (Math/round (rand range)))))
+
+(defn estimate-integral [p x1 x2 y1 y2 trials]
+  (* (monte-carlo trials (fn []
+			   (let [rx (random-in-range x1 x2)
+				 ry (random-in-range y1 y2)]
+			     (< ry (p rx))))
+		  (* (- x2 x1) (- y2 y1)))))
+
+;; ex 3.6
+
+(def random-init (atom 0))
+(defn rand-update [n]
+  (mod (+ (* n 3) 5) 19))
+(def rand-new
+     (let [x random-init]
+       (fn [action]
+	 (cond (= action 'generate) (do (reset! x (rand-update @x)) @x)
+	       (= action 'reset) (fn [n] (reset! x n))))))
+
