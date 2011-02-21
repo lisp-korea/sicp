@@ -184,3 +184,185 @@
 ((acc 'some-other-password 'deposit) 50)
 ((acc 'some-other-password 'deposit) 50)
 ((acc 'some-other-password 'deposit) 50)
+
+;; 3.2 The Benefits of Introducing Assignment
+
+(def random-init (atom 0))
+(defn rand-update [n])
+(defn gcd [a b]
+  (loop [x a
+	 y b]
+    (if (= y 0)
+      x
+      (recur y (mod x y)))))
+  
+(def random
+     (let [x random-init]
+       (fn []
+	 (reset! x (rand-update @x))
+	 @x)))
+
+(defn cesaro-test []
+  (= (gcd (random) (random)) 1))
+(defn estimate-pi [trials]
+  (sqrt (/ 6 (monte-carlo tirals cesaro-test))))
+(defn monte-carlo [trials experiment]
+  (loop [trials-remaining trials
+	 trials-passed 0]
+    (cond (= trials-remaining 0) (/ trials-passed trials)
+	  (experiment) (recur (- trials-remaining 1) (+ trials-passed 1))
+	  :else (recur (- trials-remaining 1) trials-passed))))
+
+
+;; without assignemnt...
+
+(defn random-gcd-test [trials initial-x]
+  (loop [trials-remaining trials
+	 trials-passed 0
+	 x initial-x]
+    (let [x1 (rand-update x)]
+      (let [x2 (rand-update x1)]
+	(cond (= trials-remaining 0) (/ trials-passed trials)
+	      (= (gcd x1 x2) 1) (recur (- trials-remaining 0)
+				       (+ trials-passed 1)
+				       x2)
+	      :else (recur (- trials-remaining 1)
+			   trials-passed
+			   x2))))))
+(defn estimate-pi [trials]
+  (sqrt (/ 6 (random-gcd-test trials random-init))))
+
+
+;; ex 3.5
+
+(defn random-in-range [low high]
+  (let [range (- high low)]
+    (+ low (Math/round (rand range)))))
+
+(defn estimate-integral [p x1 x2 y1 y2 trials]
+  (* (monte-carlo trials (fn []
+			   (let [rx (random-in-range x1 x2)
+				 ry (random-in-range y1 y2)]
+			     (< ry (p rx))))
+		  (* (- x2 x1) (- y2 y1)))))
+
+;; ex 3.6
+
+(def random-init (atom 0))
+(defn rand-update [n]
+  (mod (+ (* n 3) 5) 19))
+(def rand-new
+     (let [x random-init]
+       (fn [action]
+	 (cond (= action 'generate) (do (reset! x (rand-update @x)) @x)
+	       (= action 'reset) (fn [n] (reset! x n))))))
+
+
+;; 3.1.3 The Costs of Introducing Assignment
+
+
+(defn make-simplified-withdraw [balance]
+  (let [b (atom balance)]
+	(fn [amount]
+	  (reset! b (- @b amount))
+	  @b)))
+
+(def W (make-simplified-withdraw 25))
+
+(W 20)
+5
+
+(W 10)
+-5
+
+
+(defn make-decrementer[balance]
+  (fn [amount]
+    (- balance amount)))
+
+(def D (make-decrementer 25))
+
+(D 20)
+5
+
+(D 10)
+15
+
+;; Pitfalls of imperative programming
+
+
+;; no assgin ver.
+
+(defn factorial [n]
+  (loop [product 1
+	 counter 1]
+    (if (> counter n)
+      product
+      (recur (* counter product)
+	     (+ counter 1)))))
+
+;; assign ver.
+
+(defn factorial [n]
+  (let [product (atom 1)
+	counter (atom 1)]
+    (loop []
+      (if (> @counter n)
+	@product
+	(do
+	  (reset! product (* @counter @product))
+	  (reset! counter (+ @counter 1))
+	  (recur))))))
+
+
+;; ex 3.7
+(defn make-account [balance password]
+  (let [b (atom balance)
+	pwd (atom (list password))]
+    (defn check-password [p]
+      (loop [rest-passwords @pwd]
+	(cond (empty? rest-passwords) false
+	      (= (first rest-passwords) p) true
+	      :else (recur (rest rest-passwords)))))
+    (defn withdraw [amount]
+      (if (>= @b amount)
+	(do
+	  (reset! b (- @b amount))
+	  @b)
+	"Insufficient funds"))
+    (defn deposit [amount]
+      (reset! b (+ @b amount))
+      @b)
+    (defn dispatch [p m]
+      (cond
+       (not (check-password p)) (throw (Exception. "Incorrect password"))
+       (= m 'withdraw) withdraw
+       (= m 'deposit) deposit
+       (= m 'joint) (fn [new-password]
+		      (reset! pwd (cons new-password @pwd)))
+       :else (throw (Exception. (str "Unknown request -- MAKE-ACCOUNT" m)))))))
+(defn make-joint [acc password new-password]
+  (do
+    ((acc password 'joint) new-password)
+    acc))
+
+(def peter-acc (make-account 100 'open-sesame))
+(def paul-acc
+     (make-joint peter-acc 'open-sesame 'rosebud))
+
+;; ex 3.8
+
+(def f
+     (let [x (atom 0)]
+       (fn [n]
+	 (let [y @x]
+	   (do
+	     (reset! x (+ n @x))
+	     y)))))
+
+(+ (f 0) (f 1))
+0
+
+(+ (f 1) (f 0))
+1
+  
