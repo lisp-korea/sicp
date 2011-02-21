@@ -257,3 +257,112 @@
 	 (cond (= action 'generate) (do (reset! x (rand-update @x)) @x)
 	       (= action 'reset) (fn [n] (reset! x n))))))
 
+
+;; 3.1.3 The Costs of Introducing Assignment
+
+
+(defn make-simplified-withdraw [balance]
+  (let [b (atom balance)]
+	(fn [amount]
+	  (reset! b (- @b amount))
+	  @b)))
+
+(def W (make-simplified-withdraw 25))
+
+(W 20)
+5
+
+(W 10)
+-5
+
+
+(defn make-decrementer[balance]
+  (fn [amount]
+    (- balance amount)))
+
+(def D (make-decrementer 25))
+
+(D 20)
+5
+
+(D 10)
+15
+
+;; Pitfalls of imperative programming
+
+
+;; no assgin ver.
+
+(defn factorial [n]
+  (loop [product 1
+	 counter 1]
+    (if (> counter n)
+      product
+      (recur (* counter product)
+	     (+ counter 1)))))
+
+;; assign ver.
+
+(defn factorial [n]
+  (let [product (atom 1)
+	counter (atom 1)]
+    (loop []
+      (if (> @counter n)
+	@product
+	(do
+	  (reset! product (* @counter @product))
+	  (reset! counter (+ @counter 1))
+	  (recur))))))
+
+
+;; ex 3.7
+(defn make-account [balance password]
+  (let [b (atom balance)
+	pwd (atom (list password))]
+    (defn check-password [p]
+      (loop [rest-passwords @pwd]
+	(cond (empty? rest-passwords) false
+	      (= (first rest-passwords) p) true
+	      :else (recur (rest rest-passwords)))))
+    (defn withdraw [amount]
+      (if (>= @b amount)
+	(do
+	  (reset! b (- @b amount))
+	  @b)
+	"Insufficient funds"))
+    (defn deposit [amount]
+      (reset! b (+ @b amount))
+      @b)
+    (defn dispatch [p m]
+      (cond
+       (not (check-password p)) (throw (Exception. "Incorrect password"))
+       (= m 'withdraw) withdraw
+       (= m 'deposit) deposit
+       (= m 'joint) (fn [new-password]
+		      (reset! pwd (cons new-password @pwd)))
+       :else (throw (Exception. (str "Unknown request -- MAKE-ACCOUNT" m)))))))
+(defn make-joint [acc password new-password]
+  (do
+    ((acc password 'joint) new-password)
+    acc))
+
+(def peter-acc (make-account 100 'open-sesame))
+(def paul-acc
+     (make-joint peter-acc 'open-sesame 'rosebud))
+
+;; ex 3.8
+
+(def f
+     (let [x (atom 0)]
+       (fn [n]
+	 (let [y @x]
+	   (do
+	     (reset! x (+ n @x))
+	     y)))))
+
+(+ (f 0) (f 1))
+0
+
+(+ (f 1) (f 0))
+1
+  
