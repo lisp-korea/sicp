@@ -6,7 +6,7 @@
 ;             -  |
 ;              |  -
 ;              v   |
-;             §∑§∑-
+;             „Öá„Öá-
 ;             |
 ;             v
 ;        Parameters : n
@@ -36,7 +36,7 @@
 ;             -    |         |    |
 ;              |   |         |    |
 ;              v   |         v    |
-;             §∑§∑-        §∑§∑---
+;             „Öá„Öá-        „Öá„Öá---
 ;             |             |
 ;             v              ---->   Pameters : product
 ;        Parameters : n              Counter max-count
@@ -67,7 +67,7 @@
 ;           -------|--------------^- ----------------|------^-------
 ;                  |              |                  |      |
 ;                  |          ------------------     v      |
-;                --       E1 |initial-amount:100|   §∑§∑----
+;                --       E1 |initial-amount:100|   „Öá„Öá----
 ;               |     E2      --------^---------    |
 ;               |      |              |             |
 ;               |    --               |             |
@@ -75,7 +75,7 @@
 ;               |    -->|balance:100|-              V
 ;               |        ----^------         Parameters : initial-amount
 ;               |            |               body :
-;             §∑§∑-----------                 ((lambda (balance)
+;             „Öá„Öá-----------                 ((lambda (balance)
 ;	      |				       (lambda (amount)
 ;	       -			        (if (>=balance amount)
 ;		|				  (begin (set! balace (- balace amount))
@@ -96,7 +96,7 @@
 ;           -------|--------------^- ----------------|------^-------
 ;                  |              |                  |      |
 ;                  |          ------------------     v      |
-;                --       E1 |initial-amount:100|   §∑§∑----
+;                --       E1 |initial-amount:100|   „Öá„Öá----
 ;               |     E2      --------^---------    |
 ;               |      |              |             |
 ;               |    --               |             |
@@ -104,7 +104,7 @@
 ;               |    -->|balance:100|-              V
 ;               |        ----^---^--					Parameters : initial-amount
 ;               |            |   |					body :
-;             §∑§∑-----------    |					 ((lambda (balance)
+;             „Öá„Öá-----------    |					 ((lambda (balance)
 ;	      |			 ---------				  (lambda (amount)
 ;	       -		|amount:50|				   (if (>=balance amount)
 ;		|		 ---------				    (begin (set! balace (- balace amount))
@@ -123,7 +123,7 @@
 ;           -------|--------------^- ----------------|------^-------
 ;                  |              |                  |      |
 ;                  |          ------------------     v      |
-;                --       E1 |initial-amount:100|   §∑§∑----
+;                --       E1 |initial-amount:100|   „Öá„Öá----
 ;               |     E2      --------^---------    |
 ;               |      |              |             |
 ;               |    --               |             |
@@ -131,7 +131,7 @@
 ;               |    --> |balance:50|-              V
 ;               |         ---^------         Parameters : initial-amount
 ;               |            |               body :
-;             §∑§∑-----------                 ((lambda (balance)
+;             „Öá„Öá-----------                 ((lambda (balance)
 ;	      |				       (lambda (amount)
 ;	       -			        (if (>=balance amount)
 ;		|				  (begin (set! balace (- balace amount))
@@ -152,13 +152,13 @@
 ;                  |          ------------------     ||   -----------       ------------------   |    |
 ;                --       E1 |initial-amount:100|    | ->|balance:100| E3->|initial-amount:100|  |    |
 ;               |     E2      --------^---------     |    -----------       --------^---------   v    |
-;               |      |              |              |      |    |                  |           §∑§∑--
-;               |    --               |             §∑§∑----      ------------------             |
+;               |      |              |              |      |    |                  |           „Öá„Öá--
+;               |    --               |             „Öá„Öá----      ------------------             |
 ;               |   |    ----------   |              |             Parameters : initial-amount<--
 ;               |    -->|balance:50|--               V             body :
 ;               |        ---^------  Parameters : amount                     (lambda (balance)
 ;               |           |        body :                                   (lambda (amount)
-;             §∑§∑----------          (if (>= balance amount)                  (if (>=balance amount)
+;             „Öá„Öá----------          (if (>= balance amount)                  (if (>=balance amount)
 ;	      |			       (begin (set! balace (- balace amount))   (begin (set! balace (- balace amount))
 ;	       -			balance)                                 balance)
 ;		|			"Insufficient funds")	             "Insufficient funds"))) initial-amount)
@@ -190,3 +190,180 @@
 (newline)
 (define W2 (make-withdraw 100))
 (W2 'd)
+
+;ex3-11
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;           --------------------------------------------------------
+;          | make-account ----------------------------------        |
+;          | acc-- -                                        |       |
+;           -------|--------------^- -----------------------|------^
+;                  |              |                         |      |
+;                  |          -------------- <------        v      |		Parameters : balance
+;                --       E1 | balance : 50 <-----  |      „Öá„Öá----		body :
+;               |            | withdraw ------    | |       |			(define (withdraw amount)
+;               |            | deposit----  | |   | |        ----------------->	 (if (>=balance amount)
+;               |            | dispatch   | |  -  | |				   (begin (set! balace (- balace amount))
+;               |             -|-^----^---|-    | | |					balance)
+;               |              | |    |   |     v | |				"Insufficient funds")))
+;               |             -  |    |   |    „Öá„Öá |				(define (deposit amount)
+;               |            |   |    |   v     |   |				 (set! balance (+ balance amount))
+;               |	     v   |    |  „Öá„Öá-------				  balance)
+;               |	    „Öá„Öá-     |		  |				(define (dispatch m)
+;               |                     |		  v				 (cond ((eq? m 'withdraw) withdraw)
+;             „Öá„Öá--------------------	parameters : amount				((eq? m 'deposit) deposit)
+;	      |				body :						(else (error "Unkown request --MAKE-ACCOUNT" m))))
+;	       -			 (if (>= balance amount)		disptach)
+;		|				(begin (set! balance (- balance amount))
+;		v					balance)
+;	parameters :				"Insufficient funds"))
+;       body :
+;       dispatch
+;			parameters : m							parameters : amount
+;			body :								body :
+;			(cond ((eq? m 'withdraw) withdraw)				(set! balance (+ balance amount))
+;				((eq? m 'deposit) deposit)					balance)
+;				(else (error "Unkown request --MAKE-ACCOUNT" m))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;           --------------------------------------------------------
+;          | make-account ----------------------------------        |
+;          | acc---                                         |       |
+;           -------|--------------^- -----------------------|------^
+;                  |              |                         |      |
+;                  |          --------------                v      |			Parameters : balance
+;                --       E1 | balance : 50 <-----         „Öá„Öá----			body :
+;               |            | withdraw ... |     |         |				(define (withdraw amount)
+;               |            | deposit ...  |     |          ----------------->		 (if (>=balance amount)
+;               |            | dispatch ... |     |  					   (begin (set! balace (- balace amount))
+;               |             --------^-----      |  						balance)
+;               |                     |           |  					"Insufficient funds")))
+;               |                     |      --------------				(define (deposit amount)
+;               |                     |     | m : deposit  <----			 (set! balance (+ balance amount))
+;               |	              |      --------------	|			  balance)
+;               |	              |		  		|			(define (dispatch m)
+;               |                     |		  		|			 (cond ((eq? m 'withdraw) withdraw)
+;             „Öá„Öá--------------------	(cond ((eq? m 'withdraw)|withdraw)		  ((eq? m 'deposit) deposit)
+;	      |				((eq? m 'deposit) deposit)			  (else (error "Unkown request --MAKE-ACCOUNT"
+;	       -			(else (error "Unkown request --MAKE-ACCOUNT"		m))))
+;		|			 m))))			|			disptach)
+;		v				 ---------------
+;	parameters :				| amount : 40   |
+;       body :					 ---------------
+;       dispatch
+;
+;				(set! balance (+ balance amount))
+;					balance)
+;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;           --------------------------------------------------------
+;          | make-account ----------------------------------        |
+;          | acc---                                         |       |
+;           -------|--------------^- -----------------------|------^
+;                  |              |                         |      |
+;                  |          --------------                v      |			Parameters : balance
+;                --       E1 | balance : 90 |              „Öá„Öá----			body :
+;               |            | withdraw ... |               |				(define (withdraw amount)
+;               |            | deposit ...  |                ----------------->		 (if (>=balance amount)
+;               |            | dispatch ... |        					   (begin (set! balace (- balace amount))
+;               |             --------^-----         						balance)
+;               |                     |              					"Insufficient funds")))
+;               |                     |							(define (deposit amount)
+;               |                     |							 (set! balance (+ balance amount))
+;               |	              |							  balance)
+;               |	              |							(define (dispatch m)
+;               |                     |							 (cond ((eq? m 'withdraw) withdraw)
+;             „Öá„Öá--------------------							  ((eq? m 'deposit) deposit)
+;	      |										  (else (error "Unkown request --MAKE-ACCOUNT"
+;	       -										m))))
+;		|									disptach)
+;		v
+;	parameters :
+;       body :
+;       dispatch
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;           --------------------------------------------------------
+;          | make-account ----------------------------------        |
+;          | acc---                                         |       |
+;           -------|--------------^- -----------------------|------^
+;                  |              |                         |      |
+;                  |          --------------                v      |			Parameters : balance
+;                --       E1 | balance : 90 <-----         „Öá„Öá----			body :
+;               |            | withdraw ... |     |         |				(define (withdraw amount)
+;               |            | deposit ...  |     |          ----------------->		 (if (>=balance amount)
+;               |            | dispatch ... |     |  					   (begin (set! balace (- balace amount))
+;               |             --------^-----      |  						balance)
+;               |                     |           |  					"Insufficient funds")))
+;               |                     |      --------------				(define (deposit amount)
+;               |                     |     | m : withdraw <----			 (set! balance (+ balance amount))
+;               |	              |      --------------	|			  balance)
+;               |	              |		  		|			(define (dispatch m)
+;               |                     |		  		|			 (cond ((eq? m 'withdraw) withdraw)
+;             „Öá„Öá--------------------	(cond ((eq? m 'withdraw)|withdraw)		  ((eq? m 'deposit) deposit)
+;	      |				((eq? m 'deposit) deposit)			  (else (error "Unkown request --MAKE-ACCOUNT"
+;	       -			(else (error "Unkown request --MAKE-ACCOUNT"		m))))
+;		|			 m))))			|			disptach)
+;		v				 ---------------
+;	parameters :				| amount : 60   |
+;       body :					 ---------------
+;       dispatch
+;
+;				(if (>=balance amount)
+;					(begin (set! balace (- balace amount))
+;						balance)
+;					"Insufficient funds")))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;           --------------------------------------------------------
+;          | make-account ----------------------------------        |
+;          | acc---                                         |       |
+;           -------|--------------^- -----------------------|------^
+;                  |              |                         |      |
+;                  |          --------------                v      |			Parameters : balance
+;                --       E1 | balance : 30 |              „Öá„Öá----			body :
+;               |            | withdraw ... |               |				(define (withdraw amount)
+;               |            | deposit ...  |                ----------------->		 (if (>=balance amount)
+;               |            | dispatch ... |        					   (begin (set! balace (- balace amount))
+;               |             --------^-----         						balance)
+;               |                     |              					"Insufficient funds")))
+;               |                     |							(define (deposit amount)
+;               |                     |							 (set! balance (+ balance amount))
+;               |	              |							  balance)
+;               |	              |							(define (dispatch m)
+;               |                     |							 (cond ((eq? m 'withdraw) withdraw)
+;             „Öá„Öá--------------------							  ((eq? m 'deposit) deposit)
+;	      |										  (else (error "Unkown request --MAKE-ACCOUNT"
+;	       -										m))))
+;		|									disptach)
+;		v
+;	parameters :
+;       body :
+;       dispatch
+;;;;;;;;;;;;;;;;;;;;acc2Í∞Ä Ï∂îÍ∞ÄÎêòÎäîÎç∞ ()ÏïàÏùò ÏàòÏπòÎßå Îã§Î•¥Í≥† ÎèôÏùºÌïòÎã§;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;           --------------------------------------------------------
+;          | make-account ----------------------------------        |
+;          | acc(2)                                         |       |
+;           -------|--------------^- -----------------------|------^
+;                  |              |                         |      |
+;                  |          -------------- <------        v      |		Parameters : balance
+;                --       E1 |balance:50(100)<----  |      „Öá„Öá----		body :
+;               |            | withdraw ------    | |       |			(define (withdraw amount)
+;               |            | deposit----  | |   | |        ----------------->	 (if (>=balance amount)
+;               |            | dispatch   | |  -  | |				   (begin (set! balace (- balace amount))
+;               |             -|-^----^---|-    | | |					balance)
+;               |              | |    |   |     v | |				"Insufficient funds")))
+;               |             -  |    |   |    „Öá„Öá |				(define (deposit amount)
+;               |            |   |    |   v     |   |				 (set! balance (+ balance amount))
+;               |	     v   |    |  „Öá„Öá-------				  balance)
+;               |	    „Öá„Öá-     |		  |				(define (dispatch m)
+;               |                     |		  v				 (cond ((eq? m 'withdraw) withdraw)
+;             „Öá„Öá--------------------	parameters : amount				((eq? m 'deposit) deposit)
+;	      |				body :						(else (error "Unkown request --MAKE-ACCOUNT" m))))
+;	       -			 (if (>= balance amount)		disptach)
+;		|				(begin (set! balance (- balance amount))
+;		v					balance)
+;	parameters :				"Insufficient funds"))
+;       body :
+;       dispatch
+;			parameters : m							parameters : amount
+;			body :								body :
+;			(cond ((eq? m 'withdraw) withdraw)				(set! balance (+ balance amount))
+;				((eq? m 'deposit) deposit)					balance)
+;				(else (error "Unkown request --MAKE-ACCOUNT" m))))
