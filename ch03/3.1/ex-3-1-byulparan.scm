@@ -30,6 +30,8 @@
 (s 'how-many-calls?)
 (s 21)
 (s 'how-many-calls?)
+(s 'how-many-calls?>)
+
 (s 'reset-count)
 (s 100)
 (s 'how-many-calls?)
@@ -66,7 +68,7 @@
     (if (>= balance amount) (begin (set! balance (- balance amount))
 				   balance)
 	"Insufficient funds"))
-  (define (deposit amount)
+  (define (deposit amount) 
     (set! balance (+ balance amount))
     balance)
   (let ((wrong-call-count 0))
