@@ -451,3 +451,83 @@
 ((q1 'display))
 ;;(b)
 
+
+;; ex 3.23
+
+;; constructor
+(define (make-deque)
+  (cons '() '()))
+
+;; utility
+(define (front-ptr deque)
+  (car deque))
+(define (rear-ptr deque)
+  (cdr deque))
+(define (set-front-ptr! deque item)
+  (set-car! deque item))
+(define (set-rear-ptr! deque item)
+  (set-cdr! deque item))
+(define (set-prev-link! item link)
+  (set-car! (cdr item) link))
+(define (set-next-link! item link)
+  (set-cdr! (cdr item) (cons link '())))
+(define (prev-link item)
+  (cadr item))
+(define (next-link item)
+  (caddr item))
+(define (get-value item)
+  (car item))
+  
+  
+;; predicate
+(define (empty-deque? deque)
+  (and (null? (front-ptr deque))
+       (null? (rear-ptr deque))))
+
+;;selectors
+(define (front-deque deque)
+  (if (empty-deque? deque)
+      (error "FRONT-DEQUE called with an empty deque")
+      (get-value (front-ptr deque))))
+(define (rear-deque deque)
+  (if (empty-deque? deque)
+      (error "REAR-DEQUE called with an empty")
+      (get-value (rear-ptr deque))))
+
+;; mutators
+(define (front-insert-deque! deque item)
+  (let ((new-pair (list item '() '())))
+    (cond ((empty-deque? deque)
+	   (set-front-ptr! deque new-pair)
+	   (set-rear-ptr! deque new-pair))
+	  (else
+	   (set-next-link! new-pair (front-ptr deque))
+	   (set-prev-link! (front-ptr deque) new-pair)
+	   (set-front-ptr! deque new-pair)))))
+(define (rear-insert-deque! deque item)
+  (let ((new-pair (list item '() '())))
+    (cond ((empty-deque? deque)
+	   (set-front-ptr! deque new-pair)
+	   (set-rear-ptr! deque new-pair))
+	  (else
+	   (set-next-link! (rear-ptr deque) new-pair)
+	   (set-prev-link! new-pair (rear-ptr deque))
+	   (set-rear-ptr! deque new-pair)))))
+(define (front-delete-deque! deque)
+  (cond ((empty-queue? deque)
+	 (error "FRONT-DELETE called with an empty deque"))
+	 (else
+	  (let ((new-front (next-link (front-ptr deque))))
+	    (set-front-ptr! deque new-front)
+	    (if (not (null? new-front))
+		(set-prev-link! new-front '())
+		(set-rear-ptr! deque new-front))))))
+(define (rear-delete-deque! deque)
+  (cond ((empty-queue? deque)
+	 (error "REAR-DELETE called with an empty deque"))
+	(else
+	 (let ((new-rear (prev-link (rear-ptr deque))))
+	   (set-rear-ptr! deque new-rear)
+	   (if (not (null? new-rear))
+	       (set-next-link! new-rear '())
+	       (set-prev-link! deque new-rear))))))
