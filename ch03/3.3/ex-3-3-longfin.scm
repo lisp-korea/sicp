@@ -296,3 +296,158 @@
 ;; 3nd and 7th
 
 ;; ...
+
+
+;; Mutation is just assignment
+
+(define (ncons x y)
+  (define (dispatch m)
+    (cond ((eq? m 'car) x)
+	  ((eq? m 'cdr) y)
+	  (else (error "Undefined opertion -- CONS" m))))
+  dispatch)
+
+(define (ncar z) (z 'car))
+
+(define (ncdr z) (z 'cdr))
+
+
+(define (ncons x y)
+  (define (set-x! v) (set! x v))
+  (define (set-y! v) (set! y v))
+  (define (dispatch m)
+    (cond ((eq? m 'car) x)
+	  ((eq? m 'cdr) y)
+	  ((eq? m 'set-car!) set-x!)
+	  ((eq? m 'set-cdr!) set-y!)
+	  (else (error "Undefined opertaion -- CONS" m))))
+  dispatch)
+
+(define (ncar z) (z 'car))
+(define (ncdr z) (z 'cdr))
+(define (nset-car! z new-value)
+  ((z 'set-car!) new-value)
+  z)
+(define (nset-cdr! z new-value)
+  ((z 'set-cdr!) new-value)
+  z)
+
+;; ex 3.20
+
+(define x (ncons 1 2))
+;; G = [ncons=(...), ncar=(...), ncdr=(...), x=(E1.dispatch)]
+;; E1 = [x=1, y=2,dispatch=(...)]
+
+(define z (ncons x x))
+;; G = [ncons=(...), ncar=(...), ncdr=(...), x=(E1.dispatch), z=(E2.dispatch)]
+;; E1 = [x=1, y=2,dispatch=(...)]
+;; E2 = [x=G.x, y=G.x, dispatch=(...)]
+
+(nset-car! (ncdr z) 17)
+(ncar x)
+;; G = [ncons=(...), ncar=(...), ncdr=(...), x=(E1.dispatch), z=(E2.dispatch)]
+;; E1 = [x=17, y=2,dispatch=(...)]
+;; E2 = [x=G.x, y=G.x, dispatch=(...)]
+
+
+;; 3.3.2 Representing Queues
+
+(define (front-ptr queue) (car queue))
+(define (rear-ptr queue) (cdr queue))
+(define (set-front-ptr! queue item) (set-car! queue item))
+(define (set-rear-ptr! queue item) (set-cdr! queue item))
+
+(define (empty-queue? queue) (null? (front-ptr queue)))
+
+(define (make-queue) (cons '() '()))
+
+(define (front-queue queue)
+  (if (empty-queue? queue)
+      (error "FRONT called with an empty queue" queue)
+      (car (front-ptr queue))))
+
+(define (insert-queue! queue item)
+  (let ((new-pair (cons item '())))
+    (cond ((empty-queue? queue)
+	   (set-front-ptr! queue new-pair)
+	   (set-rear-ptr! queue new-pair)
+	   queue)
+	  (else
+	   (set-cdr! (rear-ptr queue) new-pair)
+	   (set-rear-ptr! queue new-pair)
+	   queue))))
+
+(define (delete-queue! queue)
+  (cond ((empty-queue? queue)
+	 (error "DELETE! called with an empty queue" queue))
+	(else
+	 (set-front-ptr! queue (cdr (front-ptr queue)))
+	 queue)))
+
+;; ex 3.21
+
+(define q1 (make-queue))
+;; (())
+(insert-queue! q1 'a)
+;; ((a) a)
+(insert-queue! q1 'b)
+;; ((a b) b)
+(delete-queue! q1)
+;; ((b) b)
+(delete-queue! q1)
+;; (() b)
+
+(define (print-queue queue)
+  (display (front-ptr queue))
+  (display (newline)))
+
+;; ex 3.22
+
+(define (make-queue)
+  (let ((front-ptr '())
+	(rear-ptr '()))
+    (define (empty?)
+      (null? front-ptr))
+    (define (front)
+      (if (empty?)
+	  (error "FRONT called with an empty queue")
+	  (car front-ptr)))
+    (define (insert! item)
+      (let ((new-pair (cons item '())))
+	(cond ((empty?)
+	       (set! front-ptr new-pair)
+	       (set! rear-ptr new-pair)
+	       dispatch)
+	      (else
+	       (set-cdr! rear-ptr new-pair)
+	       (set! rear-ptr new-pair)
+	       dispatch))))
+    (define (delete!)
+      (cond ((empty?)
+	     (error "DELETE! called with an empty queue"))
+	    (else
+	     (set! front-ptr (cdr front-ptr))
+	     dispatch)))
+    (define (print)
+      (display front-ptr))
+    (define (dispatch m)
+      (cond ((eq? m 'insert!) insert!)
+	    ((eq? m 'delete!) delete!)
+	    ((eq? m 'empty?) empty?)
+	    ((eq? m 'front) front)
+	    ((eq? m 'display) print)
+	    (else
+	     (error "Unknown operation"))))
+    dispatch))
+
+(define q1 (make-queue))
+((q1 'insert!) 'a)
+((q1 'insert!) 'b)
+
+((q1 'display))
+;;(a b)
+((q1 'delete!))
+
+((q1 'display))
+;;(b)
+
