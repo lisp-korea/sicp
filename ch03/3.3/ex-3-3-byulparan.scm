@@ -186,7 +186,7 @@ z2
 	  ((eq? m 'cdr) y)
 	  ((eq? m 'set-car!) set-x!)
 	  ((eq? m 'set-cdr!) set-y!)
-	  (else (error "Undefined operation --CONS" m))))
+	  (else (error "Undefined operation --CONS"))))
   dispatch)
 
 (define (car2 z)
@@ -225,7 +225,7 @@ z2
 
 (define (front-queue queue)
   (if (empty-queue? queue)
-      (error "FRONT called with an empty queue" queue)
+      (error "FRONT called with an empty queue")
       (car (front-ptr queue))))
 
 (define (insert-queue! queue item)
@@ -240,7 +240,7 @@ z2
 	   queue))))
 
 (define (delete-queue! queue)
-  (cond ((empty-queue? queue) (error "DELETE! called with an empty queue" queue))
+  (cond ((empty-queue? queue) (error "DELETE! called with an empty queue"))
 	(else
 	 (set-front-ptr! queue (cdr (front-ptr queue)))
 	 queue)))
@@ -248,9 +248,9 @@ z2
 
 ;; 연습문제 3.21
 
-(define (error message err)
+(define (error message)
   (display message)
-  (display " ") (display err) (display "\n"))
+  (display "\n"))
 
 (define q1 (make-queue))
 
@@ -268,7 +268,353 @@ z2
 	   
 
 ;; 연습문제 3.22
-;; 
+
+(define (make-queue)
+  (let ((front-ptr '())
+	(rear-ptr '()))
+    (define (empty-queue?)
+      (null? front-ptr))
+    (define (front-queue)
+      (if (empty-queue?)
+	  (error "FRONT called with empty queue")
+	  (car front-ptr)))
+    (define (insert-queue! item)
+      (let ((new-pair (cons item '())))
+	(cond ((empty-queue?) (begin
+				(set! front-ptr new-pair)
+				(set! rear-ptr new-pair)))
+	      (else
+	       (set-cdr! rear-ptr new-pair)
+	       (set! rear-ptr new-pair)))))
+    (define (delete-queue!)
+      (cond ((empty-queue?) (error "DELETE! called on emtpy queue"))
+	    (else
+	     (set! front-ptr (cdr front-ptr)))))
+    (define (print-queue)
+      front-ptr)
+    (define (dispatch m)
+      (cond ((eq? m 'empty-queue?) empty-queue?)
+	    ((eq? m 'insert-queue!) insert-queue!)
+	    ((eq? m 'delete-queue!) delete-queue!)
+	    ((eq? m 'front-queue) front-queue)
+	    ((eq? m 'print-queue) print-queue)
+	    (else (error "ERR"))))
+    dispatch))
 
 
+;; 연습문제 3.23
+;; deque
+
+(define (make-deque)
+  (let ((deque (cons '() '())))
+    (define (front-ptr)
+      (car deque))
+    (define (rear-ptr)
+      (cdr deque))
+    (define (set-front-ptr! item)
+      (set-car! deque item))
+    (define (set-rear-ptr! item)
+      (set-cdr! deque item))
+    (define (empty-deque?)
+      (null? (front-ptr)))
+    (define (front-deque)
+      (cond ((empty-deque?) (error "FRONT called with an empty deque"))
+	    (else (caar (front-ptr)))))
+    (define (rear-deque)
+      (cond ((empty-deque?) (error "REAR called with an empty deque"))
+	    (else (caar (rear-ptr)))))
+    (define (front-insert-deque! item)
+      (let ((new-pair (cons (cons item '()) '())))
+	(cond ((empty-deque?) (begin
+				(set-front-ptr! new-pair)
+				(set-rear-ptr! new-pair)))
+	      (else
+	       (set-cdr! new-pair (front-ptr))
+	       (set-cdr! (car (front-ptr)) new-pair)
+	       (set-front-ptr! new-pair)))))
+    (define (rear-insert-deque! item)
+      (let ((new-pair (cons (cons item '()) '())))
+	(cond ((empty-deque?) (begin
+			       (set-front-ptr! new-pair)
+			       (set-rear-ptr! new-pair)))
+	      (else
+	       (set-cdr! (rear-ptr) new-pair)
+	       (set-cdr! (car new-pair) (rear-ptr))
+	       (set-rear-ptr! new-pair)))))
+    (define (front-delete-deque!)
+      (cond ((empty-deque?) (error "FRONT-DELETE called with on empty deque"))
+	    ((eq? (front-ptr) (rear-ptr))
+	     (set-front-ptr! '())
+	     (set-rear-ptr! '()))
+	    (else
+	     (set-front-ptr! (cdr (front-ptr)))
+	     (set-cdr! (car (front-ptr)) '()))))
+    (define (rear-delete-deque!)
+      (cond ((empty-deque?) (error "REAR-DELETE called with on emtpy deque"))
+	    ((eq? (front-ptr) (rear-ptr))
+	     (set-front-ptr! '())
+	     (set-rear-ptr! '()))
+	    (else
+	     (set-rear-ptr! (cdar (rear-ptr)))
+	     (set-cdr! (rear-ptr) '()))))
+    (define (print-deque)
+      (define (print-deque-inner deque acc)
+	(cond ((null? deque) acc)
+	      (else (print-deque-inner (cdr deque)
+				       (append acc (list (caar deque)))))))
+      (print-deque-inner (front-ptr) '()))
+    (define (dispatch m)
+      (cond ((eq? m 'empty-deque?) empty-deque?)
+	    ((eq? m 'front-deque) front-deque)
+	    ((eq? m 'rear-deque) rear-deque)
+	    ((eq? m 'front-insert-deque!) front-insert-deque!)
+	    ((eq? m 'front-delete-deque!) front-delete-deque!)
+	    ((eq? m 'rear-insert-deque!) rear-insert-deque!)
+	    ((eq? m 'rear-delete-deque!) rear-delete-deque!)
+	    ((eq? m 'print-deque) print-deque)
+	    (else (error "ERROR"))))
+    dispatch))
+
+
+
+;; 3.3.3
+;; 표
+
+(define (lookup key table)
+  (let ((record (byul-assoc key (cdr table))))
+    (if record
+	(cdr record)
+	#f)))
+
+(define (byul-assoc key records)
+  (cond ((null? records) #f)
+	((equal? key (caar records)) (car records))
+	(else (byul-assoc key (cdr records)))))
+
+(define (insert! key value table)
+  (let ((record (assoc key (cdr table))))
+    (if record
+	(set-cdr! record value)
+	(set-cdr! table (cons (cons key value) (cdr table)))))
+  'ok!)
+
+
+(define (make-table)
+  (list '*table*))
+
+
+;; 이차원 표
+
+(define (lookup key-1 key-2 table)
+  (let ((subtable (byul-assoc key-1 (cdr table))))
+    (if subtable
+	(let ((record (byul-assoc key-2 (cdr subtable))))
+	  (if record
+	      (cdr record)
+	      #f))
+	#f)))
+
+(define (insert! key-1 key-2 value table)
+  (let ((subtable (byul-assoc key-1 (cdr table))))
+    (if subtable
+	(let ((record (byul-assoc key-2 (cdr subtable))))
+	  (if record
+	      (set-cdr! record value)
+	      (set-cdr! subtable (cons (cons key-2 value)
+				       (cdr subtable)))))
+	(set-cdr! table
+		  (cons (list key-1
+			      (cons key-2 value))
+			(cdr table)))))
+  'ok)
+
+
+;; 프로시저 속에 표 감추기
+
+(define (make-table)
+  (let ((local-table (list '*table*)))
+    (define (lookup key-1 key-2)
+      (let ((subtable (byul-assoc key-1 (cdr local-table))))
+	(if subtable
+	    (let ((record (byul-assoc key-2 (cdr subtable))))
+	      (if record
+		  (cdr record)
+		  #f))
+	    #f)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (byul-assoc key-1 (cdr local-table))))
+	(if subtable
+	    (let ((record (byul-assoc key-2 (cdr subtable))))
+	      (if record
+		  (set-cdr! record value)
+		  (set-cdr! subtable (cons (cons key-2 value)
+					   (cdr subtable)))))
+	    (set-cdr! local-table
+		      (cons (list key-1 (cons key-2 value))
+			    (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+	    ((eq? m 'insert-proc!) insert!)
+	    (else (error "Unknown operation --TABLE"))))
+    dispatch))
+
+(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc!))
+
+(put 'letters 'a 97)
+(put 'letters 'b 98)
+(get 'letters 'b)
+(get 'letters 'a)
+
+
+
+;; 연습문제 3.24
+(define (make-table same-key?)
+  (let ((local-table (list '*table*)))
+    (define (byul-assoc key records)
+      (cond ((null? records) #f)
+	    ((same-key? key (caar records)) (car records))
+	    (else (byul-assoc key (cdr records)))))
+    (define (lookup key-1 key-2)
+      (let ((subtable (byul-assoc key-1 (cdr local-table))))
+	(if subtable
+	    (let ((record (byul-assoc key-2 (cdr subtable))))
+	      (if record
+		  (cdr record)
+		  #f))
+	    #f)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (byul-assoc key-1 (cdr local-table))))
+	(if subtable
+	    (let ((record (byul-assoc key-2 (cdr subtable))))
+	      (if record
+		  (set-cdr! record value)
+		  (set-cdr! subtable (cons (cons key-2 value)
+					   (cdr subtable)))))
+	    (set-cdr! local-table
+		      (cons (list key-1 (cons key-2 value))
+			    (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+	    ((eq? m 'insert-proc!) insert!)
+	    (else (error "Unknown operation --TABLE"))))
+    dispatch))
+
+(define table1 (make-table equal?))
+((table1 'insert-proc!) 'a 100 10)
+((table1 'insert-proc!) 'a 101 20)
+((table1 'lookup-proc) 'a 100.2)
+((table1 'lookup-proc) 'a 101.2)
+
+
+(define table2 (make-table (lambda (a b)
+			     (cond ((number? a) (if (> 0.5 (abs (- a b))) #t #f))
+				   (else (equal? a b))))))
+
+((table2 'insert-proc!) 'a 100 10)
+((table2 'insert-proc!) 'a 101 20)
+((table2 'lookup-proc) 'a 100.2)
+((table2 'lookup-proc) 'a 100.8)
+
+
+;; 연습문제 3.25
+(define (make-table same-key?)
+  (let ((local-table (list '*table*)))
+    (define (byul-assoc key records)
+      (cond ((null? records) #f)
+	    ((same-key? key (caar records)) (car records))
+	    (else (byul-assoc key (cdr records)))))
+    (define (lookup key-list)
+      (define (look-inner key table)
+	(let ((subtable (byul-assoc (car key) (cdr table))))
+	  (if subtable
+	      (cond ((null? (cdr key)) (cdr subtable))
+		    (else (look-inner (cdr key) subtable)))
+	      #f)))
+      (look-inner key-list local-table))
+    (define (insert! key-list value)
+      (define (insert-inner key table)
+      (let ((subtable (byul-assoc (car key) (cdr table))))
+	(if subtable
+	    (cond ((null? (cdr key))  (set-cdr! subtable value))
+		  (else (insert-inner (cdr key) subtable)))
+	    (begin
+	      (if (null? (cdr key)) (set-cdr! table (cons
+						     (cons  (car key) value) (cdr table)))
+		  (let ((new-subtable (list (car key))))
+		    (set-cdr! table (cons new-subtable (cdr table)))
+		    (insert-inner (cdr key) new-subtable)))))))
+      (insert-inner key-list local-table))
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+	    ((eq? m 'insert-proc!) insert!)
+	    (else (error "Unknown operation --TABLE"))))
+    dispatch))
+
+(define table (make-table equal?))
+
+
+((table 'lookup-proc) '(a c))
+
+((table 'insert-proc!) '(a b c) 2110)
+((table 'insert-proc!) '(a b d) 20)
+((table 'insert-proc!) '(a b) 80)
+((table 'insert-proc!) '(a c) 80)
+((table 'insert-proc!) '(a d e f g) 10)
+((table 'insert-proc!) '(a d e g h) 40)
+((table 'lookup-proc) '(a d e))
+((table 'lookup-proc) '(a d e f g))
+((table 'lookup-proc) '(a d e g h))
+
+
+;; 연습문제 3.26
+
+;; 연습문제 3.27
+
+(define (lookup key table)
+  (let ((record (byul-assoc key (cdr table))))
+    (if record
+	(cdr record)
+	#f)))
+
+(define (byul-assoc key records)
+  (cond ((null? records) #f)
+	((equal? key (caar records)) (car records))
+	(else (byul-assoc key (cdr records)))))
+
+(define (insert! key value table)
+  (let ((record (assoc key (cdr table))))
+    (if record
+	(set-cdr! record value)
+	(set-cdr! table (cons (cons key value) (cdr table)))))
+  'ok!)
+
+
+(define (make-table)
+  (list '*table*))
+
+(define (memoize f)
+  (let ((table (make-table)))
+    (lambda (x)
+      (let ((previously-computed-result (lookup x table)))
+	(or previously-computed-result
+	    (let ((result (f x)))
+	      (insert! x result table)
+	      result))))))
+
+(define memo-fib
+  (memoize (lambda (n)
+	     (cond ((= n 0) 0)
+		   ((= n 1) 1)
+		   (else (+ (memo-fib (- n 1))
+			    (memo-fib (- n 2))))))))
+
+(define (fib n)
+  (cond ((= n 0) 0)
+	((= n 1) 1)
+	(else (+ (fib (- n 1))
+		 (fib (- n 2))))))
 
