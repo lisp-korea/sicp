@@ -700,3 +700,157 @@
 	    ((eq? m 'insert-proc!) insert!)
 	    (else (error "Unknown operation -- TABLE" m))))
     dispatch))
+
+
+
+;; 3.3.4 A Simulator for Digital Circuits
+
+
+(define a (make-wire))
+(define b (make-wire))
+(define c (make-wire))
+
+(define d (make-wire))
+(define e (make-wire))
+(define s (make-wire))
+
+;; a or b -> d
+(or-gate a b d)
+
+;; a and b -> c
+(and-gate a b c)
+
+;; not c -> e
+(inverter c e)
+
+;; d and e -> s
+(and-gate d e s)
+
+(define (half-adder a b s c)
+  (let ((d (make-wire))
+	(e (make-wire)))
+    (or-gate a b d)
+    (and-gate a b c)
+    (inverter c e)
+    (and-gate d e s)
+    'ok))
+
+(define (full-adder a b c-in sum c-out)
+  (let ((s (make-wire))
+	(c1 (make-wire))
+	(c2 (make-wire)))
+    (half-adder b c-in s c1)
+    (half-adder a s sum c2)
+    (or-gate c1 c2 c-out)
+    'ok))
+
+
+;; Primitive function boxes
+
+;; (get-signal <WIRE>)
+;; (set-signal! <WIRE> <NEW VALUE>)
+;; (add-action! <WIRE> <PROCEDURE OF NO ARGUMENTS>)
+
+(define (inverter input output)
+  (define (inverter-input)
+    (let ((new-value (logical-not (get-signal input))))
+      (after-delay inverter-delay
+		   (lambda ()
+		     (set-signal! output new-value)))))
+  (add-action! input inverter-input)
+  'ok)
+
+(define (logical-not s)
+  (cond ((= s 0) 1)
+	((= s 1) 0)
+	(else (error "Invalid signal" s))))
+
+(define (and-gate a1 a2 output)
+  (define (and-action-procedure)
+    (let ((new-value
+	   (logical-and (get-signal a1) (get-signal a2))))
+      (after-delay and-gate-delay
+		   (lambda ()
+		     (set-signal! output new-value)))))
+  (add-action! a1 and-action-procedure)
+  (add-action! a2 and-action-procedure)
+  'ok)
+
+(define logical-and *)
+
+;; ex 3.28
+(define (or-gate a1 a2 output)
+  (define (or-action-procedure)
+    (let ((new-value
+	   (logical-or (get-signal a1) (get-signal a2))))
+      (after-delay or-gate-delay
+		   (lambda ()
+		     (set-signal! output new-value)))))
+  (add-action! a1 or-action-procedure)
+  (add-action! a2 or-action-procedure))
+
+(define logical-or +)
+
+;; ex 3.29
+
+"
+	a1	a2	|	output
+	0	0	|	0
+	0	1	|	1
+	1	0	|	1
+	1     	1	|	1
+
+	a or b = not(not (a) and not (b))
+"
+
+(define (or-gate a1 a2 output)
+  (define (or-action-procedure)
+    (let ((new-value
+	   (inverters
+	    (and-gate-delay
+	     (inverters a1)
+	     (inverters a2)))))
+      (lambda ()
+	(set-signal! output new-value))))
+  (add-action! a1 or-action-procedure)
+  (add-action! a2 or-action-procedure))
+
+
+;; ex 3.30
+
+(define (ripple-carry as bs ss c)
+  (cond ((not (= (length as) (length bs) (length ss)))
+	 (error "Invalid input"))
+	((= (length ss) 0) 'ok)
+	(else
+	 (begin
+	   (let ((nc (make-wire)))
+	     (full-adder (car as) (car bs) c (car ss) nc)
+	     (ripple-carry
+	      (cdr as)
+	      (cdr bs)
+	      (cdr ss)
+	      nc))))))
+
+;; inverter's delay : id
+;; or-gate's delay : od
+;; and-gate-delay : ad
+
+;; one HA's delay = max(2ad + id, od + ad) : had
+;; one FA's delay = 2had + od : fad
+
+;; n-bit ripple-carry adder's delay = n*fad
+;; = n(2had + od)
+;; = 2n*had + n*od
+
+;; if ad + id > od
+;; = 2n(2ad + id) + n*od
+;; = 4n*ad + 2n*id + n*od
+
+;; if ad + id < od
+;; = 2n*(od + ad) + n*od
+;; = 3n*od + 2n*ad
+
+		
+	 
+	
