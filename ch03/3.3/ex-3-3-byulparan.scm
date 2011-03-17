@@ -16,7 +16,7 @@
 (define y (list 'c 'd))
 (define z (append x y))
 z
-(cdr x)
+(car x)
 
 (define w (append! x y))
 w
@@ -47,6 +47,8 @@ w
 
 (define v (list 'a 'b 'c 'd))
 (define w (mystery v))
+
+
 
 
 (define x (list 'a 'b))
@@ -145,6 +147,9 @@ z2
 (let ((a (make-cycle '(1 2 3))))
   (eq? a (cdddr a)))
 
+
+
+
 (define (find-cycle list)
   (let ((copy '()))
     (define (inner-find-cycle x)
@@ -159,7 +164,7 @@ z2
 (find-cycle (make-cycle '(1 2 3 4)))
 (find-cycle (cons 'q (make-cycle '(1 2 3 4))))
 
-;; 연습문제 3.19
+;; 연습문제 3.19  정해진 공간만큼만 쓰는 알고리즘(정말 꼼꼼히 잘 생각해야 풀 수 있다)
 ;; Floyd's idea:
  (define (contains-cycle? lst) 
    (define (safe-cdr l) 
@@ -557,17 +562,18 @@ z2
 (define table (make-table equal?))
 
 
-((table 'lookup-proc) '(a c))
+((table 'lookup-proc) '(a))
 
 ((table 'insert-proc!) '(a b c) 2110)
 ((table 'insert-proc!) '(a b d) 20)
 ((table 'insert-proc!) '(a b) 80)
 ((table 'insert-proc!) '(a c) 80)
 ((table 'insert-proc!) '(a d e f g) 10)
+((table 'insert-proc!) '(a d e f x) 100)
 ((table 'insert-proc!) '(a d e g h) 40)
 ((table 'lookup-proc) '(a d e))
-((table 'lookup-proc) '(a d e f g))
-((table 'lookup-proc) '(a d e g h))
+((table 'lookup-proc) '(a d e f))
+((table 'lookup-proc) '(a d e g))
 
 
 ;; 연습문제 3.26
@@ -596,8 +602,11 @@ z2
 (define (make-table)
   (list '*table*))
 
+(define *inner-table* '())
+
 (define (memoize f)
   (let ((table (make-table)))
+    (set! *inner-table* table)
     (lambda (x)
       (let ((previously-computed-result (lookup x table)))
 	(or previously-computed-result
@@ -612,9 +621,17 @@ z2
 		   (else (+ (memo-fib (- n 1))
 			    (memo-fib (- n 2))))))))
 
-(define (fib n)
-  (cond ((= n 0) 0)
-	((= n 1) 1)
-	(else (+ (fib (- n 1))
-		 (fib (- n 2))))))
+(memo-fib 30)
+
+
+(let ((table (make-table)))
+  (define (fib n)
+    (cond ((= n 0) 0)
+	  ((= n 1) 1)
+	  (else (+ (fib (- n 1))
+		   (fib (- n 2))))))
+
+(define test-fib (memoize fib))
+
+(test-fib 31)
 
