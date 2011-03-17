@@ -635,3 +635,103 @@ z2
 
 (test-fib 31)
 
+
+;; 3.3.4 디지털 회로 시뮬레이터
+
+(define (half-adder a b s c)
+  (let ((d (make-wire)) (e (make-wire)))
+    (or-gate a b d)
+    (and-gate a b c)
+    (inverter c e)
+    (and-gate d e s)
+    'ok))
+
+(define (full-adder a b c-in sum c-out)
+  (let ((s (make-wire))
+	(c1 (make-wire))
+	(c2 (make-wire)))
+    (half-adder b c-in s c1)
+    (half-adder a s sum c2)
+    (or-gate c1 c2 c-out)
+    'ok))
+
+
+;; 기본함수 소자
+
+(define (inverter input output)
+  (define (invert-input)
+    (let ((new-value (logical-not (get-signal input))))
+      (after-delay inverter-delay
+		   (lambda ()
+		     (set-signal! output new-value)))))
+  (add-action! input invert-input)
+  'ok)
+
+(define (logical-not s)
+  (cond ((= s 0) 1)
+	((= s 1) 0)
+	(else (error "Invalid signal" s))))
+
+(define (and-gate a1 a2 output)
+  (define (and-action-procedure)
+    (let ((new-value
+	   (logical-and (get-signal a1) (get-signal a2))))
+      (after-delay and-gate-delay
+		   (lambda ()
+		     (set-signal! output new-value)))))
+  (add-action! a1 and-action-procedure)
+  (add-action! a2 and-action-procedure)
+  'ok)
+
+
+;; 연습문제 3.28
+
+(define (or-gate a1 a2 output)
+  (define (or-action-procedure)
+    (let ((new-value
+	   (logical-or (get-signal a1) (get-signal a2))))
+      (after-delay or-gate-delay
+		   (lambda ()
+		     (set-signal! output new-value)))))
+  (add-action! a1 or-action-procedure)
+  (add-action! a2 or-action-procedure))
+
+(define (logical-or s1 s2)
+  (if (and (or (= s1 0) (= s1 1))
+	   (or (= s2 0) (= s2 1))) (cond ((and (= s1 0) (= s2 0)) 0)
+					 (else 1))
+	   (error "Invalid signal")))
+
+
+;; 연습문제 3.29
+
+(define (or-gate a1 a2 output)
+  (define (or-action-procedure)
+    (let ((a (make-wire))
+	  (b (make-wire))
+	  (c (make-wire)))
+      (inverter a1 a)
+      (inverter a2 b)
+      (and-gate a b c)
+      (inverter c output)))
+  (add-action! a1 or-action-procedure)
+  (add-action! a2 or-action-procedure))
+
+;; The delay = 3*inverter-delay + and-gate-delay
+
+
+;; 연습문제 3.30
+  
+(define (ripple-carry-adder a b s c)
+  (cond ((null? a) 'ok)
+	(else
+	 (let ((c-out (make-wire)))
+	   (full-adder (car a) (car b) c (car s) c-out)
+	   (ripple-carry-adder (cdr a) (cdr b) (cdr s) c-out)))))
+
+
+  
+
+
+
+
