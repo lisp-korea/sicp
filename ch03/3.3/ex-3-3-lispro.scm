@@ -931,3 +931,594 @@ a (count-pairs a)
 (timed-fib-test 3 2)
 (timed-fib-test 30 1)
 (timed-fib-test 30 2)
+
+
+;3.28
+(define (or-gate a1 a2 output)
+(define (or-action-procedure)
+(let ((new-value
+(logical-or (get-signal a1) (get-signal a2))))
+(after-delay or-gate-delay
+(lambda ()
+(set-signal! output new-value)))))
+(add-action! a1 or-action-procedure)
+(add-action! a2 or-action-procedure)
+‘ok)
+(define (logical-or x y)
+(if (and (= x 0) (= y 0))
+0
+1))
+
+;3.29
+(define (or-gate a1 a2 output)
+(let ((c (make-wire)) (d (make-wire)) (e (make-wire)))
+(inverter a1 c)
+(inverter a2 d)
+(and-gate c d e)
+(inverter e output))
+‘ok)
+;3.30
+(define (half-adder a b s c)
+(let ((d (make-wire)) (e (make-wire)))
+(or-gate a b d)
+(and-gate a b c)
+(inverter c e)
+(and-gate d e s)
+‘ok))
+(define (full-adder a b c-in sum c-out)
+(let ((s (make-wire))
+(c1 (make-wire))
+(c2 (make-wire)))
+(half-adder b c-in s c1)
+(half-adder a s sum c2)
+(or-gate c1 c2 c-out)
+‘ok))
+(define (inverter input output)
+(define (invert-input)
+(let ((new-value (logical-not (get-signal input))))
+(after-delay inverter-delay
+(lambda ()
+(set-signal! output new-value)))))
+(add-action! input invert-input)
+‘ok)
+(define (logical-not s)
+(cond ((= s 0) 1)
+((= s 1) 0)
+(else (error “Invalid signal” s))))
+(define (and-gate a1 a2 output)
+(define (and-action-procedure)
+(let ((new-value
+(logical-and (get-signal a1) (get-signal a2))))
+(after-delay and-gate-delay
+(lambda ()
+(set-signal! output new-value)))))
+(add-action! a1 and-action-procedure)
+(add-action! a2 and-action-procedure)
+‘ok)
+(define (logical-and x y)
+(if (and (= x 1) (= y 1))
+1
+0))
+
+(define (or-gate a1 a2 output)
+(define (or-action-procedure)
+(let ((new-value
+(logical-or (get-signal a1) (get-signal a2))))
+(after-delay or-gate-delay
+(lambda ()
+(set-signal! output new-value)))))
+(add-action! a1 or-action-procedure)
+(add-action! a2 or-action-procedure)
+‘ok)
+(define (logical-or x y)
+(if (and (= x 0) (= y 0))
+0
+1))
+
+; answer
+(define (ripple-carry-adder An Bn Sn C)
+(define (r-c-adder-iter Ak Bk Sk Ck)
+(cond ((null? Ak) null) ;
+(else
+(full-adder (car Ak) (car Bk) Ck (car Sk) Ck)
+(r-c-adder-iter (cdr Ak) (cdr Bk) (cdr Sk) Ck))))
+(r-c-adder-iter An Bn Sn C))
+;3.31
+(define (half-adder a b s c)
+(let ((d (make-wire)) (e (make-wire)))
+(or-gate a b d)
+(and-gate a b c)
+(inverter c e)
+(and-gate d e s)
+‘ok))
+(define (full-adder a b c-in sum c-out)
+(let ((s (make-wire))
+(c1 (make-wire))
+(c2 (make-wire)))
+(half-adder b c-in s c1)
+(half-adder a s sum c2)
+(or-gate c1 c2 c-out)
+‘ok))
+(define (inverter input output)
+(define (invert-input)
+(let ((new-value (logical-not (get-signal input))))
+(after-delay inverter-delay
+(lambda ()
+(set-signal! output new-value)))))
+(add-action! input invert-input)
+‘ok)
+(define (logical-not s)
+(cond ((= s 0) 1)
+((= s 1) 0)
+(else (error “Invalid signal” s))))
+(define (and-gate a1 a2 output)
+(define (and-action-procedure)
+(let ((new-value
+(logical-and (get-signal a1) (get-signal a2))))
+(after-delay and-gate-delay
+(lambda ()
+(set-signal! output new-value)))))
+(add-action! a1 and-action-procedure)
+(add-action! a2 and-action-procedure)
+‘ok)
+(define (logical-and x y)
+(if (and (= x 1) (= y 1))
+1
+0))
+
+(define (or-gate a1 a2 output)
+(define (or-action-procedure)
+(let ((new-value
+(logical-or (get-signal a1) (get-signal a2))))
+(after-delay or-gate-delay
+(lambda ()
+(set-signal! output new-value)))))
+(add-action! a1 or-action-procedure)
+(add-action! a2 or-action-procedure)
+‘ok)
+(define (logical-or x y)
+(if (and (= x 0) (= y 0))
+0
+1))
+
+(define (call-each procedures)
+(if (null? procedures)
+‘done
+(begin
+((car procedures))
+(call-each (cdr procedures)))))
+
+(define (get-signal wire)
+(wire ‘get-signal))
+(define (set-signal! wire new-value)
+((wire ‘set-signal!) new-value))
+(define (add-action! wire action-procedure)
+((wire ‘add-action!) action-procedure))
+(define (after-delay delay action)
+(add-to-agenda! (+ delay (current-time the-agenda))
+action
+the-agenda))
+
+(define (propagate)
+(if (empty-agenda? the-agenda)
+‘done
+(let ((first-item (first-agenda-item the-agenda)))
+(first-item)
+(remove-first-agenda-item! the-agenda)
+(propagate))))
+(define (probe name wire)
+(add-action! wire
+(lambda ()        
+(newline)
+(display name)
+(display “ “)
+(display (current-time the-agenda))
+(display “  New-value = “)
+(display (get-signal wire)))))
+(define (make-time-segment time queue)
+(cons time queue))
+(define (segment-time s) (car s))
+(define (segment-queue s) (cdr s))
+(define (make-agenda) (list 0))
+(define (current-time agenda) (car agenda))
+(define (set-current-time! agenda time)
+(set-car! agenda time))
+(define (segments agenda) (cdr agenda))
+(define (set-segments! agenda segments)
+(set-cdr! agenda segments))
+(define (first-segment agenda) (car (segments agenda)))
+(define (rest-segments agenda) (cdr (segments agenda)))
+(define (empty-agenda? agenda)
+(null? (segments agenda)))
+(define (add-to-agenda! time action agenda)
+(define (belongs-before? segments)
+(or (null? segments)
+(< time (segment-time (car segments)))))
+(define (make-new-time-segment time action)
+(let ((q (make-queue)))
+(insert-queue! q action)
+(make-time-segment time q)))
+(define (add-to-segments! segments)
+(if (= (segment-time (car segments)) time)
+(insert-queue! (segment-queue (car segments))
+action)
+(let ((rest (cdr segments)))
+(if (belongs-before? rest)
+(set-cdr!
+segments
+(cons (make-new-time-segment time action)
+(cdr segments)))
+(add-to-segments! rest)))))
+(let ((segments (segments agenda)))
+(if (belongs-before? segments)
+(set-segments!  agenda (cons (make-new-time-segment time action)
+segments))
+(add-to-segments! segments))))
+(define (remove-first-agenda-item! agenda)
+(let ((q (segment-queue (first-segment agenda))))
+(delete-queue! q)
+(if (empty-queue? q)
+(set-segments! agenda (rest-segments agenda)))))
+(define (first-agenda-item agenda)
+(if (empty-agenda? agenda)
+(error “Agenda is empty—FIRST-AGENDA-ITEM”)
+(let ((first-seg (first-segment agenda)))
+(set-current-time! agenda (segment-time first-seg))
+(front-queue (segment-queue first-seg)))))
+(define the-agenda (make-agenda))
+; SECTION 3.3.2
+(define (front-ptr queue) (car queue))
+(define (rear-ptr queue) (cdr queue))
+(define (set-front-ptr! queue item) (set-car! queue item))
+(define (set-rear-ptr! queue item) (set-cdr! queue item))
+
+(define (empty-queue? queue) (null? (front-ptr queue)))
+(define (make-queue) (cons ‘() ‘()))
+(define (front-queue queue)
+(if (empty-queue? queue)
+(error “FRONT called with an empty queue” queue)
+(car (front-ptr queue))))
+(define (insert-queue! queue item)
+(let ((new-pair (cons item ‘())))
+(cond ((empty-queue? queue)
+(set-front-ptr! queue new-pair) (set-rear-ptr! queue new-pair) queue)
+(else
+(set-cdr! (rear-ptr queue) new-pair) (set-rear-ptr! queue new-pair) queue))))
+(define (delete-queue! queue)
+(cond ((empty-queue? queue)
+(error “DELETE! called with an empty queue” queue))
+(else
+(set-front-ptr! queue (cdr (front-ptr queue))) queue)))
+; make-wire
+(define (make-wire)
+(let ((signal-value 0) (action-procedures ‘()))
+(define (set-my-signal! new-value)
+(if (not (= signal-value new-value))
+(begin (set! signal-value new-value)
+(call-each action-procedures))
+‘done))
+(define (accept-action-procedure! proc)
+(set! action-procedures (cons proc action-procedures))
+;(proc))     
+      )
+(define (dispatch m)
+(cond ((eq? m ‘get-signal) signal-value)
+((eq? m ‘set-signal!) set-my-signal!)
+((eq? m ‘add-action!) accept-action-procedure!)
+(else (error “Unknown operation—WIRE” m)))) dispatch))
+; execute
+(define a (make-wire))
+(define b (make-wire))
+(define s (make-wire))
+(define c (make-wire))
+(define and-gate-delay 5)
+(define inverter-delay 5)
+(define or-gate-delay 5)
+
+(half-adder a b s c)
+(probe ‘input-a a) (probe ‘input-b b) (probe ‘sum s) (probe ‘carry c)
+(newline)
+(set-signal! a 1)
+(propagate)
+;3.32
+;;; 밝히라니... 허거덕...
+
+;3.33
+(define (averager a b c)
+(define (process-new-value)
+(cond ((and (has-value? a) (has-value? b))
+(set-value! c
+(/ (+ (get-value a) (get-value b)) 2) me))
+((and (has-value? a) (has-value? c))
+(set-value! b
+(- (* (get-value c) 2) (get-value a)) me))
+((and (has-value? b) (has-value? c))
+(set-value! a
+(- (* (get-value c) 2) (get-value b)) me))))
+(define (process-forget-value)
+(forget-value! c me)
+(forget-value! a me)
+(forget-value! b me)
+(process-new-value))
+(define (me request)
+(cond ((eq? request ‘I-have-a-value)  
+(process-new-value))
+((eq? request ‘I-lost-my-value) 
+(process-forget-value))
+(else 
+(error “Unknown request—AVERAGER” request))))
+(connect a me)
+(connect b me)
+(connect c me) me)
+; execute
+(define A (make-connector))
+(define B (make-connector))
+(define C (make-connector))
+
+(probe “Input A” A)
+(probe “Input B” B)
+(probe “AVERAGE” C)
+
+(averager A B C)
+(set-value! A 25 ‘user)
+(set-value! B 55 ‘user)
+(forget-value! A ‘user)
+
+(set-value! C 80 ‘user)
+;3.34
+(define true (= 0 0))
+(define false (= 0 1))
+
+;;;SECTION 3.3.5
+(define (adder a1 a2 sum)
+(define (process-new-value)
+(cond ((and (has-value? a1) (has-value? a2))
+(set-value! sum
+(+ (get-value a1) (get-value a2)) me))
+((and (has-value? a1) (has-value? sum))
+(set-value! a2
+(- (get-value sum) (get-value a1)) me))
+((and (has-value? a2) (has-value? sum))
+(set-value! a1
+(- (get-value sum) (get-value a2)) me))))
+(define (process-forget-value)
+(forget-value! sum me)
+(forget-value! a1 me)
+(forget-value! a2 me)
+(process-new-value))
+(define (me request)
+(cond ((eq? request ‘I-have-a-value)  
+(process-new-value))
+((eq? request ‘I-lost-my-value) 
+(process-forget-value))
+(else 
+(error “Unknown request—ADDER” request))))
+(connect a1 me)
+(connect a2 me)
+(connect sum me) me)
+(define (inform-about-value constraint)
+(constraint ‘I-have-a-value))
+(define (inform-about-no-value constraint)
+(constraint ‘I-lost-my-value))
+(define (multiplier m1 m2 product)
+(define (process-new-value)
+(cond ((or (and (has-value? m1) (= (get-value m1) 0))
+(and (has-value? m2) (= (get-value m2) 0)))
+(set-value! product 0 me))
+((and (has-value? m1) (has-value? m2))
+(set-value! product
+(* (get-value m1) (get-value m2)) me))
+((and (has-value? product) (has-value? m1))
+(set-value! m2
+(/ (get-value product) (get-value m1)) me))
+((and (has-value? product) (has-value? m2))
+(set-value! m1
+(/ (get-value product) (get-value m2)) me))))
+(define (process-forget-value)
+(forget-value! product me)
+(forget-value! m1 me)
+(forget-value! m2 me)
+(process-new-value))
+(define (me request)
+(cond ((eq? request ‘I-have-a-value)
+(process-new-value))
+((eq? request ‘I-lost-my-value)
+(process-forget-value))
+(else
+(error “Unknown request—MULTIPLIER” request))))
+(connect m1 me)
+(connect m2 me)
+(connect product me) me)
+(define (constant value connector)
+(define (me request)
+(error “Unknown request—CONSTANT” request))
+(connect connector me)
+(set-value! connector value me) me)
+(define (probe name connector)
+(define (print-probe value)
+(newline)
+(display “Probe: “)
+(display name)
+(display “ = “)
+(display value))
+(define (process-new-value)
+(print-probe (get-value connector)))
+(define (process-forget-value)
+(print-probe “?”))
+(define (me request)
+(cond ((eq? request ‘I-have-a-value)
+(process-new-value))
+((eq? request ‘I-lost-my-value)
+(process-forget-value))
+(else
+(error “Unknown request—PROBE” request)))) (connect connector me) me)
+(define (make-connector)
+(let ((value false) (informant false) (constraints ‘()))
+(define (set-my-value newval setter)
+(cond ((not (has-value? me))
+(set! value newval)
+(set! informant setter)
+(for-each-except setter
+inform-about-value constraints))
+((not (= value newval))
+(error “Contradiction” (list value newval)))
+(else ‘ignored)))
+(define (forget-my-value retractor)
+(if (eq? retractor informant)
+(begin (set! informant false)
+(for-each-except retractor
+inform-about-no-value constraints))
+‘ignored))
+(define (connect new-constraint)
+(if (not (memq new-constraint constraints))
+(set! constraints 
+(cons new-constraint constraints)))
+(if (has-value? me)
+(inform-about-value new-constraint))
+‘done)
+(define (me request)
+(cond ((eq? request ‘has-value?)
+(if informant true false))
+((eq? request ‘value) value)
+((eq? request ‘set-value!) set-my-value)
+((eq? request ‘forget) forget-my-value)
+((eq? request ‘connect) connect)
+(else (error “Unknown operation—CONNECTOR”
+request)))) me))
+(define (for-each-except exception procedure list)
+(define (loop items)
+(cond ((null? items) ‘done)
+((eq? (car items) exception) (loop (cdr items)))
+(else (procedure (car items))
+(loop (cdr items)))))
+(loop list))
+(define (has-value? connector)
+(connector ‘has-value?))
+(define (get-value connector)
+(connector ‘value))
+(define (set-value! connector new-value informant)
+((connector ‘set-value!) new-value informant))
+(define (forget-value! connector retractor)
+((connector ‘forget) retractor))
+(define (connect connector new-constraint)
+((connector ‘connect) new-constraint))
+; exercise 3.34
+(define (squarer a b)
+(multiplier a a b))
+; execute
+(define A (make-connector))
+(define B (make-connector))
+
+(probe “Input A” A)
+(probe “Output B” B)
+
+(squarer A B)
+(set-value! A 5 ‘user)
+(forget-value! A ‘user)
+(set-value! B 16 ‘user)
+;;squarer를 구할 때 (multiplier a a b)를 사용하기에
+
+;;a를 지우고b에만 값을 설정하고a를 구하려고 하면m1, m2모두 지워집니다.
+;;따라서 이것으로는 구할 수 없습니다.
+;3.35
+(define (square x) (* x x))
+
+(define (squarer a b)
+(define (process-new-value)
+(if (has-value? b)
+(if (< (get-value b) 0)
+(error “square less than 0 -- SQUARER” (get-value b))
+(set-value! a
+(sqrt (get-value b)) me))
+(set-value! b
+(square (get-value a)) me)))
+(define (process-forget-value)
+(forget-value! b me)
+(forget-value! a me))
+(define (me request)
+(cond ((eq? request ‘I-have-a-value)
+(process-new-value))
+((eq? request ‘I-lost-my-value)
+(process-forget-value))
+(else
+(error “Unknown request—SQUARER” request))))
+(connect a me)
+(connect b me) me)
+; execute
+(define A (make-connector))
+(define B (make-connector))
+
+(probe “Input A” A)
+(probe “Output B” B)
+
+(squarer A B)
+(set-value! A 5 ‘user)
+(forget-value! A ‘user)
+(set-value! B 16 ‘user)
+
+;3.36
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;          +----------------------------------------------------------------------------------------------+
+;  global  | b -------------------------------------------------------------------------+                 |
+;  env     | for-each-except-------------------------+                                  |                 |
+;          | a ----+                                 |                                  |                 |
+;          +-------+-----------^---------------------+----------------------------------+------------^----+
+;                  |           |                     |                                  |            |
+;                  |  +------------------+    +------+---------+                        |   +-------------------+
+;                  |  |    value : 10    |    |      | +----------------+               |   |   value : false   |
+;          +-------+  | informant : user |    |      | |    loop :      |<-+            |   | informant : false |
+;          |          |constranints:null |    |      V +----------+-----+  |            |   | constraints : null|
+;          |          |set-my-value :    +-+  |    ㅇㅇ--------^  |        |            |   +-------------------+
+;          |          |forget-my-value : | |  |     |             |        |          ㅇㅇ------------^
+;          V          |     connect :    | |  |     +-------+     +----+   |           |
+;        ㅇㅇ---+     |       me :       | |  |             V          |   |           V
+;         |     |     +--------^---------+ V  | parameters:exception,  |   | parameters : f
+;         +-+   +--------------+          ㅇㅇ+--+         procedure,  |   | body : (let ((table (make-table)))
+;           V                  |-----------+--+  |         list        |   |    (lambda (x)
+;  parameters :                +-----------+-----+    body:(loop list) |   |      (let ((previously-computed-result (lookup x table)))
+;  body :                                  +---------------+           V   |        (or previously-computed-result
+;  (let ((value false) (informant false) constraints '())) |          ㅇㅇ-+           (let ((result (f x)))
+;      me)                                                 V           |                 (insert! x result table)
+;                                    parameters : newval, setter       +-----V            result)))))
+;                                    body :                                  parameters : items
+;                                          (cond ((not (has-value me))       body :
+;                                    (set! value newval)                     (cond ((null? items) 'done)
+;                                    (set! informant setter)                       ((eq? (car items) exception) (loop (cdr
+;                                    (for-eace-except setter                 items)))
+;                                              inform-about-value                  (else (procedure (car items)))
+;                                              constraints))                            (loop (car items))))
+;                                    ((not (=value newval))
+;                                     (error "Contradiction" (list value newval)))
+;                                    (else "ignored))
+
+;3.37
+(define (c+ x y)
+(let ((z (make-connector)))
+(adder x y z) z))
+; answer
+(define (c- x y) ; x - y
+(let ((z (make-connector)))
+(adder z y x) z))
+(define (c* x y) ; x * y
+(let ((z (make-connector)))
+(multiplier x y z) z))
+(define (c/ x y) ; x / y
+(let ((z (make-connector)))
+(multiplier z y x) z))
+(define (cv value)
+(let ((z (make-connector)))
+(set-value! z value ‘user) z))
+; exercise 3.37
+(define (celsius-fahrenheit-converter x)
+(c+ (c* (c/ (cv 9) (cv 5))
+x)
+(cv 32)))
+(define C (make-connector))
+(define F (celsius-fahrenheit-converter C))
+; execute
+(probe “Celsius temp” C)
+(probe “Fahrenheit temp” F)
+
+(set-value! C 25 ‘user)
+(forget-value! C ‘user)
+(set-value! F 212 ‘user)
