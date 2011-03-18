@@ -1062,3 +1062,81 @@
 (propagate)
 
 ;; ex 3.31
+
+(define (make-wire-without-init)
+  (let ((signal-value 0)
+	(action-procedures '()))
+    (define (set-my-signal! new-value)
+      (if (not (= signal-value new-value))
+	  (begin (set! signal-value new-value)
+		 (call-each action-procedures)
+		 'done)))
+
+    (define (accept-action-procedure! proc)
+      (set! action-procedures (cons proc action-procedures))
+;;      (proc))
+      )
+
+    (define (dispatch m)
+      (cond ((eq? m 'get-signal) signal-value)
+	    ((eq? m 'set-signal!) set-my-signal!)
+	    ((eq? m 'add-action!) accept-action-procedure!)
+	    (else (error "Unknown operration -- WIRE" m))))
+    dispatch))
+
+
+
+(define the-agenda (make-agenda))
+(define input-1 (make-wire-without-init))
+(define input-2 (make-wire-without-init))
+(define sum (make-wire-without-init))
+(define carry (make-wire-without-init))
+
+(probe 'sum sum)
+
+(probe 'carry carry)
+
+(half-adder input-1 input-2 sum carry) 
+
+(set-signal! input-1 1)
+
+(propagate)
+;; none...
+(set-signal! input-2 1)
+
+(propagate)
+;; loose result
+;; gates aren't run proc immediately. they just asign event handler to wire.
+
+
+;; ex 3.32
+
+;; segment => (time . queue)
+;; segments => (segment+)
+;; agenda => (time . segments)
+
+(define the-agenda (make-agenda))
+(define input-1 (make-wire))
+(define input-2 (make-wire))
+(define output (make-wire))
+
+(set-signal! input-2 1)
+
+(and-gate input-1 input-2 output)
+
+(set-signal! input-1 1)
+;;  [input-1's event[0->1]]
+
+(set-signal! input-2 0)
+;; [input-1's event[0->1], input-2's event[1->0]]
+
+(propagate)
+
+;; if segment has queue..
+;; fire input-1 0->1,  then output => (1 and 1) = 1
+;; fire input-2 1->0, then output => (0 and 1) = 0
+
+;; if segment has stack.
+;; fire input-2 1->0, then output => (0 and 0) = 0
+;; fire input-1 0->1,  then output => (0 and 1) = 0
+
