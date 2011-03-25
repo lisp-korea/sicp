@@ -85,3 +85,42 @@
 ;; A1 - B -A2 -A3 => 100
 ;; A1 - A2 - B - A3 => 100
 
+
+;; ex 3.40
+
+(define x 10)
+
+(parallel-execute (lambda () (set! x (* x x))) ;;A
+		  (lambda () (set! x (* x x x)))) ;;B
+
+;; A - B = 1000000
+;; B - A = 1000000
+
+;; A = load x - calc(* x x) - set x
+;;   = A1     - A2          - A3
+
+;; B = load x - calc(* x x x) - set x
+;;   = B1     - B2            - B3
+
+;; A1 - B1 - A2 - A3 - B2 - B3
+;; = A1 - A2 - B1 - A3 - B2 - B3
+;; = A1 - B1 -B2 - A2 - A3 - B3
+;; = A1 - A2 - B1 - B2 - A3 - B3
+;; = A1 ... - B3
+;; = 1000(last B3 dominates)
+
+;; B1 - A1 - B2 - B3 - A2 - A3
+;; = B1 - B2 - A1 - B3 - A2 - A3 
+;; = B1 ... A3
+;; = 100 (last A3 dominates)
+
+
+(define x 10)
+
+(define s (make-serializer))
+
+(parallel-execute (s (lambda () (set! x (* x x))))
+		  (s (lambda () (set! x (* x x x)))))
+
+;; remain only 1000000
+
