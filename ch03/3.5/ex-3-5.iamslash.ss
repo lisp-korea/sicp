@@ -28,7 +28,7 @@
              (stream-for-each proc (stream-cdr s)))))
        
 (define (display-stream s)
-  (stream-for-each display-line n))
+  (stream-for-each display-line s))
 (define (display-line x)
   (newline)
   (display x))
@@ -41,9 +41,29 @@
       (cons-stream
        low
        (stream-enumerate-interval (+ low 1) high))))
+(define (stream-filter pred stream)
+  (cond ((stream-null? stream) the-empty-stream)
+        ((pred (stream-car stream))
+         (cons-stream (stream-car stream)
+                      (stream-filter pred
+                                     (stream-cdr stream))))
+        (else (stream-filter pred (stream-cdr stream)))))
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; delay와 force프로시저 만들기
-
+(define (delay exp)
+  (lambda () exp))
+(define (force delayed-object)
+  (delayed-object))
+(define (memo-proc proc)
+  (let ((already-run? false) (result false))
+    (lambda ()
+      (if (not already-run?)
+          (begin (set! result (proc))
+                 (set! already-run? true)
+                 result)
+          result))))
+;; (define (delay exp)
+;;   (memo-proc (lambda () exp)))
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ex.3.50
 (define (stream-null? x)
@@ -112,9 +132,41 @@
 (define z (stream-filter (lambda (x) (= (remainder x 5) 0))
                          seq))
 (stream-ref y 7)
+;; sol.1) 136
 (display-stream z)
-
+;; sol.2)
+;; > 
+;; 10
+;; 15
+;; 45
+;; 55
+;; 105
+;; 120
+;; 190
+;; 210done
+;; > 
+;; sol.3) delay를 memo-proc으로 구현한 것과 그렇지 않은 것의 차이
+;; ???
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 3.5.2 무한 스트림
-
+(define (integers-starting-from n)
+  (cons-stream n (integers-starting-from (+ n 1))))
+(define integers (integers-starting-from 1))
+(define (divisible? x y) (= (remainder x y) 0))
+(define no-sevens
+  (stream-filter (lambda (x) (not (divisible? x 7)))
+                 integers))
+(stream-ref no-sevens 70)
+(define (fibgen a b)
+  (cons-stream a (fibgen b (+ a b))))
+(define fibs (fibgen 0 1))
+(define (sieve stream)
+  (cons-stream
+   (stream-car stream)
+   (sieve (stream-filter
+           (lambda (x)
+             (not (divisible? x (stream-car stream))))
+           (stream-cdr stream)))))
+(define primes (sieve (integers-starting-from 2)))
+(stream-ref primes 50)
