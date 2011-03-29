@@ -170,3 +170,37 @@
            (stream-cdr stream)))))
 (define primes (sieve (integers-starting-from 2)))
 (stream-ref primes 50)
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 스트림을 드러나지 않게 정의하는 방법
+(define ones (cons-stream 1 ones))
+(define (add-streams s1 s2)
+  (stream-map + s1 s2))
+(define fibs
+  (cons-stream 0
+               (cons-stream 1
+                            (add-streams (stream-cdr fibs)
+                                         fibs))))
+(define (scale-stream stream factor)
+  (stream-map (lambda (x) (* x factor)) stream))
+(define double (cons-stream 1 (scale-stream double 2)))
+(define primes
+  (cons-stream
+   2
+   (stream-filter prime? (integers-starting-from 3))))
+(define (prime? n)
+  (define (iter ps)
+    (cond ((> (square (stream-car ps)) n) true)
+          ((divisible? n (stream-car ps)) false)
+          (else (iter (stream-cdr ps)))))
+  (iter primes))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.53
+(define s (cons-stream 1 (add-streams s s)))
+;; sol)
+;; 1, 2, 4, 8, 16, 32, 64 ... (2^n, n은 0보다 크거나 같은 정수)
+;; normal order evaluation으로 확인 가능
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.54
