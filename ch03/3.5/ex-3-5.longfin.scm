@@ -196,3 +196,11 @@
 ;; z = [5 . (delay [5 . (delay [5 . (delay ...)])])]
 (stream-ref y 7)
 ;; sum = 12 + 3 + 4 + 5 + ... 14
+
+(display-stream z)
+;; 5
+;; 10
+;; 15
+;; 20
+
+;; sum = 114 + 6 + 7 + ... 20
