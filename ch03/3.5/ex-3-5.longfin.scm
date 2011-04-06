@@ -204,3 +204,97 @@
 ;; 20
 
 ;; sum = 114 + 6 + 7 + ... 20
+
+
+
+;; 3.5.2 Infinite Streams
+
+(define-syntax cons-stream
+  (syntax-rules ()
+    ((cons-stream x y)
+     (cons x (delay y)))))
+
+(define the-empty-stream '())
+(define (stream-null? s)
+  (eq? s the-empty-stream))
+
+(define (stream-car stream) (car stream))
+(define (stream-cdr stream) (force (cdr stream)))
+
+(define (integers-starting-from n)
+  (cons-stream n (integers-starting-from (+ n 1))))
+
+(define integers (integers-starting-from 1))
+(define (divisible? x y) (= (remainder x y) 0))
+
+(define no-sevens
+  (stream-filter (lambda (x) (not (divisible? x 7)))
+		 integers))
+
+(define (fibgen a b)
+  (cons-stream a (fibgen b (+ a b))))
+
+(define fibs (fibgen 0 1))
+
+(define (sieve stream)
+  (cons-stream
+   (stream-car stream)
+   (sieve (stream-filter
+	   (lambda (x)
+	     (not (divisible? x (stream-car stream))))
+	   (stream-cdr stream)))))
+(define primes (sieve (integers-starting-from 2)))
+
+(stream-ref primes 50)
+
+;; Defining streams implicitly
+
+(define ones (cons-stream 1 ones))
+
+
+(define (stream-map proc . argstreams)
+  (if (null? (car argstreams))
+      the-empty-stream
+      (cons-stream
+	(apply proc (map stream-car argstreams))
+	(apply stream-map
+	       (cons proc (map stream-cdr argstreams))))))
+
+(define (add-strems s1 s2)
+  (stream-map + s1 s2))
+
+(define integers (cons-stream 1 (add-strems ones integers)))
+
+(define fibs
+  (cons-stream 0
+	       (cons-stream 1
+			    (add-strems (stream-cdr fibs)
+					fibs))))
+
+;; ex 3.53
+
+(define s (cons-stream 1 (add-streams s s)))
+
+;; (1 .
+;;      ((+ 1 1)) . (add-stream
+;;                              (+ (+ 1 1) (+ 1 1)) (add-stream (+ 1 1)
+;;								(+ 1 1)
+;;                              (+ (+ 1 1) (+ 1 1)) (add-stream (+ 1 1)
+;;								(+ 1 1)
+;; ...
+
+
+;; like [1 2 4 8 16 32 64 ...]
+
+;; ex 3.54
+
+(define (mul-streams s1 s2)
+  (stream-map * s1 s2))
+(define factorials (cons-stream 1 (mul-streams integers factorials)))
+
+;; ex 3.55
+(define (sum-streams s1 s2)
+  (stream-map + s1 s2))
+
+(define (partial-sums s)
+  (cons-stream 1 (sum-streams s (partial-sums s))))
