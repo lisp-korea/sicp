@@ -1482,6 +1482,7 @@
 "
 (set-value! a 10 'user)
 "
+
 	global env => [(a <proc>), (b <proc>)]
 	env a => [(value #f), (constratins '())]
 		       {set-my-value, forget-my-value, connect, me}
