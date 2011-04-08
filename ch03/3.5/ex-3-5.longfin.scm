@@ -1,3 +1,12 @@
+(define (error reason . args)
+      (display "Error: ")
+      (display reason)
+      (for-each (lambda (arg) 
+                  (display " ")
+		  (write arg))
+		args)
+      (newline)
+      (scheme-report-environment -1))
 ;; 3.5 Streams
 
 ;; 3.5.1 Streams Are Delayed Lists
@@ -61,7 +70,6 @@
       the-empty-stream
       (cons-stream (proc (stream-car))
 		   (stream-map proc (stream-cdr s)))))
-
 (define (stream-for-each proc s)
   (if (stream-null? s)
       'done
@@ -260,19 +268,18 @@
 	(apply stream-map
 	       (cons proc (map stream-cdr argstreams))))))
 
-(define (add-strems s1 s2)
+(define (add-streams s1 s2)
   (stream-map + s1 s2))
 
-(define integers (cons-stream 1 (add-strems ones integers)))
+(define integers (cons-stream 1 (add-streams ones integers)))
 
 (define fibs
   (cons-stream 0
 	       (cons-stream 1
-			    (add-strems (stream-cdr fibs)
+			    (add-streams (stream-cdr fibs)
 					fibs))))
 
 ;; ex 3.53
-
 (define s (cons-stream 1 (add-streams s s)))
 
 ;; (1 .
@@ -297,4 +304,143 @@
   (stream-map + s1 s2))
 
 (define (partial-sums s)
-  (cons-stream 1 (sum-streams s (partial-sums s))))
+  (cons-stream 0 (sum-streams s (partial-sums s))))
+
+;; ex 3.56
+(define (scale-stream S n)
+  (cons-stream (* (stream-car S) n)
+	       (scale-stream (stream-cdr S) n)))
+
+(define (merge s1 s2)
+  (cond ((stream-null? s1) s2)
+	((stream-null? s2) s1)
+	(else
+	 (let ((s1car (stream-car s1))
+	       (s2car (stream-car s2)))
+	   (cond ((< s1car s2car)
+		  (cons-stream s1car (merge (stream-cdr s1) s2)))
+		 ((> s1car s2car)
+		  (cons-stream s2car (merge s1 (stream-cdr s2))))
+		 (else
+		  (cons-stream s1car
+			       (merge (stream-cdr s1)
+				      (stream-cdr s2)))))))))
+
+(define S (cons-stream 1 (merge (scale-stream integers 2)
+				(merge (scale-stream integers 3)
+				       (scale-stream integers 5)))))
+
+;; ex 3.57
+
+;; if (stream-ref fibs 5)
+
+(stream-ref (stream-cdr fibs) 4)
+(stream-ref (stream-cdr (stream-cdr fibs)) 3)
+(stream-ref (stream-cdr (stream-cdr (stream-cdr fibs))) 2)
+(stream-ref (stream-cdr (stream-cdr (stream-cdr (stream-cdr fibs)))) 1)
+(stream-ref (stream-cdr (stream-cdr (stream-cdr (stream-cdr (stream-cdr fibs))))) 0)
+(stream-car (stream-cdr (stream-cdr (stream-cdr (stream-cdr (stream-cdr fibs))))))
+
+
+;;           1    1    2    3  = '(stream-cdr fibs)' : a
+;;              (0+1)(1+1)(2+1)
+;;           0    1    1    2  = 'fibs' : b
+;;                   (0+1)(1+1)
+;; 0    1    1    2    3    5  = 'fibs'
+;;         (0+1)(1+1)(2+1)(3+2)
+;;         a1+b1
+;;              a3+b2=a1+b1+b2
+;;                   a4+b3= ...
+
+
+;; ex 3.58
+
+
+(define (expand num den radix)
+  (cons-stream
+   (quotient (* num radix) den)
+   (expand (remainder (* num radix) den) den radix)))
+
+(expand 1 7 10)
+
+;; (1 (expand (remainder 10 7) 7 10))
+;; (1 (4 (expand (remainder 30 7) 7 10)))
+;; (1 (4 (2 (expand (remainder 20 7) 7 10))))
+;; (1 (4 (2 (8 (expand (remainder 60 7) 7 10))))))
+;; (1 (4 (2 (8 (5 (expand (remainder 40 7) 7 10))))))
+;; (1 (4 (2 (8 (5 (7 (expand (remainder 50 7) 7 10))))))))
+;; (1 (4 (2 (8 (5 (7 (1 (expand (remainder 10 7) 7 10))))))))
+;; ...
+
+
+(expand 3 8 10)
+
+;; (3 (expand (remainder 30 8) 8 10))
+;; (3 (7 (expand (remainder 60 8) 8 10)))
+;; (3 (7 (5 (expand (remainder 40 8) 8 10))))
+;; (3 (7 (5 (0 (expand 0 8) 8 10))))
+;; ...
+
+;; ex 3.59
+
+;; a
+
+(define (integrate-series s)
+  (define (iter s n)
+    (cons-stream (/ (stream-car s) n)
+		 (iter (stream-cdr s) (+ n 1))))
+  (iter s 1))
+
+;; b
+
+(define exp-series
+  (cons-stream 1 (integrate-series exp-series)))
+
+(define cosine-series
+  (cons-stream 1 (integrate-series (scale-stream sine-series -1))))
+
+(define sine-series
+  (cons-stream 0 (integrate-series cosine-series)))
+
+;; ex 3.60
+
+;; 45 + 5 + 27 + 3
+;; (a1x + a2x^2) * (b1x + b2x^2)
+;; (a1x * b1x) + (a1x * b2x^2) + (a2x^2 * b1x) (a2x^2 * b2x^2)
+;; (a1b1)x^2 + (a1b2 + a2b1)x^3 + (a2b2)x^4
+
+(define (mul-seriese s1 s2)
+  (cons-stream
+   (* (stream-car s1) (stream-car s2))
+   (add-streams
+    (mul-seriese (stream-cdr s1) s2)
+    (scale-stream (stream-cdr s2) (stream-car s1)))))
+
+(define expected
+  (add-streams
+   (mul-seriese sine-series sine-series)
+   (mul-seriese cosine-series cosine-series)))
+
+;; ex 3.61
+
+(define (invert-unit-series s)
+  (cons-stream
+   1
+   (scale-stream
+    (mul-seriese (stream-cdr s)
+		 (invert-unit-series s))
+    -1)))
+
+;; ex 3.62
+
+;; sin x = a/h
+;; cos x = b/h
+;; tan x = a/b = sin x / cos x
+(define (div-seriese s1 s2)
+  (if (= (stream-car s2) 0)
+      (error "stream has 0")
+      (mul-seriese s1
+		   (invert-unit-series s2))))
+
+(define tan-serise
+  (div-seriese sine-series cosine-series))
