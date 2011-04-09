@@ -493,6 +493,31 @@ factorials
 				      (stream-cdr s2)))))))))
 
 ;; (define S (cons-stream 1 (merge <??>)))
+(define S (cons-stream 1 (merge (scale-stream S 2)
+				(merge (scale-stream S 3)
+				       (scale-stream S 5)))))
+
+S
+
+
+(stream-ref S 0)
+(stream-ref S 1)
+(stream-ref S 2)
+(stream-ref S 3)
+(stream-ref S 4)
+(stream-ref S 5)
+(stream-ref S 6)
+(stream-ref S 7)
+(stream-ref S 8)
+(stream-ref S 9)
+(stream-ref S 10)
+(stream-ref S 11)
+(stream-ref S 12)
+(stream-ref S 13)
+(stream-ref S 14)
+(stream-ref S 15)
+(stream-ref S 16)
+
 
 
 
@@ -533,11 +558,57 @@ factorials
 ;;; 3.5.3 스트림 패러다임
 ;;; p435
 
+;;; 셈미룸 계산법과 스트림 기법은 갇힌 상태와 덮어쓰기에서 얻을 수 있는 좋은 점을 제공
+
+;;; 스트림 방식에서는 순간순간 변하는 상태가 아니라, 전체 시간의 흐름에 초점을 두고 생각할 수 있으며,
+;;; 따라서 서로 다른 시점의 상태들을 한데 묶거나 서로 비교하기가 편하다.
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 스트림 프로세스로 반복을 표현하는 방법
-;;;
+;;; p435
 
+;;; 여러 변수 값을 바꾸는 방법에 기대지 않아도, 끝없이 펼쳐지는 스트림으로 상태를 나타낼 수 있다.
+
+
+;;;-----------------------------
+;;; sqrt-stream
+(define (average a b)
+  (/ (+ a b) 2))
+
+(define (sqrt-improve guess x)
+  (average guess (/ x guess)))
+
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream 1.0
+		 (stream-map (lambda (guess)
+			       (sqrt-improve guess x))
+			     guesses)))
+  guesses)
+
+(define sq2 (sqrt-stream 2.0))
+
+(stream-ref sq2 0)
+(stream-ref sq2 1)
+(stream-ref sq2 2)
+(stream-ref sq2 3)
+(stream-ref sq2 4)
+(stream-ref sq2 5)
+(stream-ref sq2 6)
+;;;-----------------------------
+
+
+;;;-----------------------------
+;;; pi-stream
+(define (pi-summands n)
+  (cons-stream (/ 1.0 n)
+	       (stream-map - (pi-summands (+ n 2)))))
+
+(define pi-stream
+  (scale-stream (partial-sums (pi-summands 1)) 4))
+
+;(display-stream pi-stream)
 
 
 ;; ex 3.63 ~ 3.65
