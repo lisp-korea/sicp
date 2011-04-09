@@ -525,11 +525,47 @@ S
 ;;;--------------------------< ex 3.57 >--------------------------
 ;;; p432
 
+;; n번째 피보나치 수를 구하는데 필요한 덧셈의 수
+;; - 지수 비례로 늘어난다는 사실을 밝혀라.
+
+
 
 
 ;;;--------------------------< ex 3.58 >--------------------------
 ;;; p432
 
+(define (expand num den radix)
+  (cons-stream
+   (quotient (* num radix) den)
+   (expand (remainder (* num radix) den) den radix)))
+
+(define s1 (expand 1 7 10))
+
+(stream-ref s1 0)
+(stream-ref s1 1)
+(stream-ref s1 2)
+(stream-ref s1 3)
+(stream-ref s1 4)
+(stream-ref s1 5)
+(stream-ref s1 6)
+(stream-ref s1 7)
+(stream-ref s1 8)
+(stream-ref s1 9)
+(stream-ref s1 10)
+
+(define s2 (expand 3 8 10))
+
+(stream-ref s2 0)
+(stream-ref s2 1)
+(stream-ref s2 2)
+(stream-ref s2 3)
+(stream-ref s2 4)
+(stream-ref s2 5)
+(stream-ref s2 6)
+(stream-ref s2 7)
+(stream-ref s2 8)
+(stream-ref s2 9)
+(stream-ref s2 10)
 
 
 ;;;--------------------------< ex 3.59 >--------------------------
