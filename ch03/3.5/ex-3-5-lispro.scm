@@ -1,210 +1,161 @@
-##########Exercise 3.50
+; stream
+(define true (= 0 0))
+(define false (= 1 0))
 
-(defun stream-map (proc &rest argstreams)
+(define (cons-stream a b)
+  (cons a (delay b)))
+(define the-empty-stream '()) 
+(define stream-null? null?) 
+(define (stream-car stream) (car stream))
+(define (stream-cdr stream) (force (cdr stream)))
+
+; section 3.5
+(define (stream-ref s n)
+  (if (= n 0)
+      (stream-car s)
+      (stream-ref (stream-cdr s) (- n 1))))
+
+(define (stream-for-each proc s)
+  (if (stream-null? s)
+      'done
+      (begin (proc (stream-car s))
+             (stream-for-each proc (stream-cdr s)))))
+
+(define (display-stream s)
+  (stream-for-each display-line s))
+
+(define (display-line x)
+  (newline)
+  (display x))
+
+(define (stream-enumerate-interval low high)
+  (if (> low high)
+      the-empty-stream
+      (cons-stream
+       low
+       (stream-enumerate-interval (+ low 1) high))))
+
+(define (stream-filter pred stream)
+  (cond ((stream-null? stream) the-empty-stream)
+        ((pred (stream-car stream))
+         (cons-stream (stream-car stream)
+                      (stream-filter pred
+                                     (stream-cdr stream))))
+        (else (stream-filter pred (stream-cdr stream)))))
+
+(define (memo-proc proc)
+  (let ((already-run? false) (result false))
+    (lambda ()
+      (if (not already-run?)
+          (begin (set! result (proc))
+                 (set! already-run? true)
+                 result)
+          result))))
+
+(define (scale-stream stream factor)
+  (stream-map (lambda (x) (* x factor)) stream))
+
+; exercise 3.50
+(define (stream-map proc . argstreams)
   (if (stream-null? (car argstreams))
-    the-empty-stream
-    (cons-stream
-      (apply proc (mapcar #'stream-car argstreams))
-      (apply #'stream-map
-        (cons proc (mapcar #'stream-cdr argstreams))))))
+      the-empty-stream
+      (cons-stream
+       (apply proc (map stream-car argstreams))
+       (apply stream-map
+              (cons proc (map stream-cdr argstreams))))))
 
-(deflex s1 (stream-enumerate-interval 10 100))
-(deflex s2 (stream-enumerate-interval 20 200))
-(deflex s3 (stream-enumerate-interval 30 300))
+;;;SECTION 3.5.2
+(define (add-streams s1 s2)
+  (stream-map + s1 s2))
 
-(deflex ss (stream-map #'+ s1 s2 s3))
+(define ones (cons-stream 1 ones))
+(define integers (cons-stream 1 (add-streams ones integers)))
 
-(stream-ref ss 0)
-#=> 60
-(stream-ref ss 1)
-#=> 63
-(stream-ref ss 2)
-#=> 66
+; exercise 3.54
+(define (mul-streams s1 s2)
+  (stream-map * s1 s2))
 
-#############Exercise 3.51
-
-(deflex x (stream-map #'show (stream-enumerate-interval 0 10))))
-#=> 0
-(stream-ref x 5)
-#=>
-#1
-#2
-#3
-#4
-#5
-(stream-ref x 7)
-#=>
-#6
-#7
-
-########Exercise 3.52
-
-(deflex sum 0)
-(defun accum (x)
-  (setf sum (+ x sum))
-  sum)
-#=> sum is 0
-
-(deflex seq (stream-map #'accum (stream-enumerate-interval 1 20)))
-#=> sum is 1
-
-(deflex y (stream-filter #'evenp seq))
-#=> sum is 6
-
-(deflex z (stream-filter (lambda (x) (= (rem x 5) 0)) seq))
-#=> sum is 10
-
-(stream-ref y 7)
-#=> 136
-#=> sum is 136
-
-(display-stream z)
-#=>
-#10
-#15
-#45
-#55
-#105
-#120
-#190
-#210
-
-###########Exercise 3.53
-
-(deflex s (cons-stream 1 (add-streams s s)))
-#=> 1, 2, 4, 8, 16 ...
-
-
-############Exercise 3.54
-
-(defun mul-streams (s1 s2)
-  (stream-map #'* s1 s2))
-
-(deflex factorials
-  (cons-stream 1 (mul-streams
-                    factorials
-                    (integers-starting-from 2))))
-
-
-
-#############Exercise 3.55
-
-
-(defun partial-sums (s)
-  (cons-stream
-    (stream-car s)
-    (add-streams
-      (stream-cdr s)
-      (partial-sums s))))
-Exercise 3.56
-
-(defun merge (s1 s2)
+; exercise 3.56
+(define (merge s1 s2)
   (cond ((stream-null? s1) s2)
         ((stream-null? s2) s1)
-        (t
-          (let ((s1car (stream-car s1))
-                (s2car (stream-car s2)))
-            (cond ((< s1car s2car)
-                    (cons-stream s1car (merge (stream-cdr s1) s2)))
-                  ((> s1car s2car)
-                    (cons-stream s2car (merge s1 (stream-cdr s2))))
-                  (t
-                    (cons-stream
-                      s1car
-                      (merge (stream-cdr s1) (stream-cdr s2)))))))))
+        (else
+         (let ((s1car (stream-car s1))
+               (s2car (stream-car s2)))
+           (cond ((< s1car s2car)
+                  (cons-stream s1car (merge (stream-cdr s1) s2)))
+                 ((> s1car s2car)
+                  (cons-stream s2car (merge s1 (stream-cdr s2))))
+                 (else
+                  (cons-stream s1car
+                               (merge (stream-cdr s1)
+                                      (stream-cdr s2)))))))))
 
-(deflex s
-  (cons-stream
-    1
-    (merge
-      (scale-stream integers 2)
-      (merge
-        (scale-stream integers 3)
-        (scale-stream integers 5)))))
+; print-stream-n
+(define (print-stream-n S n)
+  (define (iter i)
+    (if (= i n)
+        'done
+        (begin (display (stream-ref S i))
+               (display "  ")
+               (if (= (remainder (+ i 1) 10) 0)
+                   (newline))
+               (iter (+ i 1)))))
+  (iter 0))
 
+; exercise 3.59
+(define (div-streams s1 s2)
+  (stream-map / s1 s2))
 
-##########Exercise 3.57
+(define (integrate-series coff_stm)
+  (let ((integrate_s (cons-stream 1 ; 상수 c
+                                  (div-streams coff_stm integers))))
+    (stream-cdr integrate_s)))
 
-With memoization, n-1 additions are performed for computing the n@th fibonacci number, since each call of @force on the stream returned by add-streams recomputes the fibs stream only once.
-
-Without memoization, the growth is exponential because in the call to add-streams, (stream-cdr fibs) will do all the work fibs does, but that is repeated.
-
-##########Exercise 3.58
-
-(expand 1 7 10)
-#=> 1 4 2 8 5 7 1 4 2 8
-
-(expand 3 8 10)
-
-#=> 3 7 5 0 0 0 0 0 0 0
-
-
-########Exercise 3.59
-
-#a.
-
-(defun integrate-series (s)
-  (labels (
-      (integrate-aux (s n)
-        (cons-stream
-          (/ (stream-car s) n)
-          (integrate-aux
-            (stream-cdr s)
-            (+ n 1)))))
-    (integrate-aux s 1)))
-
-
-# b.
-
-(deflex sine-series
-  (cons-stream 0 (integrate-series cosine-series)))
-
-(deflex cosine-series
+(define exp-series
+  (cons-stream 1 (integrate-series exp-series)))
+(define cosine-series
   (cons-stream 1
-    (scale-stream
-      (integrate-series sine-series)
-      -1)))
+               (integrate-series (scale-stream sine-series -1))))
+(define sine-series
+  (cons-stream 0
+               (integrate-series cosine-series)))
 
+; exercise 3.60
+(define (mul-series s1 s2)
+  (cons-stream (* (stream-car s1) (stream-car s2))
+               (add-streams (mul-series (stream-cdr s1) s2)
+                            (scale-stream (stream-cdr s2) (stream-car s1)))))
+; exercise 3.61
+(define (invert-unit-series S)
+  (define X
+    (cons-stream 1
+                 (scale-stream (mul-series (stream-cdr S) X) -1)))
+  X)
 
-######Exercise 3.60
+; exercise 3.62
+; s1 / s2
+(define (div-series s1 s2)
+  (if (= 0 (stream-car s2))
+      (error "Divide by zero" s2)
+      (mul-series s1 (invert-unit-series s2))))
 
+; execute
+(define f1 (div-series sine-series cosine-series))
+(print-stream-n cosine-series 10)
+(print-stream-n sine-series 10)
+(print-stream-n f1 10)
+(newline) (newline)
 
-(defun mul-series (s1 s2)
-  (cons-stream
-    (* (stream-car s1) (stream-car s2))
-    (add-streams
-      (scale-stream (stream-cdr s2) (stream-car s1))
-      (mul-series (stream-cdr s1) s2))))
-###########################
-
-(deflex la
-  (add-streams
-    (mul-series sine-series sine-series)
-    (mul-series cosine-series cosine-series)))
-#=> 1 0 0 0 ...
-
-
-##########Exercise 3.61
-
-(defun invert-unit-series (sr)
-  (cons-stream
-    1
-    (scale-stream
-      (mul-series
-        (invert-unit-series sr)
-        (stream-cdr sr))
-      -1)))
-
-########Exercise 3.62
-
-(defun div-series (num denom)
-  (let ((denom-const (stream-car denom)))
-    (if (zerop denom-const)
-      (error "denom constant term is zero")
-      (mul-series
-        (invert-unit-series
-          (scale-stream denom denom-const))
-        num))))
-
-(deflex tangent-series
-  (div-series sine-series cosine-series))
+(define constant_one
+  (add-streams (mul-series sine-series sine-series)
+               (mul-series cosine-series cosine-series)))
+(define one_minus_x
+  (cons-stream 1
+               (cons-stream -1
+                            (add-streams ones
+                                       (scale-stream ones -1)))))
+(define f2 (div-series constant_one one_minus_x))
+(print-stream-n constant_one 10)
+(print-stream-n one_minus_x 10)
+(print-stream-n f2 10)
