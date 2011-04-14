@@ -1,4 +1,4 @@
-;Exercise 3.50
+;;;Exercise 3.50
 
 (defun stream-map (proc &rest argstreams)
   (if (stream-null? (car argstreams))
