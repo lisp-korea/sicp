@@ -571,20 +571,166 @@ S
 ;;;--------------------------< ex 3.59 >--------------------------
 ;;; p432
 
+;; a) a0 + a1x + a2x^2 + a3x^3 + ...
+;; -> c + a0x + 1/2*a1x^2 + 1/3*a2x^3 + ...
+
+(define (integrate-series s-before)
+  (define series
+    (stream-map / s-before 
+		(stream-cdr integers)))
+  series)
+
+
+(define s-integrated (cons-stream 1 (integrate-series ones)))
+
+(stream-ref s-integrated 0)
+(stream-ref s-integrated 1)
+(stream-ref s-integrated 2)
+(stream-ref s-integrated 3)
+(stream-ref s-integrated 4)
+(stream-ref s-integrated 5)
+
+;; b) x |-> e^x 를 미분한 결과는 그 자신과 같다.
+;; 이를 표현하면 아래와 같다.
+(define exp-series
+  (cons-stream 1 (integrate-series exp-series)))
+
+
+(stream-ref exp-series 0)
+(stream-ref exp-series 1)
+(stream-ref exp-series 2)
+(stream-ref exp-series 3)
+(stream-ref exp-series 4)
+(stream-ref exp-series 5)
+
+;; sin을 미분하면 cos
+;; cos 을 미분하면 -sin
+;; 을 바탕으로 사인과 코사인 수열 정의
+
+(define cosine-series
+  (cons-stream 1 (integrate-series (scale-stream sine-series -1.))))
+
+(define sine-series
+  (cons-stream 0 (integrate-series cosine-series)))
+
+(stream-ref cosine-series 0)
+(stream-ref cosine-series 1)
+(stream-ref cosine-series 2)
+(stream-ref cosine-series 3)
+(stream-ref cosine-series 4)
+(stream-ref cosine-series 5)
+
+(stream-ref sine-series 0)
+(stream-ref sine-series 1)
+(stream-ref sine-series 2)
+(stream-ref sine-series 3)
+(stream-ref sine-series 4)
+(stream-ref sine-series 5)
 
 
 ;;;--------------------------< ex 3.60 >--------------------------
 ;;; p434
 
+;; ex3.59에서처럼 계수 스트림으로 나타낸 거듭제곱 수열을 가지고 
+;;  add-streams를 써서 두 수열을 더하는 프로시저를 구현할 수 있다.
+;; ??
 
+;; 두 수열을 곱하는 프로시저
+
+;; (define (mul-series s1 s2)
+;;   (cons-stream (* (stream-car s1)
+;; 		  (stream-car s2))
+;; 	       (add-streams <??>
+;; 			    <??>
+;; )))
+
+
+;; longfin 님 방법.
+(define (mul-series s1 s2)
+  (cons-stream
+   (* (stream-car s1) (stream-car s2))
+   (add-streams
+    (mul-series (stream-cdr s1) s2)
+    (scale-stream (stream-cdr s2) (stream-car s1)))))
+
+(define expected
+  (add-streams
+   (mul-series sine-series sine-series)
+   (mul-series cosine-series cosine-series)))
+
+expected
+
+(stream-ref expected 0)
+(stream-ref expected 1)
+(stream-ref expected 2)
+(stream-ref expected 3)
+(stream-ref expected 4)
+(stream-ref expected 5)
+
+(define ss (partial-sums expected))
+
+ ss
+
+(stream-ref ss 0)
+(stream-ref ss 1)
+(stream-ref ss 2)
+(stream-ref ss 10)
+;(display-stream ss)
 
 ;;;--------------------------< ex 3.61 >--------------------------
 ;;; p434
+
+;; 상수항이 1인 거듭제곱 수열을 S
+;; S*X = 1 이 되는 수열 X : 1/S 를 찾자.
+
+;; S = 1 + Sr
+
+;;      S * X = 1
+;; (1+Sr) * X = 1
+;; X + Sr * X = 1
+;;          X = 1 - Sr*X
+
+(define (invert-unit-series s)
+  (define s-inv
+    (cons-stream 1
+		 (scale-stream (mul-streams (stream-cdr s)
+					    s-inv)
+			       -1)))
+  s-inv)
+
+;; 상수항이 1, n차 계수가 n인 거듭제곱 수열 S
+(define S integers)
+
+(define X (invert-unit-series S))
+
+
+(stream-ref X 0)
+(stream-ref X 1)
+(stream-ref X 2)
+(stream-ref X 3)
+(stream-ref X 4)
+(stream-ref X 5)
+
+(define SS (partial-sums S))
+
+(stream-ref SS 10)
+
+(define SX (partial-sums X))
+
+(stream-ref SX 10)
+
+(* (stream-ref SS 100)
+   (stream-ref SX 100)
+   1.0)
+;; 1에 가까운 값을 기대했으나,,,,
+
+;; 흠,,, 잘못 푼 듯...
 
 
 
 ;;;--------------------------< ex 3.62 >--------------------------
 ;;; p435
+
 
 
 
@@ -644,10 +790,151 @@ S
 (define pi-stream
   (scale-stream (partial-sums (pi-summands 1)) 4))
 
-;(display-stream pi-stream)
+;; (display-stream pi-stream)
+;; 4.0
+;; 2.666666666666667
+;; 3.466666666666667
+;; 2.8952380952380956
+;; 3.3396825396825403
+;; 2.9760461760461765
+;; 3.2837384837384844
+;; 3.017071817071818
+;; 3.2523659347188767
 
 
-;; ex 3.63 ~ 3.65
+
+;;; 스트림 방식을 쓰면 같은 일을 하더라도 몇 가지 재밌는 재주를 부릴 수 있어서 좋다.
+;;; - 차례열 가속기
+;;;    : 어떤 값에 가까워지는 차례열을 훨씬 빠르게 다가가도록 바꾸어 줌.
+
+;;; (오일러) 
+;;; 부호가 번갈아 바뀌는 수열이 있을 때, 그 부분합을 나타내는 차례열과 잘 맞아떨어지는 가속기가 있다.
+;;;                 (S_(n+1) - S_n)^2
+;;; S_(n+1) -  --------------------------
+;;;             S_(n-1) - 2S_n + S_(n+1)
+
+
+
+;; 처음의 차례열 스트림 : s
+;; 가속 변환한 차례열 :
+(define (euler-transform s)
+  (let ((s0 (stream-ref s 0))    ; S_(n-1)
+	(s1 (stream-ref s 1))    ; S_n
+	(s2 (stream-ref s 2)))   ; S_(n+1)
+    (cons-stream (- s2 (/ (square (- s2 s1))
+			  (+ s0 (* -2 s1) s2)))
+		 (euler-transform (stream-cdr s)))))
+
+;; (display-stream (euler-transform pi-stream))
+;; 3.166666666666667
+;; 3.1333333333333337
+;; 3.1452380952380956
+;; 3.13968253968254
+;; 3.1427128427128435
+;; 3.1408813408813416
+;; 3.142071817071818
+;; 3.1412548236077655
+;; 3.1418396189294033
+
+
+
+
+;;; 가속한 차례열을 다시 가속하는 방법
+;;; - 재귀하면서 가속하는 방법
+(define (make-tableau transform s)
+  (cons-stream s
+	       (make-tableau transform
+			     (transform s))))
+
+;; 태블로의 행마다 첫 원소를 뽑아 차례열을 만들어 낸다.
+(define (accelerated-sequence transform s)
+  (stream-map stream-car
+	      (make-tableau transform s)))
+
+;; (display-stream (accelerated-sequence euler-transform
+;; 				      pi-stream))
+;; 4.0
+;; 3.166666666666667
+;; 3.142105263157895
+;; 3.141599357319005
+;; 3.1415927140337785
+;; 3.1415926539752927
+;; 3.1415926535911765
+;; 3.141592653589778
+;; 3.1415926535897953
+;; 3.141592653589795
+;; +nan.0
+;; +nan.0
+
+
+
+;;;--------------------------< ex 3.63 >--------------------------
+;;; p440
+
+;; guess 변수 없이 sqrt-stream 작성
+;; 반복하는 계산이 많아져서 효율이 크게 떨어진다
+;; - 왜?
+;;  : 기존에는 stream의 다음 인덱스 원소를 계산할 때 만들어진 guess 으로부터 한 단계만 더 계산하면 된다.
+;;  : 여기서는 다음 인덱스 원소를 계산할 때 (sqrt-stream x)로 재귀를 하면서 매번 처음부터 n번째까지를 계산해야 한다.
+(define (sqrt-stream x)
+  (cons-stream 1.0
+	       (stream-map (lambda (guess)
+			     (sqrt-improve guess x))
+			   (sqrt-stream x))))
+
+(define sq-of-2 (sqrt-stream 2))
+
+(stream-ref sq-of-2 10)
+
+
+;;;--------------------------< ex 3.64 >--------------------------
+;;; p440
+
+;;; 스트림과 수(허용 오차)를 인자로 받는 stream-limit 프로시저 정의
+;; - 스트림을 훑어보다가 이어지는 두 원소를 뺀 절대값이 허용 오차보다 작은 경우를 찾아내면
+;;   그 두 원소 중 두 번째 원소를 결과로 내놓는다.
+
+(define (stream-limit s tolerance)
+  (let ((d1 (stream-car s))
+	(d2 (stream-car (stream-cdr s))))
+    (if (< (abs (- d1 d2)) tolerance)
+	d2
+	(stream-limit (stream-cdr s) tolerance))))
+	 
+
+(define (new-sqrt x tolerance)
+  (stream-limit (sqrt-stream x) tolerance))
+
+(new-sqrt 2 0.01)
+(new-sqrt 2 0.001)
+
+;;;--------------------------< ex 3.65 >--------------------------
+;;; p441
+
+;; 2의 자연로그에 가까운 값에 다가드는 차례열 세 개
+;; ln2 = 1 - 1/2 + 1/3 - 1/4 + ...
+
+;;; 1) 그냥 stream
+(define (ln2-summands n)
+  (cons-stream (/ 1.0 n)
+	       (stream-map - (ln2-summands (+ n 1)))))
+
+(define ln2-stream
+  (partial-sums (ln2-summands 1)))
+
+;; (display-stream ln2-stream)
+
+(stream-ref ln2-stream 10)
+(stream-ref ln2-stream 100)
+
+
+;;; 2) 오일러 기법 가속
+
+
+;;; 3) 태블로 사용
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 쌍으로 이루어진 무한 스트림
