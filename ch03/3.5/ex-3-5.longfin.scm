@@ -444,3 +444,100 @@
 
 (define tan-serise
   (div-seriese sine-series cosine-series))
+
+;; 3.5.3 Exploiting the Stream Paradigm
+
+;; Formulating iterations as stream processes
+
+(define (sqrt-improve guess x)
+  (average guess (/ x guess)))
+
+(define (average x y)
+  (/ (+ x y) 2))
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream 1.0
+		 (stream-map (lambda (guess)
+			       (sqrt-improve guess x))
+			     guesses)))
+  guesses)
+
+
+;; [pi]        1     1     1
+;; ---- = 1 - --- + --- - --- + ...
+;;   4         3     5     7
+
+(define (pi-summands n)
+  (cons-stream (/ 1.0 n)
+	       (stream-map - (pi-summands (+ n 2)))))
+
+(define pi-stream
+  (scale-stream (partial-sums (pi-summands 1)) 4))
+
+
+
+;;              (S_(n+1) - S_n)^2
+;; S_(n+1) - ------------------------
+;;           S_(n-1) - 2S_n + S_(n+1)
+
+(define (euler-transform s)
+  (let ((s0 (stream-ref s 0))
+	(s1 (stream-ref s 1))
+	(s2 (stream-ref s 2)))
+    (cons-stream (- s2 (/ (square (- s2 s1))
+			  (+ s0 (* -2 s1) s2)))
+		 (euler-transform (stream-cdr s)))))
+
+(define (make-tableau transform s)
+  (cons-stream s
+	       (make-tableau transform
+			     (transform s))))
+
+(define (accelerated-sequence transform s)
+  (stream-map stream-car
+	      (make-tableau transform s)))
+
+;; ex 3.63
+
+(define (sqrt-stream x)
+  (cons-stream 1.0
+	       (stream-map (lambda (guess)
+			     (sqrt-improve guess x))
+			   (sqrt-stream x))))
+
+;; when call (sqrt-stream), create (cons-stream x ...)
+
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream 1.0
+		 (stream-map (lambda (guess)
+			       (sqrt-improve guess x))
+			     guesses)))
+  guesses)
+
+;; guesses is cached.
+
+
+;; ex 3.64
+
+(define (stream-limit s tolerance)
+  (let ((s1 (stream-ref s 0))
+	(s2 (stream-ref s 1)))
+    (if (< (abs (- s1 s2)) tolerance)
+	s2
+	(stream-limit (stream-cdr s) tolerance))))
+
+(define (sqrt-with-tolerance x tolerance)
+  (stream-limit (sqrt-stream x) tolerance))
+
+
+;; ex 3.65
+
+(define (ln2-summands x)
+  (cons-stream (/ 1.0 x)
+   (stream-map - (ln2-summands (+ x 1)))))
+
+(define ln2-stream
+  (partial-sums (ln2-summands 1)))
+
+;; Infinite streams of pairs
