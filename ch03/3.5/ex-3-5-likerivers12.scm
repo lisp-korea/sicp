@@ -7,6 +7,7 @@
 
 
 
+
 ;;;==========================================
 ;;; 3.5.1 스트림과 (계산을) 미룬 리스트
 ;;; p412
@@ -235,6 +236,8 @@
 (stream-ref y 7)
 
 (display-stream z)
+
+
 
 
 
@@ -736,6 +739,11 @@ expected
 
 
 
+
+
+
+
+
 ;;;==========================================
 ;;; 3.5.3 스트림 패러다임
 ;;; p435
@@ -838,7 +846,6 @@ expected
 
 
 
-
 ;;; 가속한 차례열을 다시 가속하는 방법
 ;;; - 재귀하면서 가속하는 방법
 (define (make-tableau transform s)
@@ -924,15 +931,61 @@ expected
 
 ;; (display-stream ln2-stream)
 
+(stream-ref ln2-stream 0)
+(stream-ref ln2-stream 1)
+(stream-ref ln2-stream 2)
+(stream-ref ln2-stream 3)
+(stream-ref ln2-stream 4)
+;; 1.0
+;; > 0.5
+;; > 0.8333333333333333
+;; > 0.5833333333333333
+;; > 0.7833333333333332
+
 (stream-ref ln2-stream 10)
 (stream-ref ln2-stream 100)
 
 
 ;;; 2) 오일러 기법 가속
+(define ln2-stream-euler
+  (euler-transform ln2-stream))
+
+(stream-ref ln2-stream-euler 0)
+(stream-ref ln2-stream-euler 1)
+(stream-ref ln2-stream-euler 2)
+(stream-ref ln2-stream-euler 3)
+(stream-ref ln2-stream-euler 4)
+;; 0.7
+;; > 0.6904761904761905
+;; > 0.6944444444444444
+;; > 0.6924242424242424
+;; > 0.6935897435897436
+
+(stream-ref ln2-stream-euler 10)
+(stream-ref ln2-stream-euler 100)
+
 
 
 ;;; 3) 태블로 사용
+(define ln2-stream-accel 
+  (accelerated-sequence euler-transform ln2-stream))
 
+
+(stream-ref ln2-stream-accel 0)
+(stream-ref ln2-stream-accel 1)
+(stream-ref ln2-stream-accel 2)
+(stream-ref ln2-stream-accel 3)
+(stream-ref ln2-stream-accel 4)
+;; 1.0
+;; > 0.7
+;; > 0.6932773109243697
+;; > 0.6931488693329254
+;; > 0.6931471960735491
+
+(stream-ref ln2-stream-accel 10)
+(stream-ref ln2-stream-accel 100)
+
+  
 
 
 
@@ -940,11 +993,371 @@ expected
 ;;; 쌍으로 이루어진 무한 스트림
 ;;; p441
 
+;;; 차례열 패러다임을 스트림으로 확장..
+;;; ch2.2.3 prime-sum-pairs (p161)
+;;; 의 쓰임새를 늘여보자.
+
+;;; int-pairs 스트림에서 pair의 합이 소수인 것 만 골라내기
+;; (stream-filter (lambda (pair)
+;; 		 (prime? (+ (car pair) (cadr pair))))
+;; 	       int-pairs)
+
+
+;;; 여기서 int-pairs를 만드는 방법을 알아보자
+
+;; 두 스트림 
+;; S = (S_i)
+;; T = (T_j)
+;; 가 있을 때
+
+;; 네모 배열을 펴쳐내면 
+;; ->
+;; (S0, T0)  (S0, T1)  (S0, T2) ...
+;; (S1, T0)  (S1, T1)  (S1, T2) ...
+;; (S2, T0)  (S2, T1)  (S2, T2) ...
+;; ...
+;; 대각선과 그 위쪽에 있는 모든 쌍을 모아 스트림으로 뽑아내면 
+;; ->
+;; (S0, T0)  (S0, T1)  (S0, T2) ...
+;;           (S1, T1)  (S1, T2) ...
+;;                     (S2, T2) ...
+;;                              ...
+;; 세부분으로 나눠서 생각하면
+;; ->
+;;   (1)    |      (2)
+;; (S0, T0) | (S0, T1)  (S0, T2) ...
+;; ---------+-----------------------
+;;          | (S1, T1)  (S1, T2) ...
+;;          |           (S2, T2) ...
+;;          |      (3)           ...
+
+;; (2)는 다음과 같이 뽑아낼 수 있다.
+;; (stream-map (lambda (x) (list (stream-car s) x))
+;; 	    (stream-cdr t))
+
+;;; 따라서 (pairs s t)는
+;; (define (pairs s t)
+;;   (cons-stream
+;;    (list (stream-car s) (stream-car t))              ; <- (1)
+;;    (<combine-in-some-way>
+;;     (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
+;; 		(stream-cdr t))
+;;     (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+
+;; 두 스트림을 엮어내는 방법 1)
+;; (define (stream-append s1 s2)
+;;   (if (stream-null? s1)
+;;       s2
+;;       (cons-stream (stream-car s1)
+;; 		   (stream-append (stream-cdr s1) s2))))
+;; - 무한 스트림은 이 방법식으로 처리할 수 없다.
+;;   두 번째 스트림을 한데 묶기도 전에 
+;;   첫 번째 스트림의 원소를 모두 가져올 수 있어야 하기 때문이다.
+
+;; 문제 해결 방법
+;;
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+		   (interleave s2 (stream-cdr s1)))))
+;; 두 스트림에서 번갈아 원소를 꺼내 쓰기 때문에,
+;; 첫 번째 스트림이 끝없이 펼쳐지더라도 
+;; 결국에는 두 번째 스트림의 모든 원소가 결과 스트림 속에 들어간다고 믿을 수 있다.
+;; (하지만 나타나는 순서는 다르다)
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))              ; <- (1)
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
+		(stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
 
 
 
-;; ex 3.66 ~ 3.72
+;;;--------------------------< ex 3.66 >--------------------------
+;;; p444
 
+(pairs integers integers) 
+;;; 스트림에 들어가는 쌍이 어떤 차례를 따르는지 설명해보라
+
+
+(define int-pair-stream (pairs integers integers))
+
+(stream-ref int-pair-stream 0)
+(stream-ref int-pair-stream 1)
+(stream-ref int-pair-stream 2)
+(stream-ref int-pair-stream 3)
+(stream-ref int-pair-stream 4)
+(stream-ref int-pair-stream 5)
+(stream-ref int-pair-stream 6)
+(stream-ref int-pair-stream 7)
+(stream-ref int-pair-stream 8)
+(stream-ref int-pair-stream 9)
+(stream-ref int-pair-stream 10)
+(stream-ref int-pair-stream 11)
+(stream-ref int-pair-stream 12)
+
+;; > (1 1)  ;1,1
+;; > (1 2)  ;1,
+;; > (2 2)       ;2,2
+;; > (1 3)  ;1,                        
+;; > (2 3)       ;2,                  
+;; > (1 4)  ;1,                      
+;; > (3 3)            ;3,3             
+;; > (1 5)  ;1,                           
+;; > (2 4)       ;2,                 
+;; > (1 6)  ;1,                          
+;; > (3 4)            ;3,               
+;; > (1 7)  ;1,                         
+;; > (2 5)       ;2,                       
+;;          ;1,                         
+;;                          ;4,4                     
+;;          ;1,                       
+;;               ;2                           
+;;          ;1,                     
+;;               ;3
+;;          ;1
+
+
+;;           합
+;; > (1 1)  ;2
+;; > (1 2)  ;3
+;; > (2 2)       ;4
+;; > (1 3)  ;4
+;; > (2 3)       ;5
+;; > (1 4)  ;5
+;; > (3 3)             ;6
+;; > (1 5)  ;6
+;; > (2 4)       ;6
+;; > (1 6)  ;7
+;; > (3 4)             ;7
+;; > (1 7)  ;8
+;; > (2 5)       ;7
+;;
+
+
+
+; 1; (1 1)
+; 2; (1 2)
+; 3;         (2 2)
+; 4; (1 3)
+; 5;         (2 3)
+; 6; (1 4) 
+; 7;                (3 3)
+; 8; (1 5)
+; 9;         (2 4)
+;10; (1 6)
+;11;                (3 4)
+;12; (1 7)
+;13;         (2 5)
+;14; (1 8)
+;15;                       (4 4)
+;16; (1 9)
+;17;         (2 6)
+;18; (1 10)
+;19;                (3 5)
+;20; (1 11)
+;21;         (2 7)
+;22; (1 12)
+;23;                       (4 5)
+;24; (1 13)
+;25;         (2 8)
+;26; (1 14)
+;27;                (3 6)
+;28; (1 15)
+;29;         (2 9)
+;30; (1 16)
+;31;                               (5 5)
+;32; (1 17)
+;33;         (2 10)
+;34; (1 18)
+;35;                (3 7)
+;36; (1 19)
+;37;         (2 11)
+;38; (1 20)
+;39;                       (4 6)
+;40; (1 21)
+;41;         (2 12)
+;42; (1 22)
+;43;                (3 8)
+;44; (1 23)
+;45;         (2 13)
+;46; (1 24)
+;47;                               (5 6)
+
+
+;;;--------------------------< ex 3.67 >--------------------------
+;;; p445
+
+;; (i <= j) 조건없이 모든 정수 쌍(i,j)의 스트림을 만들어내는 pairs
+
+;;  (1) | (2)
+;; -----+-----
+;;  (4) \ (3)
+;;        \
+
+(define (pairs s t)
+   (cons-stream
+    (list (stream-car s) (stream-car t))              ; <- (1)
+
+    (interleave
+     (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
+		 (stream-cdr t))
+
+;;     (cons-stream
+     (interleave 
+      (stream-map (lambda (x) (list x (stream-car t)))   ; <- (4)
+		  (stream-cdr s))
+
+       (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+)
+
+(define all-int-pair-stream (pairs integers integers))
+
+
+(stream-ref all-int-pair-stream 0)
+(stream-ref all-int-pair-stream 1)
+(stream-ref all-int-pair-stream 2)
+(stream-ref all-int-pair-stream 3)
+(stream-ref all-int-pair-stream 4)
+(stream-ref all-int-pair-stream 5)
+(stream-ref all-int-pair-stream 6)
+(stream-ref all-int-pair-stream 7)
+(stream-ref all-int-pair-stream 8)
+(stream-ref all-int-pair-stream 9)
+(stream-ref all-int-pair-stream 10)
+(stream-ref all-int-pair-stream 11)
+(stream-ref all-int-pair-stream 12)
+(stream-ref all-int-pair-stream 13)
+(stream-ref all-int-pair-stream 14)
+(stream-ref all-int-pair-stream 15)
+(stream-ref all-int-pair-stream 16)
+(stream-ref all-int-pair-stream 17)
+(stream-ref all-int-pair-stream 18)
+(stream-ref all-int-pair-stream 19)
+(stream-ref all-int-pair-stream 20)
+(stream-ref all-int-pair-stream 21)
+
+
+;;;--------------------------< ex 3.68 >--------------------------
+;;; p445
+
+;;; 기존에 쌍의 스트림을 세 조각으로 나누어 붙임
+;; (S0, T0)를 나머지와 분리하지 않고 통째로 쓰면...?
+
+(define (pairs s t)
+  ;; (begin 
+  ;;   (display (stream-car s))
+  ;;   (newline)
+  (interleave 
+   (stream-map (lambda (x) (list (stream-car s) x))
+	       t)
+   (pairs (stream-cdr s) (stream-cdr t))))
+;; )					
+
+
+(define int-pair-stream (pairs integers integers))
+
+(stream-ref int-pair-stream 0)
+(stream-ref int-pair-stream 1)
+(stream-ref int-pair-stream 2)
+
+;; 스트림은 지연 평가를 한다.
+;; 스트림의 지연 평가는 cons-stream 에 의해서 발생된다.
+;; 여기서는 cons-stream으로 stream을 묶지 않았기 때문에
+;; 평가를 지연하지 않는다.
+;; 따라서 무한 스트림에 대해서 pair를 만드므로
+;; 무한히 평가를 하게 된다.
+
+
+
+;;;--------------------------< ex 3.69 >--------------------------
+;;; p445
+
+;; (stream-filter (lambda (pair)
+;; 		 (prime? (+ (car pair) (cadr pair))))
+;; 	       int-pairs)
+
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))              ; <- (1)
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
+		(stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+
+;; (define (triples s t u)
+;;    (pairs s 
+;; 	  (pairs t u)))
+
+(define (triples s t u)
+  (define t-pairs (pairs t u))
+  (define (iter-triples s1 s2)
+    (cons-stream 
+     (cons (stream-car s1) (stream-car s2))
+     (interleave
+      (stream-map (lambda (x) (cons (stream-car s1) x))
+		  s2)
+      (iter-triples (stream-cdr s1) s2))))
+  (iter-triples s t-pairs))
+
+(define triple-stream (triples integers integers integers))
+
+(stream-ref triple-stream 0)
+(stream-ref triple-stream 1)
+(stream-ref triple-stream 2)
+(stream-ref triple-stream 3)
+(stream-ref triple-stream 4)
+(stream-ref triple-stream 5)
+(stream-ref triple-stream 6)
+(stream-ref triple-stream 7)
+(stream-ref triple-stream 8)
+(stream-ref triple-stream 9)
+
+  
+(define pytha-stream
+  (stream-filter (lambda (x)
+		   (let ((i (car x))
+			 (j (cadr x))
+			 (k (caddr x)))
+		     (if (= (+ (square i) (square j))
+			    (square k))
+			 #t
+			 #f)))
+		 (triples integers
+			  integers
+			  integers)))
+
+
+(stream-ref pytha-stream 0)
+(stream-ref pytha-stream 1)
+(stream-ref pytha-stream 2)
+;; <- (8 6 10) 시간이 많이 걸림.
+;; (stream-ref pytha-stream 3)
+;; (stream-ref pytha-stream 4)
+;; (stream-ref pytha-stream 5)
+;; (stream-ref pytha-stream 6)
+;; (stream-ref pytha-stream 7)
+;; (stream-ref pytha-stream 8)
+;; (stream-ref pytha-stream 9)
+
+
+
+
+
+;;;--------------------------< ex 3.70 >--------------------------
+;;; p445,6
+
+
+;;;--------------------------< ex 3.71 >--------------------------
+;;; p446
+
+
+;;;--------------------------< ex 3.72 >--------------------------
+;;; p447
 
 
 
@@ -953,22 +1366,209 @@ expected
 ;;; 신호를 표현하는 스트림
 ;;; p447
 
+;; 신호 처리 시스템의 '신호'를 컴퓨터 계산 방식으로 흉내낸 것이 스트림
+;; - 연속하는 시간 간격의 신호 값들을 줄줄이 이어진 스트림의 원소로 나타냄.
+
+;; 적분기의 구현
+;; 덧셈기
+;; S_i = C + SUM{j=1,i}
+(define (integral integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+		 (add-streams (scale-stream integrand dt)
+			      int)))
+  int)
+
+
+(define test-integral (integral integers 1 0.1))
+
+		   
+(stream-ref test-integral 0)
+(stream-ref test-integral 1)
+(stream-ref test-integral 2)
+(stream-ref test-integral 3)
+(stream-ref test-integral 4)
+(stream-ref test-integral 5)
+(stream-ref test-integral 6)
+(stream-ref test-integral 7)
+(stream-ref test-integral 8)
+(stream-ref test-integral 9)
+(stream-ref test-integral 10)
+(stream-ref test-integral 11)
+(stream-ref test-integral 12)
+
+;;; 해석,,,
 
 
 
-;; ex 3.73 ~ 3.76
+;;;--------------------------< ex 3.73 >--------------------------
+;;; p448 
+
+
+;;;--------------------------< ex 3.74 >--------------------------
+;;; p449
+
+
+;;;--------------------------< ex 3.75 >--------------------------
+;;; p450
+
+
+;;;--------------------------< ex 3.76 >--------------------------
+;;; p451
+
+
+
+
+
+
+
+
+
+
+
 
 
 ;;;==========================================
 ;;; 3.5.4 스트림과 셈미룸 계산법(stream and delayed evaluation)
 ;;; p451
 
+;;;
+;; 스트림을 이용한 프로시저로 신호처리방식을 정의할 때
+;; 피드백 루프는 프로시저 속에서 스트림 자신을 불러쓰는 것으로 정의된다.
+;; (define int
+;;   (cons-stream initial-value
+;; 	       (add-streams (scale-stream integrand dt)
+;; 			    int)))
+;; : int
 
-;; ex 3.77 ~ 3.80
+;; <- 이와 같은 정의는 cons-stream 속에 있는 delay 연산 덕분이다.
+;; 이 연산이 없다면 cons-stream 에 넘겨줄 인자 값을 구할 때
+;; int의 정의부터 처리해야 하기 때문에 실행기는 int를 결코 만들어 내지 못한다.
+
+;; delay가 없다면 피드백 루프를 표현할 수단이 없다.
+
+
+;;;
+;; 루프가 있는 시스템을 스트림으로 흉내내다 보면
+;; cons-stream에 숨어있는 delay 연산 말고도 delay 연산을 따로 써야할 때가 있다.
+(define (solve f y0 dt)
+  (define y (integral dy y0 dt))
+  (define dy (stream-map f y))
+  y)
+;; <- dy를 정의하기 전에 dy를 사용한다.
+
+
+
+
+;;;
+;; 사실 integral의 경우
+;; 출력 스트림의 첫째 원소는 인자로 받아온 initial-value이다.
+;; 따라서 dy를 구하지 않더라도 출력 스트림(y)의 첫째 원소를 정할 수 있다.
+;; 일단 y의 첫 원소가 무엇인지 알수 있다면 문제없이 다음으로 진행할 수 있다.
+
+
+;;;
+;; 위 생각을 반영하여
+;; 피적분 값들의 스트림이 셈미룬 인자가 되게끔 integral을 다시 정의해 보자.
+(define (integral delayed-integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+		 (let ((integrand (force delayed-integrand)))
+		   (add-streams (scale-stream integrand dt)
+				int))))
+  int)
+
+
+(define test-delayed-integral (integral (delay integers) 1 0.1))
+;;                                      ^^^^^^^^^^^^^^^^		   
+
+(stream-ref test-delayed-integral 0)
+(stream-ref test-delayed-integral 1)
+(stream-ref test-delayed-integral 2)
+(stream-ref test-delayed-integral 3)
+(stream-ref test-delayed-integral 4)
+(stream-ref test-delayed-integral 5)
+(stream-ref test-delayed-integral 6)
+(stream-ref test-delayed-integral 7)
+(stream-ref test-delayed-integral 8)
+(stream-ref test-delayed-integral 9)
+(stream-ref test-delayed-integral 10)
+(stream-ref test-delayed-integral 11)
+(stream-ref test-delayed-integral 12)
+
+;; 이제 y의 정의에서 dy값 계산을 뒤로 미룸으로써 solve 프로시저의 구현을 마무리할 수 있다.
+(define (solve f y0 dt)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (stream-map f y))
+  y)
+
+(stream-ref (solve (lambda (y) y) 1 0.001) 1000)
+;; 에러 발생
+;;  === context ===
+;; stdin::13576: stream-car
+;; /usr/lib/racket/collects/racket/mpair.rkt:27:2: mmap
+;; stdin::15558: stream-map
+;; stdin::98352: solve
+;; /usr/lib/racket/collects/racket/private/misc.rkt:74:7
+;; /usr/lib/racket/collects/r5rs/run.rkt: [running body]
+
+
+
+;;;--------------------------< ex 3.77 >--------------------------
+;;; p454
+
+
+;;;--------------------------< ex 3.78 >--------------------------
+;;; p455
+
+
+;;;--------------------------< ex 3.79 >--------------------------
+;;; p456
+
+
+;;;--------------------------< ex 3.80 >--------------------------
+;;; p456
+
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 정의대로 계산하기(normal-order evaluation)
 ;;; p458
+
+;; 3.5.4에서는
+;; delay와 force가 프로그램의 표현력을 얼마나 크게 끌어올릴 수 있는지 알아보았다.
+;; 하지만, 프로그램 짜는 게 복잡해질 수 있다는 사실도 보았다.
+;; - 피적분 인자 값의 계산을 미뤄야 한다는 점을 기억해야함.
+;;   모든 프로시저가 그런 규칙을 반드시 따라야 함.
+
+;;-> 두 가지 계산 방식을 가진 프로시저가 생기는 셈
+;;   1. 보통 프로시저
+;;   2. 셈미룸 인자를 받는 프로시저
+;;-> 차수 높은 프로시저도 프로시저 종류마다 따로따로 만들어줄 수 밖에 없다.
+;; 그러지 않으려면
+;; 모든 프로시저가 인자 값 계산을 미루도록 하는 수밖에 없다.
+;;-> 언어가 정의대로 계산법에 따라 식을 계산하도록 만들어야 한다.
+
+
+;;;
+;; 프로시저를 불러쓸 때 delay가 들어가면,
+;; 덮어쓰기와 변형 가능한 데이터 
+;; 또는 입출력을 처리하는 프로그램처럼
+;; 사건이 일어나는 차례를 바탕으로 하는 프로그램을 설계할 때
+;; 모든 것이 뒤죽박죽된다는 사실을 알아두어야 한다!!!
+
+;;;
+;; 변형 가능성과 셈미룸 계산법은 한 프로그래밍 언어 속에서 서로 잘 섞이지 않는다.
+
+
+
+
+
+
+
+
 
 
 
@@ -980,10 +1580,19 @@ expected
 
 
 
-;; ex 3.81 ~ 3.82
+;;;--------------------------< ex 3.81 >--------------------------
+;;; p461
+
+
+;;;--------------------------< ex 3.82 >--------------------------
+;;; p461
+
+
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 함수형 프로그래밍에서 시간의 문제
 ;;; p461
+
 
 
