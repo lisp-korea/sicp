@@ -8,8 +8,10 @@
 (define (stream-null? x)
   (null? x))
 (define the-empty-stream '())
-(define (cons-stream a b)
-  (cons a (delay b)))
+(define-syntax cons-stream
+  (syntax-rules ()
+    ((cons-stream a b)
+     (cons a (delay b)))))
 (define (stream-car stream) (car stream))
 (define (stream-cdr stream) (force (cdr stream)))
 (define (stream-ref s n)
@@ -32,7 +34,17 @@
 (define (display-line x)
   (newline)
   (display x))
-
+(define (print-stream-n S n)
+  (define (iter i)
+    (if (= i n)
+        'done
+        (begin (display (stream-ref S i))
+               (display "  ")
+               (if (= (remainder (+ i 1) 10) 0)
+                   (newline)
+                   '())
+               (iter (+ i 1)))))
+  (iter 0)) 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 스트림은 어떻게 돌아가는가?
 (define (stream-enumerate-interval low high)
@@ -66,13 +78,6 @@
 ;;   (memo-proc (lambda () exp)))
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ex.3.50
-(define (stream-null? x)
-  (null? x))
-(define the-empty-stream '())
-(define (cons-stream a b)
-  (cons a (delay b)))
-(define (stream-car stream) (car stream))
-(define (stream-cdr stream) (force (cdr stream)))
 (define (stream-map proc . argstreams)
   (if (stream-null? (car argstreams))
       the-empty-stream
@@ -204,3 +209,103 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ex.3.54
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 3.5.3 스트림 패러다임
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 스트림 프로세스로 만복을 표현하는 방법
+(define (average x y)
+  (/ (+ x y) 2.0))
+
+(define (sqrt-improve guess x)
+  (average guess (/ x guess)))
+;; 다음과 같은 방법으로 제곱근 산출
+;; (sqrt-improve 1 2)
+;; (sqrt-improve 1.5 2)
+;; (sqrt-improve 1.416 2)
+;; (sqrt-improve 1.414 2)
+
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream 1.0
+                 (stream-map (lambda (guess)
+                               (sqrt-improve guess x))
+                             guesses)))
+  guesses)
+
+(display-stream (sqrt-stream 2))
+
+(define ones
+  (cons-stream 1 ones))
+(define integers
+  (cons-stream 1
+               (add-streams integers ones)))
+
+(define (partial-sums s)
+(cons-stream (car-stream s)
+             (add-stream s (partial-sums s)))) 
+(define (pi-summands n)
+  (cons-stream (/ 1.0 n)
+               (stream-map - (pi-summands (+ n 2)))))
+(define pi-stream
+  (scale-stream (partial-sums (pi-summands 1)) 4))
+(display-stream pi-stream)
+
+(define (euler-transform x)
+  (let ((s0 (stream-ref s 0))
+        (s1 (stream-ref x 1))
+        (s2 (stream-ref s 2)))
+    (cons-stream (- s2 (/ (square (- s2 s1))
+                          (+ s0 (* -2 s1) s2)))
+                 (euler-transform (stream-cdr s)))))
+(display-stream (euler-transform pi-stream))
+
+(define (make-tableau transform s)
+  (cons-stream s
+               (make-tableau transform
+                             (transform s))))
+
+(define (accelerated-sequence transform s)
+  (stream-map stream-car
+              (make-tableau transform s)))
+(display-stream (accelerated-sequence euler-transform
+                                      pi-stream))
+
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.63
+
+;; 원래것
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream 1.0
+                 (stream-map (lambda (guess)
+                               (sqrt-improve guess x))
+                             guesses)))
+  guesses)
+;; Louis Reasoner
+(define (sqrt-stream-from-louis x)
+  (cons-stream 1.0
+               (stream-map (lambda (guess)
+                             (sqrt-improve guess x))
+                           (sqrt-stream x))))
+
+(print-stream-n (sqrt-stream 2) 10)
+(print-stream-n (sqrt-stream-from-louis 2) 10)
+;; sol) 원래것은 memo-proc의 대상이된다. louis REasoner것은 그렇지 않다???
+;; memo-proc은 다음과 같다.
+(define (memo-proc proc)
+  (let ((already-run? false) (result false))
+    (lambda ()
+      (if (not already-run?)
+          (begin (set! result (proc))
+                 (set! already-run? true)
+                 result)
+          result))))
+;; 
