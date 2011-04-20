@@ -1375,17 +1375,6 @@ expected
 					       (stream-cdr s1)))))))))
 ;; interleave를 위해서 else 부분의 merge시에 s2,s1 순서로 바꿈
 
-(define (weight pair1 pair2)
-  (let ((a1 (car pair1))
-	(b1 (cadr pair1))
-	(a2 (car pair2))
-	(b2 (cadr pair2)))
-    (let ((w1 (+ a1 b1))
-	  (w2 (+ a2 b2)))
-      (if (< w1 w2)
-	  #t
-	  #f))))
-
 
 ;;;;
 (define (pairs s t)
@@ -1410,40 +1399,95 @@ expected
 
 
 
-;;;----------------------------
-(define int-pair-stream (weighted-pairs weight integers integers))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; a. i <= j  인 모든 양의 정수 쌍을 늘어놓는 스트림.
+;;     쌍의 차례는 i+j 값에 따른다.
 
-(stream-ref int-pair-stream 0)
-(stream-ref int-pair-stream 1)
-(stream-ref int-pair-stream 2)
-(stream-ref int-pair-stream 3)
-(stream-ref int-pair-stream 4)
-(stream-ref int-pair-stream 5)
-(stream-ref int-pair-stream 6)
-(stream-ref int-pair-stream 7)
-(stream-ref int-pair-stream 8)
-(stream-ref int-pair-stream 9)
-(stream-ref int-pair-stream 10)
-(stream-ref int-pair-stream 11)
-(stream-ref int-pair-stream 12)
-;;;----------------------------
+(define (weight-a pair1 pair2)
+  (let ((i1 (car pair1))
+	(j1 (cadr pair1))
+	(i2 (car pair2))
+	(j2 (cadr pair2)))
+    (let ((w1 (+ i1 j1))
+	  (w2 (+ i2 j2)))
+      (if (< w1 w2)
+	  #t
+	  #f))))
 
 ;;;----------------------------
-(define int-pair-stream (pairs integers integers))
+(define a-pair-stream (weighted-pairs weight-a integers integers))
 
-(stream-ref int-pair-stream 0)
-(stream-ref int-pair-stream 1)
-(stream-ref int-pair-stream 2)
-(stream-ref int-pair-stream 3)
-(stream-ref int-pair-stream 4)
-(stream-ref int-pair-stream 5)
-(stream-ref int-pair-stream 6)
-(stream-ref int-pair-stream 7)
-(stream-ref int-pair-stream 8)
-(stream-ref int-pair-stream 9)
-(stream-ref int-pair-stream 10)
-(stream-ref int-pair-stream 11)
-(stream-ref int-pair-stream 12)
+(stream-ref a-pair-stream 0)
+(stream-ref a-pair-stream 1)
+(stream-ref a-pair-stream 2)
+(stream-ref a-pair-stream 3)
+(stream-ref a-pair-stream 4)
+(stream-ref a-pair-stream 5)
+(stream-ref a-pair-stream 6)
+(stream-ref a-pair-stream 7)
+(stream-ref a-pair-stream 8)
+(stream-ref a-pair-stream 9)
+(stream-ref a-pair-stream 10)
+(stream-ref a-pair-stream 11)
+(stream-ref a-pair-stream 12)
+;;;----------------------------
+
+
+
+;;; b. i<=j 인 모든 양의 정수 쌍 가운데 i,j 모두 2,3,5로 나누어떨어지지 않는 (i,j)들의 스트림
+;;     차례는 2i+3j+5ij를 따른다.
+
+
+(define (weight-b pair1 pair2)
+  (let ((i1 (car pair1))
+	(j1 (cadr pair1))
+	(i2 (car pair2))
+	(j2 (cadr pair2)))
+    (let ((w1 (+ (* 2 i1) (* 3 j1) (* 5 i1 j1)))
+	  (w2 (+ (* 2 i2) (* 3 j2) (* 5 i2 j2))))
+      (if (< w1 w2)
+	  #t
+	  #f))))
+
+(define (predicate-b x)
+  (and (not (= (remainder x 2) 0))
+       (not (= (remainder x 3) 0))
+       (not (= (remainder x 5) 0))))
+
+(define b-pair-stream
+  (stream-filter (lambda (x)
+		   (let ((i (car x))
+			 (j (cadr x)))
+		     (and (predicate-b i) (predicate-b j))))
+		 (weighted-pairs weight-b integers integers)))
+
+;; (define b-pair-stream
+;; 		 (weighted-pairs weight-b integers integers))
+
+
+(stream-ref b-pair-stream 0)
+(stream-ref b-pair-stream 1)
+(stream-ref b-pair-stream 2)
+(stream-ref b-pair-stream 3)
+(stream-ref b-pair-stream 4)
+(stream-ref b-pair-stream 5)
+(stream-ref b-pair-stream 6)
+(stream-ref b-pair-stream 7)
+(stream-ref b-pair-stream 8)
+(stream-ref b-pair-stream 9)
+(stream-ref b-pair-stream 10)
+(stream-ref b-pair-stream 11)
+(stream-ref b-pair-stream 12)
+(stream-ref b-pair-stream 13)
+(stream-ref b-pair-stream 14)
+(stream-ref b-pair-stream 15)
+(stream-ref b-pair-stream 16)
+(stream-ref b-pair-stream 17)
+(stream-ref b-pair-stream 18)
+(stream-ref b-pair-stream 19)
+(stream-ref b-pair-stream 20)
+(stream-ref b-pair-stream 21)
+(stream-ref b-pair-stream 22)
 ;;;----------------------------
 
 	    
