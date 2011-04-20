@@ -1351,6 +1351,102 @@ expected
 ;;;--------------------------< ex 3.70 >--------------------------
 ;;; p445,6
 
+;;; 두 스트림의 원소를 번갈아 끼워넣는 프로세스에서
+;; 특별히 정한 차례를 따르기보다
+;; 어떤 쓸모 있는 차례에 따라 원소를 늘어놓도록.
+;; 무게함수를 정의
+;; W(i,j) 
+
+;; merge를 확장하여 merge-weighted 를 짜라
+;; - 쌍의 무제를 재는 weight프로시저를 인자로 받을 수 있다.
+(define (merge-weighted weight s1 s2)
+  (cond ((stream-null? s1) s2)
+	((stream-null? s2) s1)
+	(else
+	 (let ((s1car (stream-car s1))
+	       (s2car (stream-car s2)))
+	   (cond ((weight s1car s2car)
+		  (cons-stream s1car (merge-weighted weight (stream-cdr s1) s2)))
+		 ((weight s1car s2car)
+		  (cons-stream s2car (merge-weighted weight s1 (stream-cdr s2))))
+		 (else
+		  (cons-stream s1car
+			       (merge-weighted weight (stream-cdr s2) 
+					       (stream-cdr s1)))))))))
+;; interleave를 위해서 else 부분의 merge시에 s2,s1 순서로 바꿈
+
+(define (weight pair1 pair2)
+  (let ((a1 (car pair1))
+	(b1 (cadr pair1))
+	(a2 (car pair2))
+	(b2 (cadr pair2)))
+    (let ((w1 (+ a1 b1))
+	  (w2 (+ a2 b2)))
+      (if (< w1 w2)
+	  #t
+	  #f))))
+
+
+;;;;
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))              ; <- (1)
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
+		(stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+;;;;
+
+
+;; pairs보다 쓰임새가 넓은 weighted-pairs 프로시저
+(define (weighted-pairs weight s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))              ; <- (1)
+   (merge-weighted
+    weight
+    (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
+		(stream-cdr t))
+    (weighted-pairs weight (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+
+
+
+;;;----------------------------
+(define int-pair-stream (weighted-pairs weight integers integers))
+
+(stream-ref int-pair-stream 0)
+(stream-ref int-pair-stream 1)
+(stream-ref int-pair-stream 2)
+(stream-ref int-pair-stream 3)
+(stream-ref int-pair-stream 4)
+(stream-ref int-pair-stream 5)
+(stream-ref int-pair-stream 6)
+(stream-ref int-pair-stream 7)
+(stream-ref int-pair-stream 8)
+(stream-ref int-pair-stream 9)
+(stream-ref int-pair-stream 10)
+(stream-ref int-pair-stream 11)
+(stream-ref int-pair-stream 12)
+;;;----------------------------
+
+;;;----------------------------
+(define int-pair-stream (pairs integers integers))
+
+(stream-ref int-pair-stream 0)
+(stream-ref int-pair-stream 1)
+(stream-ref int-pair-stream 2)
+(stream-ref int-pair-stream 3)
+(stream-ref int-pair-stream 4)
+(stream-ref int-pair-stream 5)
+(stream-ref int-pair-stream 6)
+(stream-ref int-pair-stream 7)
+(stream-ref int-pair-stream 8)
+(stream-ref int-pair-stream 9)
+(stream-ref int-pair-stream 10)
+(stream-ref int-pair-stream 11)
+(stream-ref int-pair-stream 12)
+;;;----------------------------
+
+	    
 
 ;;;--------------------------< ex 3.71 >--------------------------
 ;;; p446
