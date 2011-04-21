@@ -993,6 +993,20 @@ expected
 ;;; 쌍으로 이루어진 무한 스트림
 ;;; p441
 
+
+;;;---------------------------------
+(define (display-stream-n s n)
+  (define (iter c)
+    (if (< c n)
+	(begin
+	  (display c)
+	  (display ":")
+	  (display (stream-ref s c))
+	  (newline)
+	  (iter (+ c 1)))))
+  (iter 0))
+;;;---------------------------------
+
 ;;; 차례열 패러다임을 스트림으로 확장..
 ;;; ch2.2.3 prime-sum-pairs (p161)
 ;;; 의 쓰임새를 늘여보자.
@@ -1085,19 +1099,7 @@ expected
 
 (define int-pair-stream (pairs integers integers))
 
-(stream-ref int-pair-stream 0)
-(stream-ref int-pair-stream 1)
-(stream-ref int-pair-stream 2)
-(stream-ref int-pair-stream 3)
-(stream-ref int-pair-stream 4)
-(stream-ref int-pair-stream 5)
-(stream-ref int-pair-stream 6)
-(stream-ref int-pair-stream 7)
-(stream-ref int-pair-stream 8)
-(stream-ref int-pair-stream 9)
-(stream-ref int-pair-stream 10)
-(stream-ref int-pair-stream 11)
-(stream-ref int-pair-stream 12)
+(display-stream-n int-pair-stream 13)
 
 ;; > (1 1)  ;1,1
 ;; > (1 2)  ;1,
@@ -1198,7 +1200,7 @@ expected
 ;;  (4) \ (3)
 ;;        \
 
-(define (pairs s t)
+(define (all-pairs s t)
    (cons-stream
     (list (stream-car s) (stream-car t))              ; <- (1)
 
@@ -1211,34 +1213,12 @@ expected
       (stream-map (lambda (x) (list x (stream-car t)))   ; <- (4)
 		  (stream-cdr s))
 
-       (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+       (all-pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
 )
 
-(define all-int-pair-stream (pairs integers integers))
+(define all-int-pair-stream (all-pairs integers integers))
 
-
-(stream-ref all-int-pair-stream 0)
-(stream-ref all-int-pair-stream 1)
-(stream-ref all-int-pair-stream 2)
-(stream-ref all-int-pair-stream 3)
-(stream-ref all-int-pair-stream 4)
-(stream-ref all-int-pair-stream 5)
-(stream-ref all-int-pair-stream 6)
-(stream-ref all-int-pair-stream 7)
-(stream-ref all-int-pair-stream 8)
-(stream-ref all-int-pair-stream 9)
-(stream-ref all-int-pair-stream 10)
-(stream-ref all-int-pair-stream 11)
-(stream-ref all-int-pair-stream 12)
-(stream-ref all-int-pair-stream 13)
-(stream-ref all-int-pair-stream 14)
-(stream-ref all-int-pair-stream 15)
-(stream-ref all-int-pair-stream 16)
-(stream-ref all-int-pair-stream 17)
-(stream-ref all-int-pair-stream 18)
-(stream-ref all-int-pair-stream 19)
-(stream-ref all-int-pair-stream 20)
-(stream-ref all-int-pair-stream 21)
+(display-stream-n all-int-pair-stream 30)
 
 
 ;;;--------------------------< ex 3.68 >--------------------------
@@ -1247,22 +1227,25 @@ expected
 ;;; 기존에 쌍의 스트림을 세 조각으로 나누어 붙임
 ;; (S0, T0)를 나머지와 분리하지 않고 통째로 쓰면...?
 
-(define (pairs s t)
-  ;; (begin 
-  ;;   (display (stream-car s))
-  ;;   (newline)
-  (interleave 
-   (stream-map (lambda (x) (list (stream-car s) x))
-	       t)
-   (pairs (stream-cdr s) (stream-cdr t))))
-;; )					
+
+;; ;; 문제의 코드
+;; (define (pairs s t)
+;;   ;; (begin 
+;;   ;;   (display (stream-car s))
+;;   ;;   (newline)
+;;   (interleave 
+;;    (stream-map (lambda (x) (list (stream-car s) x))
+;; 	       t)
+;;    (pairs (stream-cdr s) (stream-cdr t))))
+;; ;; )					
 
 
 (define int-pair-stream (pairs integers integers))
 
-(stream-ref int-pair-stream 0)
-(stream-ref int-pair-stream 1)
-(stream-ref int-pair-stream 2)
+;; (stream-ref int-pair-stream 0)
+;; (stream-ref int-pair-stream 1)
+;; (stream-ref int-pair-stream 2)
+;; 무한 루프
 
 ;; 스트림은 지연 평가를 한다.
 ;; 스트림의 지연 평가는 cons-stream 에 의해서 발생된다.
@@ -1293,6 +1276,7 @@ expected
 ;;    (pairs s 
 ;; 	  (pairs t u)))
 
+;;; 흠, 수정 필요.
 (define (triples s t u)
   (define t-pairs (pairs t u))
   (define (iter-triples s1 s2)
@@ -1306,16 +1290,9 @@ expected
 
 (define triple-stream (triples integers integers integers))
 
-(stream-ref triple-stream 0)
-(stream-ref triple-stream 1)
-(stream-ref triple-stream 2)
-(stream-ref triple-stream 3)
-(stream-ref triple-stream 4)
-(stream-ref triple-stream 5)
-(stream-ref triple-stream 6)
-(stream-ref triple-stream 7)
-(stream-ref triple-stream 8)
-(stream-ref triple-stream 9)
+(display-stream-n triple-stream 10)
+
+
 
   
 (define pytha-stream
@@ -1335,21 +1312,30 @@ expected
 (stream-ref pytha-stream 0)
 (stream-ref pytha-stream 1)
 (stream-ref pytha-stream 2)
+(stream-ref pytha-stream 3)
 ;; <- (8 6 10) 시간이 많이 걸림.
-;; (stream-ref pytha-stream 3)
-;; (stream-ref pytha-stream 4)
-;; (stream-ref pytha-stream 5)
-;; (stream-ref pytha-stream 6)
-;; (stream-ref pytha-stream 7)
-;; (stream-ref pytha-stream 8)
-;; (stream-ref pytha-stream 9)
-
-
 
 
 
 ;;;--------------------------< ex 3.70 >--------------------------
 ;;; p445,6
+
+
+;;;---------------------------------
+(define (display-stream-n-weight s n weight)
+  (define (iter c)
+    (if (< c n)
+	(begin
+	  (display c)
+	  (display ":")
+	  (display (stream-ref s c))
+	  (display ":")
+	  (display (weight (stream-ref s c)))
+	  (newline)
+	  (iter (+ c 1)))))
+  (iter 0))
+;;;---------------------------------
+
 
 ;;; 두 스트림의 원소를 번갈아 끼워넣는 프로세스에서
 ;; 특별히 정한 차례를 따르기보다
@@ -1403,33 +1389,36 @@ expected
 ;;; a. i <= j  인 모든 양의 정수 쌍을 늘어놓는 스트림.
 ;;     쌍의 차례는 i+j 값에 따른다.
 
-(define (weight-a pair1 pair2)
-  (let ((i1 (car pair1))
-	(j1 (cadr pair1))
-	(i2 (car pair2))
-	(j2 (cadr pair2)))
-    (let ((w1 (+ i1 j1))
-	  (w2 (+ i2 j2)))
-      (if (< w1 w2)
-	  #t
-	  #f))))
+;; (define (weight-a pair1 pair2)
+;;   (let ((i1 (car pair1))
+;; 	(j1 (cadr pair1))
+;; 	(i2 (car pair2))
+;; 	(j2 (cadr pair2)))
+;;     (let ((w1 (+ i1 j1))
+;; 	  (w2 (+ i2 j2)))
+;;       (if (< w1 w2)
+;; 	  #t
+;; 	  #f))))
+
+;; (define a-pair-stream (weighted-pairs weight-a integers integers))
+;; (display-stream-n a-pair-stream 13)
+
+(define (weight-a pair1)
+  (let ((i (car pair1))
+	(j (cadr pair1)))
+    (+ i j)))
+
+(define (comp-weight weight pair1 pair2)
+  (< (weight pair1) (weight pair2)))
 
 ;;;----------------------------
-(define a-pair-stream (weighted-pairs weight-a integers integers))
+(define a-pair-stream (weighted-pairs (lambda (p1 p2)
+					(comp-weight weight-a
+						     p1 
+						     p2))
+					integers integers))
 
-(stream-ref a-pair-stream 0)
-(stream-ref a-pair-stream 1)
-(stream-ref a-pair-stream 2)
-(stream-ref a-pair-stream 3)
-(stream-ref a-pair-stream 4)
-(stream-ref a-pair-stream 5)
-(stream-ref a-pair-stream 6)
-(stream-ref a-pair-stream 7)
-(stream-ref a-pair-stream 8)
-(stream-ref a-pair-stream 9)
-(stream-ref a-pair-stream 10)
-(stream-ref a-pair-stream 11)
-(stream-ref a-pair-stream 12)
+(display-stream-n-weight a-pair-stream 20 weight-a)
 ;;;----------------------------
 
 
@@ -1438,16 +1427,30 @@ expected
 ;;     차례는 2i+3j+5ij를 따른다.
 
 
-(define (weight-b pair1 pair2)
-  (let ((i1 (car pair1))
-	(j1 (cadr pair1))
-	(i2 (car pair2))
-	(j2 (cadr pair2)))
-    (let ((w1 (+ (* 2 i1) (* 3 j1) (* 5 i1 j1)))
-	  (w2 (+ (* 2 i2) (* 3 j2) (* 5 i2 j2))))
-      (if (< w1 w2)
-	  #t
-	  #f))))
+;; (define (weight-b pair1 pair2)
+;;   (let ((i1 (car pair1))
+;; 	(j1 (cadr pair1))
+;; 	(i2 (car pair2))
+;; 	(j2 (cadr pair2)))
+;;     (let ((w1 (+ (* 2 i1) (* 3 j1) (* 5 i1 j1)))
+;; 	  (w2 (+ (* 2 i2) (* 3 j2) (* 5 i2 j2))))
+;;       (if (< w1 w2)
+;; 	  #t
+;; 	  #f))))
+
+;; (define b-pair-stream
+;;   (stream-filter (lambda (x)
+;; 		   (let ((i (car x))
+;; 			 (j (cadr x)))
+;; 		     (and (predicate-b i) (predicate-b j))))
+;; 		 (weighted-pairs weight-b integers integers)))
+
+;; (display-stream-n b-pair-stream 30)
+
+(define (weight-b pair1)
+  (let ((i (car pair1))
+	(j (cadr pair1)))
+    (+ (* 2 i) (* 3 j) (* 5 i j))))
 
 (define (predicate-b x)
   (and (not (= (remainder x 2) 0))
@@ -1459,41 +1462,64 @@ expected
 		   (let ((i (car x))
 			 (j (cadr x)))
 		     (and (predicate-b i) (predicate-b j))))
-		 (weighted-pairs weight-b integers integers)))
+		 (weighted-pairs (lambda (p1 p2)
+					(comp-weight weight-b
+						     p1 
+						     p2))
+				 integers integers)))
 
 ;; (define b-pair-stream
 ;; 		 (weighted-pairs weight-b integers integers))
 
-
-(stream-ref b-pair-stream 0)
-(stream-ref b-pair-stream 1)
-(stream-ref b-pair-stream 2)
-(stream-ref b-pair-stream 3)
-(stream-ref b-pair-stream 4)
-(stream-ref b-pair-stream 5)
-(stream-ref b-pair-stream 6)
-(stream-ref b-pair-stream 7)
-(stream-ref b-pair-stream 8)
-(stream-ref b-pair-stream 9)
-(stream-ref b-pair-stream 10)
-(stream-ref b-pair-stream 11)
-(stream-ref b-pair-stream 12)
-(stream-ref b-pair-stream 13)
-(stream-ref b-pair-stream 14)
-(stream-ref b-pair-stream 15)
-(stream-ref b-pair-stream 16)
-(stream-ref b-pair-stream 17)
-(stream-ref b-pair-stream 18)
-(stream-ref b-pair-stream 19)
-(stream-ref b-pair-stream 20)
-(stream-ref b-pair-stream 21)
-(stream-ref b-pair-stream 22)
-;;;----------------------------
-
+(display-stream-n-weight b-pair-stream 30 weight-b)
 	    
-
 ;;;--------------------------< ex 3.71 >--------------------------
 ;;; p446
+
+;; 라마누잔 수 
+;; - 어떤 수가 두 수의 세제곱을 더한 값이라고 할 때 ( x = i^3 + j^3 )
+;;   그렇게 셈할 수 있는 방법이 하나보다 많으면 그 수를 라마누잔 수라고 한다.
+
+;; 스트림 패러다임 해법 :
+;;  i^3 + j^3 으로 무게를 정의한 정수 쌍들의 스트림을 만들어 낸 다음
+;;  이어진 두 쌍의 무게가 같은 것을 찾아내면 된다.
+
+;; 라마누잔 수를 뽑아내는 프로시저를 만들어라.
+
+
+(define (weight-ramanujan pair1)
+  (let ((i (car pair1))
+	(j (cadr pair1)))
+    (+ (* i i i) (* j j j))))
+
+;; 1) i^3 + j^3 값의 크기 순으로 나타나는 스트림을 만든다
+(define s1 (weighted-pairs (lambda (p1 p2)
+			     (comp-weight weight-ramanujan 
+					  p1
+					  p2))
+			   integers integers))
+
+;; 흠,, 왜 weight 순서에 맞지 않는 순서로 스트림이 나타나는거지?
+(display-stream-n-weight s1 30 weight-ramanujan) 
+
+;; 2) 이어진 두 쌍 (a b), (c d)의 무게가 같으면 그 무게는 라마누잔 수이다.
+(define (merge-ramanujan s1 s2)
+  (cond ((stream-null? s1) s2)
+	((stream-null? s2) s1)
+	(else
+	 (let ((s1car (stream-car s1))
+	       (s2car (stream-car s2)))
+	   (if (= (weight-ramanujan s1car)
+		  (weight-ramanujan s2car))   ; 라마누잔수 확인
+	       (cons-stream (weight-ramanujan s1car)
+			    (merge-ramanujan (stream-cdr s1) (stream-cdr s2)))
+	       (merge-ramanujan (stream-cdr s1) (stream-cdr s2)))))))
+
+;; 흠 맞게 한 것 같은데 답이 안나오네,,?
+
+;; (define ramanujan-nums (merge-ramanujan s1 (stream-cdr s1)))
+
+;; (display-stream-n ramanujan-nums 2)
 
 
 ;;;--------------------------< ex 3.72 >--------------------------
