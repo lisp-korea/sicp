@@ -309,3 +309,77 @@
                  result)
           result))))
 ;; 
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.64
+;; sol)
+;; 시키는대로
+(define (average a b)
+  (/ (+ a b) 2.0))
+(define (sqrt-improve guess x)
+  (average guess (/ x guess)))
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream 1.0
+                 (stream-map (lambda (guess)
+                               (sqrt-improve guess x))
+                             guesses)))
+  guesses)
+(define (stream-limit s t)
+  (let ((n0 (stream-car s))
+        (n1 (stream-car (stream-cdr s))))
+    (if (< (abs (- n1 n0)) t)
+        n1
+        (stream-limit (stream-cdr s) t))))
+(define (sqrt x tolerance)
+  (stream-limit (sqrt-stream x) tolerance))
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.65
+
+;; prerequisites)
+(define (partial-sums s)
+(cons-stream (car-stream s)
+             (add-stream s (partial-sums s)))) 
+(define (pi-summands n)
+  (cons-stream (/ 1.0 n)
+               (stream-map - (pi-summands (+ n 2)))))
+(define pi-stream
+  (scale-stream (partial-sums (pi-summands 1)) 4))
+(display-stream pi-stream)
+(define (euler-transform x)
+  (let ((s0 (stream-ref s 0))
+        (s1 (stream-ref x 1))
+        (s2 (stream-ref s 2)))
+    (cons-stream (- s2 (/ (square (- s2 s1))
+                          (+ s0 (* -2 s1) s2)))
+                 (euler-transform (stream-cdr s)))))
+(display-stream (euler-transform pi-stream))
+(define (make-tableau transform s)
+  (cons-stream s
+               (make-tableau transform
+                             (transform s))))
+(define (accelerated-sequence transform s)
+  (stream-map stream-car
+              (make-tableau transform s)))
+(display-stream (accelerated-sequence euler-transform
+                                      pi-stream))
+;; sol)
+(define doit
+  (let ((pt (current-seconds)))
+    (set! pt (- (current-seconds) pt))
+    (display pt)
+    (newline)
+  
+    (set! pt (- (current-seconds) pt))
+    (display pt)
+    (newline)
+  
+    (set! pt (- (current-seconds) pt))
+    (display pt)
+    (newline)))
+  
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 쌍으로 이루어진 무한 스트림
+
+
