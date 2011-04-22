@@ -837,3 +837,108 @@
 ;; (425 (13 16) (8 19) (5 20))
 ;; > (stream-ref three-square-ns 2)
 ;; (650 (17 19) (11 23) (5 25))
+
+
+;; Streams as signals
+
+;;            i
+;;           ---
+;; S_i = C + >   x_j dt
+;;           ---
+;;           j=1
+
+(define (integral integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+		 (add-streams (scale-stream integrand dt)
+			      int)))
+  int)
+
+;; *Figure 3.32:* The `integral' procedure viewed as a
+;; signal-processing system.
+
+;;                                   initial-value
+;;                                        |
+;;             +-----------+              |   |\__
+;;      input  |           |      |\__    +-->|   \_  integral
+;;      ------>| scale: dt +----->|   \_      |cons_>--*------->
+;;             |           |      | add_>---->| __/    |
+;;             +-----------+  +-->| __/       |/       |
+;;                            |   |/                   |
+;;                            |                        |
+;;                            +------------------------+
+
+
+;; ex 3.73
+
+;; *Figure 3.33:* An RC circuit and the associated signal-flow
+;; diagram.
+
+;;        +                 -
+;;       ->----'\/\/\,---| |---
+;;        i                 C
+
+;;                    / t
+;;                    |  i
+;;       v  =  v   +  |      dt + R i
+;;              0     |
+;;                    / 0
+
+;;               +--------------+
+;;           +-->|   scale: R   |---------------------+   |\_
+;;           |   +--------------+                     |   |  \_
+;;           |                                        +-->|    \   v
+;;        i  |   +--------------+     +------------+      | add >--->
+;;       ----+-->|  scale: 1/C  |---->|  integral  |----->|   _/
+;;               +--------------+     +------------+      | _/
+;;                                                        |/
+
+(define (RC r c dt)
+  (lambda (i v_0)
+    (add-streams
+     (scale-stream i r)
+     (integral (scale-stream i (/ 1 c)) v_0 dt))))
+
+;; ex 3.74
+
+;; ... 1  2  1.5  1  0.5  -0.1  -2  -3  -2  -0.5  0.2  3  4 ...
+;; ... 0  0   0   0    0   -1    0   0   0    0    1   0  0 ...
+
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector (stream-car input-stream) last-value)
+   (make-zero-crossings (stream-cdr input-stream)
+			(stream-car input-stream))))
+
+(define zero-crossings (make-zero-crossings sense-data 0))
+
+(define zero-crossings
+  (stream-map sign-change-detector sense-data
+	      (cons-stream 0 sense-data)))
+
+;; ex 3.75
+
+(define (make-zero-crossings input-stream last-value last-avpt)
+  (let ((avpt (/ (+ (stream-car input-stream) last-value) 2)))
+    (cons-stream (sign-change-detector avpt last-avpt)
+		 (make-zero-crossings (stream-cdr input-stream)
+				      (stream-car input-stream)
+				      avpt))))
+
+;; ex 3.76
+
+(define (smooth s)
+  (let ((s1 (stream-car s))
+	(s2 (stream-car (stream-cdr s))))
+  (cons-stream
+   (/ 2 (+ s1 s2))
+   (smooth s))))
+
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector (stream-car input-stream) last-value)
+   (make-zero-crossings (stream-cdr input-stream)
+			(stream-car input-stream))))
+
+(define zero-crossings (make-zero-crossings (smooth sense-data) 0))
+  
