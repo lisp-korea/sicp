@@ -1003,7 +1003,8 @@ expected
 	  (display ":")
 	  (display (stream-ref s c))
 	  (newline)
-	  (iter (+ c 1)))))
+	  (iter (+ c 1)))
+	(newline)))
   (iter 0))
 ;;;---------------------------------
 
@@ -1634,9 +1635,8 @@ expected
 ;; 제로-크로싱 스트림 : zero-crossings 스트림
 
 (define (make-stream-from-list lst1)
-  (define s (cons-stream (if (null? lst1) '() (car lst1))
-			 (make-stream-from-list (cdr lst1))))
-  s)
+  (cons-stream (if (null? lst1) '() (car lst1))
+	       (make-stream-from-list (cdr lst1))))
 
 (define sense-data (make-stream-from-list '(1 2 1.5 1 0.5 -0.1 -2 -3 -2 -0.5 0.2 3 4)))
 
@@ -1667,11 +1667,31 @@ expected
 (define zero-crossings
   (stream-map sign-change-detector sense-data (stream-cdr sense-data)))
 ;;                                            ^^^^^^^^^^^^^^^^^^^^^^^
+
 (display-stream-n zero-crossings 12)
 
 
 ;;;--------------------------< ex 3.75 >--------------------------
 ;;; p450
+
+;; 문제점 : 잡음에 민감하다
+;; 신호를 다듬는 과정을 거쳐서 잡신호 걸러내기(LPF)
+;; 옛 값과 평균하여 만든 신호에서 제로 크로싱 신호를 뽑아내도록
+
+;; Alyssa가 짜고 Louis가 고침
+(define (make-zero-crossings input-stream last-value)
+  (let ((avpt (/ (+ (stream-car input-stream) last-value) 2)))
+    (cons-stream (sign-change-detector avpt last-value)
+		 (make-zero-crossings (stream-cdr input-stream)
+				      avpt))))
+
+
+(define zero-crossings (make-zero-crossings sense-data 0))
+
+(display-stream-n zero-crossings 12)
+
+;; 구조는 그대로 두고 오류를 찾아서 바로 잡아라
+;; 귀띔 : make-zero-crossings의 인자 수를 늘려야 한다.
 
 
 ;;;--------------------------< ex 3.76 >--------------------------
