@@ -348,7 +348,6 @@
 (define ln2-stream
   (partial-sums (ln2-summands 1)))
 
-(print-stream-n ln2-stream 10)
 
 (define (euler-transform s)
   (let ((s0 (stream-ref s 0))
@@ -367,22 +366,76 @@
               (make-tableau transform s)))
 (display-stream (accelerated-sequence euler-transform
                                       pi-stream))
-;; sol)
+;; sol) 버그발생...
 (define doit
   (let ((pt (current-seconds)))
     (set! pt (- (current-seconds) pt))
     (display pt)
     (newline)
-  
+
+    (print-stream-n ln2-stream 10)   
     (set! pt (- (current-seconds) pt))
     (display pt)
     (newline)
-  
+
+    (print-stream-n (euler-transform ln2-stream) 10)
+    (set! pt (- (current-seconds) pt))
+    (display pt)
+    (newline)
+
+    (print-stream-n (make-tableau euler-transform ln2-stream) 10)
+    (set! pt (- (current-seconds) pt))
+    (display pt)
+    (newline)
+
+    (print-stream-n (accelerated-sequence euler-transform ln2-stream) 10)
     (set! pt (- (current-seconds) pt))
     (display pt)
     (newline)))
   
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; 쌍으로 이루어진 무한 스트림
+(stream-filter (lambda (pair)
+                 (prime? (+ (car pair) (cadr pair))))
+               int-pairs)
+(stream-map (lambda (x) (list (stream-car s) x))
+            (stream-cdr t))
+;; (define (pairs s t)
+;;   (cons-stream
+;;    (list (stream-car s) (stream-car t))
+;;    (<combine-in-some-way>
+;;     (stream-map (lambda (x) (list (stream-car s) x))
+;;                 (stream-cdr t))
+;;     (pairs (stream-cdr s) (stream-cdr t)))))
+;; (define (stream-append s1 s2)
+;;   (if (stream-null? s1)
+;;       s2
+;;       (cons-stream (stream-car s1)
+;;                    (stream-append (stream-cdr s1) s2))))
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (interleave s2 (stream-cdr s1)))))
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))
 
-
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.66
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.67
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.68
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.69
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.70
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.71
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ex.3.72
