@@ -1592,10 +1592,10 @@ expected
   int)
 
 
-(define test-integral (integral integers 1 0.1))
+;;(define test-integral (integral integers 1 0.1))
+(define test-integral (integral ones 1 0.1))
 
 (display-stream-n test-integral 12)
-
 ;;; 해석,,,
 
 
@@ -1603,9 +1603,28 @@ expected
 ;;;--------------------------< ex 3.73 >--------------------------
 ;;; p448 
 
+;; RC 프로시저는 R,C,dt값을 받아서 그 결과로 프로시저를 내놓는다.
+;; 나온 프로시저는 전류 스트림 i, 처음 전압 v0를 받아서 전압 스트림 v를 내놓는다.
+
+(define (RC R C dt)
+  (lambda (i v0)
+    (define v
+      (add-streams (scale-stream i R)
+		  (integral (scale-stream i (/ 1 C))
+			    v0
+			    dt)))
+    v))
+
+(define RC1 (RC 5 1 0.5))
+
+(define v1-s (RC1 ones 1.0))
+
+(display-stream-n v1-s 30)
+
 
 ;;;--------------------------< ex 3.74 >--------------------------
 ;;; p449
+
 
 
 ;;;--------------------------< ex 3.75 >--------------------------
