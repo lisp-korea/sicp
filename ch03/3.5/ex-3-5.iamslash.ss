@@ -339,17 +339,20 @@
 
 ;; prerequisites)
 (define (partial-sums s)
-(cons-stream (car-stream s)
-             (add-stream s (partial-sums s)))) 
-(define (pi-summands n)
+  (cons-stream (stream-car s)
+               (add-streams (stream-cdr s)
+                            (partial-sums s))))
+(define (ln2-summands n)
   (cons-stream (/ 1.0 n)
-               (stream-map - (pi-summands (+ n 2)))))
-(define pi-stream
-  (scale-stream (partial-sums (pi-summands 1)) 4))
-(display-stream pi-stream)
-(define (euler-transform x)
+               (stream-map - (ln2-summands (+ n 1)))))
+(define ln2-stream
+  (partial-sums (ln2-summands 1)))
+
+(print-stream-n ln2-stream 10)
+
+(define (euler-transform s)
   (let ((s0 (stream-ref s 0))
-        (s1 (stream-ref x 1))
+        (s1 (stream-ref s 1))
         (s2 (stream-ref s 2)))
     (cons-stream (- s2 (/ (square (- s2 s1))
                           (+ s0 (* -2 s1) s2)))
