@@ -1625,6 +1625,49 @@ expected
 ;;;--------------------------< ex 3.74 >--------------------------
 ;;; p449
 
+;; 제로 크로싱
+;; 음->양 : +1
+;; 양->음 : -1
+;; 아니면 : 0
+
+;; 센서에서 오는 신호 : sense-data 스트림
+;; 제로-크로싱 스트림 : zero-crossings 스트림
+
+(define (make-stream-from-list lst1)
+  (define s (cons-stream (if (null? lst1) '() (car lst1))
+			 (make-stream-from-list (cdr lst1))))
+  s)
+
+(define sense-data (make-stream-from-list '(1 2 1.5 1 0.5 -0.1 -2 -3 -2 -0.5 0.2 3 4)))
+
+(define (sign-change-detector cur last)
+  (cond ((< last 0) (if (> cur 0) +1 0))
+	((> last 0) (if (< cur 0) -1 0))
+	(else 0)))
+
+;;-----
+;; Alyssa가 만든 것
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector (stream-car input-stream) last-value)
+   (make-zero-crossings (stream-cdr input-stream)
+			(stream-car input-stream))))
+
+(define zero-crossings (make-zero-crossings sense-data 0))
+
+;;-----
+
+(display-stream-n sense-data 13)
+
+(display-stream-n zero-crossings 13)
+
+
+;;; Eva의 조언
+;; stream-map을 쓴다면
+(define zero-crossings
+  (stream-map sign-change-detector sense-data (stream-cdr sense-data)))
+;;                                            ^^^^^^^^^^^^^^^^^^^^^^^
+(display-stream-n zero-crossings 12)
 
 
 ;;;--------------------------< ex 3.75 >--------------------------
