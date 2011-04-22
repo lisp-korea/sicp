@@ -1535,7 +1535,7 @@ expected
 ;; 흠 맞게 한 것 같은데 답이 안나오네,,?
 (define ramanujan-nums (merge-ramanujan s1 (stream-cdr s1)))
 
-(display-stream-n ramanujan-nums 3)
+(display-stream-n ramanujan-nums 6)
 
 
 ;;;--------------------------< ex 3.72 >--------------------------
