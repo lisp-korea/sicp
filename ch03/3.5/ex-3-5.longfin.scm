@@ -541,3 +541,404 @@
   (partial-sums (ln2-summands 1)))
 
 ;; Infinite streams of pairs
+
+;; (stream-filter (lambda (pair)
+;;                       (prime? (+ (car pair) (cadr pair))))
+;;                     int-pairs)
+
+;; int-paires
+;; S = (S_i), T = (T_j)
+
+;; (S_0, T_0)  (S_0, T_1)  (S_0, T_2)  ...
+;; (S_1, T_0)  (S_1, T_1)  (S_1, T_2)  ...
+;; (S_2, T_0)  (S_2, T_1)  (S_2, T_2)  ...
+;; ...
+
+
+;; (S_0, T_0)  (S_0, T_1)  (S_0, T_2)  ...
+;;             (S_1, T_1)  (S_1, T_2)  ...
+;;                         (S_2, T_2)  ...
+;;                                     ...
+
+(pairs integers integers)
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (<COMBINE-IN-SOME-WAY>
+    (stream-map (lambda (x) (list (stream-car s) x))
+		(stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))
+
+ (define (stream-append s1 s2)
+       (if (stream-null? s1)
+           s2
+           (cons-stream (stream-car s1)
+                        (stream-append (stream-cdr s1) s2))))
+
+;; unsuitable for infinite stream.(s2 isn't appeared.)
+
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+		   (interleave s2 (stream-cdr s1)))))
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+		(stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))
+
+;; ex 3.66
+
+(define x (pairs integers integers))
+
+;; (pairs [1 ?] [1 ?])
+;; [(1 1) (interleave (stream-map (lambda (x) (list 1 x)) [2 ?]) (pairs [2 ?] [2 ?]))]
+
+(stream-ref x 0)
+;; (1 1)
+
+(stream-ref x 1)
+;; (1 2)
+
+;; (pairs [2 ?] [2 ?])
+;; [(2 2) (interleave (stream-map (lambda (x) (list 2 x)) [3 ?]) (pairs [3 ?] [3 ?]))]
+
+(stream-ref x 2)
+;; (2 2)
+
+(stream-ref x 3)
+;; (1 3)
+
+(stream-ref x 4)
+;; (2 3)
+
+(stream-ref x 5)
+;; (1 4)
+
+
+;; (pairs [3 ?] [3 ?])
+;; [(3 3) (interleave (stream-map (lambda (x) (list 3 x)) [4 ?]) (pairs [4 ?] [4 ?]))]
+
+(stream-ref x 6)
+
+;; (3 3)
+
+
+;; (s_1 t_1)
+;; (s_1 t_2)
+;;	(s_2 t_2)
+;; (s_1 t_3)
+;;	(s_2 t_3)
+;; (s_1 t_4)
+;;		(s_3 t_3)
+;; (s_1 t_5)
+;;      (s_2 t_4)
+;; (s_1 t_6)
+;;		(s_3 t_4)
+;; (s_1 t_7)
+;;      (s_2 t_5)
+;; (s_1 t_8)
+;;                   (s_4 t_4)
+
+;; (1 y) => if (y == 1) : 1, (y != 1) (y-1)*2
+;; (1 100) => 99 * 2 
+
+;; (2 y) => if (y == 2) : 3, (y != 2) (y-2)*4
+;; (2 100) => 98 * 4
+
+;; (3 y) => if (y == 3) : 7, (y != 3) (y-3)*8+2
+;; (3 100) => 97 * 8 +2
+
+;; (4 y) => if (y == 5) : 7, (y != 3) (y-4)*16+6
+;; (4 100) => 96 * 16 +6
+
+;; (x y) => if (x == y) : 2^x - 1, (x != y) (y-x)*2^x+2(2^(x-2)-1)
+;; (99 100) => (100-99)*2^99+2(2^97-1) = 2^99+2^98-2
+;; (100 100) => 2^100 - 1
+
+;;  ex 3.67
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+		(stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))
+
+(define x (pairs integers integers))
+
+;; ex 3.68
+
+
+(define (pairs s t)
+  (interleave
+   (stream-map (lambda (x) (list (stream-car s) x))
+	       t)
+   (pairs (stream-cdr s) (stream-cdr t))))
+
+(define x (pairs integers integers))
+
+;; hanging...
+;; interleave isn't special form. so pairs is eager evaluation.
+
+
+;; ex 3.69
+
+(define (triples s t u)
+  (cons-stream
+   (list (stream-car s)
+	 (stream-car t)
+	 (stream-car u)) 
+   (interleave
+    (stream-map (lambda (x) (cons (stream-car s) x))
+		(pairs (stream-cdr t)
+		       (stream-cdr u)))
+    (triples (stream-cdr s) (stream-cdr t) (stream-cdr u)))))
+
+(define ts (triples integers integers integers))
+(define pythagorean-triples
+  (stream-filter (lambda (t)
+		   (= (+ (square (car t))
+			 (square (cadr t)))
+		      (square (caddr t))))
+		 ts))
+
+;; ex 3.70
+
+(define (merge-weighted s1 s2 w)
+  (cond ((stream-null? s1) s2)
+	((stream-null? s2) s1)
+	(else
+	 (let ((s1car (stream-car s1))
+	       (s2car (stream-car s2)))
+	   (cond ((w s1car s2car)
+		  (cons-stream s1car (merge-weighted (stream-cdr s1) s2 w)))
+		 (else
+		  (cons-stream s2car (merge-weighted s1 (stream-cdr s2) w))))))))
+
+
+(define (pairs-weighted s t w)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (merge-weighted
+    (stream-map (lambda (x) (list (stream-car s) x))
+		(stream-cdr t))
+    (pairs-weighted (stream-cdr s) (stream-cdr t) w)
+    w)))
+
+
+(define as (pairs-weighted
+	    integers
+	    integers
+	    (lambda (x y)
+	      (let ((x1 (car x))
+		    (x2 (cadr x))
+		    (y1 (car y))
+		    (y2 (cadr y)))
+		(< (+ x1 x2) (+ y1 y2))))))
+
+(define S (cons-stream 1 (merge (scale-stream integers 2)
+				(merge (scale-stream integers 3)
+				       (scale-stream integers 5)))))
+(define bs (pairs-weighted
+	    S
+	    S
+	    (lambda (x y)
+	      (let ((x1 (car x))
+		    (x2 (cadr x))
+		    (y1 (car y))
+		    (y2 (cadr y)))
+		(< (+ (* 2 x1)
+		      (* 3 x2)
+		      (* 5 x1 x2))
+		   (+ (* 2 y1)
+		      (* 3 y2)
+		      (* 5 y1 y2)))))))
+
+;; ex 3.71
+
+(define (cube x) (* x x x))
+
+(define (ramanujan-filter s)
+  (let ((x (stream-car s))
+	(y (stream-car (stream-cdr s))))
+    (cond ((stream-null? s) the-empty-stream)
+	  ((= x y)
+	   (cons-stream (stream-car s)
+			(ramanujan-filter (stream-cdr s))))
+	  (else
+	   (ramanujan-filter (stream-cdr s))))))
+	   
+(define ramanujan-stream
+  (ramanujan-filter
+   (stream-map
+    (lambda (pair)
+      (+ (cube (car pair))
+	 (cube (cadr pair))))
+    (pairs-weighted
+     integers
+     integers
+     (lambda (x y) 
+       (let ((x1 (car x))
+	     (x2 (cadr x))
+	     (y1 (car y))
+	     (y2 (cadr y)))
+	 (< (+ (cube x1) (cube x2))
+	    (+ (cube y1) (cube y2)))))))))
+
+;; > (stream-ref ramanujan-stream 0)
+;; 1729
+;; > (stream-ref ramanujan-stream 1)
+;; 4104
+;; > (stream-ref ramanujan-stream 2)
+;; 13832
+;; > (stream-ref ramanujan-stream 3)
+;; 20683
+;; > (stream-ref ramanujan-stream 4)
+;; 32832
+;; > (stream-ref ramanujan-stream 5)
+;; 39312
+
+(define (three-way-filter s)
+  (let ((s1 (stream-car s))
+	(s2 (stream-car (stream-cdr s)))
+	(s3 (stream-car (stream-cdr (stream-cdr s)))))
+    (let ((s1-sum (+ (square (car s1)) (square (cadr s1))))
+	  (s2-sum (+ (square (car s2)) (square (cadr s2))))
+	  (s3-sum (+ (square (car s3)) (square (cadr s3)))))
+      (cond ((stream-null? s) the-empty-stream)
+	    ((= s1-sum s2-sum s3-sum)
+	     (cons-stream (list s1-sum s1 s2 s3)
+			  (three-way-filter (stream-cdr s))))
+	    (else (three-way-filter (stream-cdr s)))))))
+
+(define three-square-ns
+  (three-way-filter
+   (pairs-weighted
+    integers
+    integers
+    (lambda (x y)
+      (let ((x1 (car x))
+	    (x2 (cadr x))
+	    (y1 (car y))
+	    (y2 (cadr y)))
+	(< (+ (square x1) (square x2))
+	   (+ (square y1) (square y2))))))))
+	     	    
+;; > (stream-ref three-square-ns 0)
+;; (325 (10 15) (6 17) (1 18))
+;; > (stream-ref three-square-ns 1)
+;; (425 (13 16) (8 19) (5 20))
+;; > (stream-ref three-square-ns 2)
+;; (650 (17 19) (11 23) (5 25))
+
+
+;; Streams as signals
+
+;;            i
+;;           ---
+;; S_i = C + >   x_j dt
+;;           ---
+;;           j=1
+
+(define (integral integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+		 (add-streams (scale-stream integrand dt)
+			      int)))
+  int)
+
+;; *Figure 3.32:* The `integral' procedure viewed as a
+;; signal-processing system.
+
+;;                                   initial-value
+;;                                        |
+;;             +-----------+              |   |\__
+;;      input  |           |      |\__    +-->|   \_  integral
+;;      ------>| scale: dt +----->|   \_      |cons_>--*------->
+;;             |           |      | add_>---->| __/    |
+;;             +-----------+  +-->| __/       |/       |
+;;                            |   |/                   |
+;;                            |                        |
+;;                            +------------------------+
+
+
+;; ex 3.73
+
+;; *Figure 3.33:* An RC circuit and the associated signal-flow
+;; diagram.
+
+;;        +                 -
+;;       ->----'\/\/\,---| |---
+;;        i                 C
+
+;;                    / t
+;;                    |  i
+;;       v  =  v   +  |      dt + R i
+;;              0     |
+;;                    / 0
+
+;;               +--------------+
+;;           +-->|   scale: R   |---------------------+   |\_
+;;           |   +--------------+                     |   |  \_
+;;           |                                        +-->|    \   v
+;;        i  |   +--------------+     +------------+      | add >--->
+;;       ----+-->|  scale: 1/C  |---->|  integral  |----->|   _/
+;;               +--------------+     +------------+      | _/
+;;                                                        |/
+
+(define (RC r c dt)
+  (lambda (i v_0)
+    (add-streams
+     (scale-stream i r)
+     (integral (scale-stream i (/ 1 c)) v_0 dt))))
+
+;; ex 3.74
+
+;; ... 1  2  1.5  1  0.5  -0.1  -2  -3  -2  -0.5  0.2  3  4 ...
+;; ... 0  0   0   0    0   -1    0   0   0    0    1   0  0 ...
+
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector (stream-car input-stream) last-value)
+   (make-zero-crossings (stream-cdr input-stream)
+			(stream-car input-stream))))
+
+(define zero-crossings (make-zero-crossings sense-data 0))
+
+(define zero-crossings
+  (stream-map sign-change-detector sense-data
+	      (cons-stream 0 sense-data)))
+
+;; ex 3.75
+
+(define (make-zero-crossings input-stream last-value last-avpt)
+  (let ((avpt (/ (+ (stream-car input-stream) last-value) 2)))
+    (cons-stream (sign-change-detector avpt last-avpt)
+		 (make-zero-crossings (stream-cdr input-stream)
+				      (stream-car input-stream)
+				      avpt))))
+
+;; ex 3.76
+
+(define (smooth s)
+  (let ((s1 (stream-car s))
+	(s2 (stream-car (stream-cdr s))))
+  (cons-stream
+   (/ 2 (+ s1 s2))
+   (smooth s))))
+
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector (stream-car input-stream) last-value)
+   (make-zero-crossings (stream-cdr input-stream)
+			(stream-car input-stream))))
+
+(define zero-crossings (make-zero-crossings (smooth sense-data) 0))
+  
