@@ -1276,16 +1276,16 @@ expected
 ;;    (pairs s 
 ;; 	  (pairs t u)))
 
-;;; 흠, 수정 필요.
+
 (define (triples s t u)
   (define t-pairs (pairs t u))
   (define (iter-triples s1 s2)
     (cons-stream 
      (cons (stream-car s1) (stream-car s2))
      (interleave
-      (stream-map (lambda (x) (cons (stream-car s1) x))
-		  s2)
-      (iter-triples (stream-cdr s1) s2))))
+      (stream-map (lambda (x) (cons (stream-car s1) x))  ;; <-- (a b c)
+		  (stream-cdr s2))
+      (iter-triples (stream-cdr s1) (stream-cdr s2)))))
   (iter-triples s t-pairs))
 
 (define triple-stream (triples integers integers integers))
@@ -1313,7 +1313,10 @@ expected
 (stream-ref pytha-stream 1)
 (stream-ref pytha-stream 2)
 (stream-ref pytha-stream 3)
-;; <- (8 6 10) 시간이 많이 걸림.
+(stream-ref pytha-stream 4)
+;; (stream-ref pytha-stream 5)
+;; <- (12 5 13) 시간 많이 걸림
+
 
 
 
@@ -1345,21 +1348,36 @@ expected
 
 ;; merge를 확장하여 merge-weighted 를 짜라
 ;; - 쌍의 무제를 재는 weight프로시저를 인자로 받을 수 있다.
-(define (merge-weighted weight s1 s2)
+;; - 무게는 같더라도 원래 쌍은 다를 수 있다는데에 주의!
+(define (merge-weighted cmp-weight s1 s2)
   (cond ((stream-null? s1) s2)
 	((stream-null? s2) s1)
 	(else
 	 (let ((s1car (stream-car s1))
 	       (s2car (stream-car s2)))
-	   (cond ((weight s1car s2car)
-		  (cons-stream s1car (merge-weighted weight (stream-cdr s1) s2)))
-		 ((weight s1car s2car)
-		  (cons-stream s2car (merge-weighted weight s1 (stream-cdr s2))))
+	   (cond ((cmp-weight s1car s2car)
+		  (cons-stream s1car (merge-weighted cmp-weight (stream-cdr s1) s2)))
+		 ((cmp-weight s2car s1car)
+		  (cons-stream s2car (merge-weighted cmp-weight s1 (stream-cdr s2))))
 		 (else
-		  (cons-stream s1car
-			       (merge-weighted weight (stream-cdr s2) 
-					       (stream-cdr s1)))))))))
-;; interleave를 위해서 else 부분의 merge시에 s2,s1 순서로 바꿈
+		  (if (cmp-pair s1car s2car)
+		      (cons-stream s1car
+				   (merge-weighted cmp-weight (stream-cdr s2) 
+						   (stream-cdr s1)))
+		      (cons-stream s1car
+				   (cons-stream s2car
+						(merge-weighted cmp-weight
+								(stream-cdr s2)
+								(stream-cdr s1)))))))))))
+;; ;<- interleave를 위해서 else 부분의 merge시에 s2,s1 순서로 바꿈
+
+(define (cmp-pair p1 p2)
+  (let ((i1 (car p1))
+	(j1 (cadr p1))
+	(i2 (car p2))
+	(j2 (cadr p2)))
+    (and (= i1 i2) (= j1 j2))))
+
 
 
 ;;;;
@@ -1372,16 +1390,15 @@ expected
     (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
 ;;;;
 
-
 ;; pairs보다 쓰임새가 넓은 weighted-pairs 프로시저
-(define (weighted-pairs weight s t)
+(define (weighted-pairs cmp-weight s t)
   (cons-stream
    (list (stream-car s) (stream-car t))              ; <- (1)
    (merge-weighted
-    weight
+    cmp-weight
     (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
 		(stream-cdr t))
-    (weighted-pairs weight (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+    (weighted-pairs cmp-weight (stream-cdr s) (stream-cdr t)))))         ; <- (3)
 
 
 
@@ -1463,9 +1480,9 @@ expected
 			 (j (cadr x)))
 		     (and (predicate-b i) (predicate-b j))))
 		 (weighted-pairs (lambda (p1 p2)
-					(comp-weight weight-b
-						     p1 
-						     p2))
+				   (comp-weight weight-b
+						p1 
+						p2))
 				 integers integers)))
 
 ;; (define b-pair-stream
@@ -1499,11 +1516,11 @@ expected
 					  p2))
 			   integers integers))
 
-;; 흠,, 왜 weight 순서에 맞지 않는 순서로 스트림이 나타나는거지?
-(display-stream-n-weight s1 30 weight-ramanujan) 
+(display-stream-n-weight s1 62 weight-ramanujan) 
 
 ;; 2) 이어진 두 쌍 (a b), (c d)의 무게가 같으면 그 무게는 라마누잔 수이다.
 (define (merge-ramanujan s1 s2)
+;;  (display (stream-car s1))
   (cond ((stream-null? s1) s2)
 	((stream-null? s2) s1)
 	(else
@@ -1516,14 +1533,43 @@ expected
 	       (merge-ramanujan (stream-cdr s1) (stream-cdr s2)))))))
 
 ;; 흠 맞게 한 것 같은데 답이 안나오네,,?
+(define ramanujan-nums (merge-ramanujan s1 (stream-cdr s1)))
 
-;; (define ramanujan-nums (merge-ramanujan s1 (stream-cdr s1)))
-
-;; (display-stream-n ramanujan-nums 2)
+(display-stream-n ramanujan-nums 3)
 
 
 ;;;--------------------------< ex 3.72 >--------------------------
 ;;; p447
+
+(define (weight-sq pair1)
+  (let ((i (car pair1))
+	(j (cadr pair1)))
+    (+ (* i i) (* j j))))
+
+(define s1 (weighted-pairs (lambda (p1 p2)
+			     (comp-weight weight-sq  ;<- weight 함수만 바뀜
+					  p1
+					  p2))
+			   integers integers))
+
+(define (merge-3sq s1 s2 s3)
+  (let ((s1car (stream-car s1))
+	(s2car (stream-car s2))
+	(s3car (stream-car s3)))
+    (if (and (= (weight-sq s1car)
+		(weight-sq s2car))
+	     (= (weight-sq s2car)
+		(weight-sq s3car)))
+	(cons-stream (weight-sq s1car)
+		     (merge-3sq (stream-cdr s1) (stream-cdr s2) (stream-cdr s3)))
+	(merge-3sq (stream-cdr s1) (stream-cdr s2) (stream-cdr s3)))))
+
+(display-stream-n-weight s1 30 weight-sq) 
+
+(define triple-sq-nums (merge-3sq s1 (stream-cdr s1) (stream-cdr (stream-cdr s1))))
+
+(display-stream-n triple-sq-nums 4)
+
 
 
 
@@ -1548,20 +1594,7 @@ expected
 
 (define test-integral (integral integers 1 0.1))
 
-		   
-(stream-ref test-integral 0)
-(stream-ref test-integral 1)
-(stream-ref test-integral 2)
-(stream-ref test-integral 3)
-(stream-ref test-integral 4)
-(stream-ref test-integral 5)
-(stream-ref test-integral 6)
-(stream-ref test-integral 7)
-(stream-ref test-integral 8)
-(stream-ref test-integral 9)
-(stream-ref test-integral 10)
-(stream-ref test-integral 11)
-(stream-ref test-integral 12)
+(display-stream-n test-integral 12)
 
 ;;; 해석,,,
 
