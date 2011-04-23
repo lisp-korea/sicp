@@ -663,15 +663,15 @@
 
 ;;  ex 3.67
 
-(define (pairs s t)
+(define (all-pairs s t)
   (cons-stream
    (list (stream-car s) (stream-car t))
    (interleave
     (stream-map (lambda (x) (list (stream-car s) x))
 		(stream-cdr t))
-    (pairs (stream-cdr s) (stream-cdr t)))))
+    (all-pairs (stream-cdr s) t))))
 
-(define x (pairs integers integers))
+(define x (all-pairs integers integers))
 
 ;; ex 3.68
 
