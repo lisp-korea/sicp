@@ -760,6 +760,19 @@ expected
 
 ;;; 여러 변수 값을 바꾸는 방법에 기대지 않아도, 끝없이 펼쳐지는 스트림으로 상태를 나타낼 수 있다.
 
+;;;---------------------------------
+(define (display-stream-n s n)
+  (define (iter c)
+    (if (< c n)
+	(begin
+	  (display c)
+	  (display ":")
+	  (display (stream-ref s c))
+	  (newline)
+	  (iter (+ c 1)))
+	(newline)))
+  (iter 0))
+;;;---------------------------------
 
 ;;;-----------------------------
 ;;; sqrt-stream
@@ -791,9 +804,15 @@ expected
 
 ;;;-----------------------------
 ;;; pi-stream
+
+;; pi/4 = 1 - 1/3 + 1/5 - 1/7 + ....
 (define (pi-summands n)
   (cons-stream (/ 1.0 n)
 	       (stream-map - (pi-summands (+ n 2)))))
+
+(define ps (pi-summands 1))
+
+(display-stream-n ps 10)
 
 (define pi-stream
   (scale-stream (partial-sums (pi-summands 1)) 4))
@@ -833,6 +852,7 @@ expected
 			  (+ s0 (* -2 s1) s2)))
 		 (euler-transform (stream-cdr s)))))
 
+(display-stream-n pi-stream 100)
 ;; (display-stream (euler-transform pi-stream))
 ;; 3.166666666666667
 ;; 3.1333333333333337
@@ -843,11 +863,23 @@ expected
 ;; 3.142071817071818
 ;; 3.1412548236077655
 ;; 3.1418396189294033
+(display-stream-n (euler-transform pi-stream) 10)
 
 
 
 ;;; 가속한 차례열을 다시 가속하는 방법
 ;;; - 재귀하면서 가속하는 방법
+
+;; S00 S01 S02 ....
+;;     S10 S11 ....
+;;         S20 S21 ...
+
+
+;; s         : S00 S01 ....
+;; tr(s)     : S10 S11 ....
+;; tr(tr(s)) : S20 S21 ...
+;; ...
+
 (define (make-tableau transform s)
   (cons-stream s
 	       (make-tableau transform
@@ -888,6 +920,16 @@ expected
 	       (stream-map (lambda (guess)
 			     (sqrt-improve guess x))
 			   (sqrt-stream x))))
+
+
+;; (define (sqrt-stream x)
+;;   (define guesses
+;;     (cons-stream 1.0
+;; 		 (stream-map (lambda (guess)
+;; 			       (sqrt-improve guess x))
+;; 			     guesses)))
+;;   guesses)
+
 
 (define sq-of-2 (sqrt-stream 2))
 
@@ -994,19 +1036,6 @@ expected
 ;;; p441
 
 
-;;;---------------------------------
-(define (display-stream-n s n)
-  (define (iter c)
-    (if (< c n)
-	(begin
-	  (display c)
-	  (display ":")
-	  (display (stream-ref s c))
-	  (newline)
-	  (iter (+ c 1)))
-	(newline)))
-  (iter 0))
-;;;---------------------------------
 
 ;;; 차례열 패러다임을 스트림으로 확장..
 ;;; ch2.2.3 prime-sum-pairs (p161)
@@ -1045,6 +1074,9 @@ expected
 ;;          | (S1, T1)  (S1, T2) ...
 ;;          |           (S2, T2) ...
 ;;          |      (3)           ...
+
+;; (i,j) ....
+;; i<=j
 
 ;; (2)는 다음과 같이 뽑아낼 수 있다.
 ;; (stream-map (lambda (x) (list (stream-car s) x))
@@ -1198,8 +1230,12 @@ expected
 
 ;;  (1) | (2)
 ;; -----+-----
-;;  (4) \ (3)
-;;        \
+;;  (4) |\ (3)
+;;      |\
+
+;; (S0, T0)  (S0, T1)  (S0, T2) ...
+;; (S1, T0)  (S1, T1)  (S1, T2) ...
+;; (S2, T0)  (S2, T1)  (S2, T2) ...
 
 (define (all-pairs s t)
    (cons-stream
@@ -1229,16 +1265,25 @@ expected
 ;; (S0, T0)를 나머지와 분리하지 않고 통째로 쓰면...?
 
 
-;; ;; 문제의 코드
 ;; (define (pairs s t)
-;;   ;; (begin 
-;;   ;;   (display (stream-car s))
-;;   ;;   (newline)
+;;   (cons-stream
+;;    (list (stream-car s) (stream-car t))              ; <- (1)
+;;    (interleave
+;;     (stream-map (lambda (x) (list (stream-car s) x)) ; <- (2)
+;; 		(stream-cdr t))
+;;     (pairs (stream-cdr s) (stream-cdr t)))))         ; <- (3)
+
+
+;; ;; ;; 문제의 코드
+;; (define (pairs s t)
+;;   (begin 
+;;     (display (stream-car s))
+;;     (newline)
 ;;   (interleave 
 ;;    (stream-map (lambda (x) (list (stream-car s) x))
 ;; 	       t)
 ;;    (pairs (stream-cdr s) (stream-cdr t))))
-;; ;; )					
+;; )					
 
 
 (define int-pair-stream (pairs integers integers))
@@ -1277,16 +1322,23 @@ expected
 ;;    (pairs s 
 ;; 	  (pairs t u)))
 
+;; (1 (2 3))
+;;  ^ ^^^^
+;; (cons 1 '(2 3))
+;; -> (1 2 3)
 
 (define (triples s t u)
   (define t-pairs (pairs t u))
+
   (define (iter-triples s1 s2)
     (cons-stream 
-     (cons (stream-car s1) (stream-car s2))
+     (cons (stream-car s1) (stream-car s2))      ;; <--- 1)
+
      (interleave
       (stream-map (lambda (x) (cons (stream-car s1) x))  ;; <-- (a b c)
-		  (stream-cdr s2))
-      (iter-triples (stream-cdr s1) (stream-cdr s2)))))
+		  (stream-cdr s2))                           ;; <--- 2)
+
+      (iter-triples (stream-cdr s1) (stream-cdr s2)))))      ;; <---- 3_
   (iter-triples s t-pairs))
 
 (define triple-stream (triples integers integers integers))
@@ -1336,7 +1388,8 @@ expected
 	  (display ":")
 	  (display (weight (stream-ref s c)))
 	  (newline)
-	  (iter (+ c 1)))))
+	  (iter (+ c 1)))
+	(newline)))
   (iter 0))
 ;;;---------------------------------
 
@@ -1561,11 +1614,11 @@ expected
 		(weight-sq s2car))
 	     (= (weight-sq s2car)
 		(weight-sq s3car)))
-	(cons-stream (weight-sq s1car)
+	(cons-stream (cons s1car (weight-sq s1car))
 		     (merge-3sq (stream-cdr s1) (stream-cdr s2) (stream-cdr s3)))
 	(merge-3sq (stream-cdr s1) (stream-cdr s2) (stream-cdr s3)))))
 
-(display-stream-n-weight s1 30 weight-sq) 
+(display-stream-n-weight s1 100 weight-sq) 
 
 (define triple-sq-nums (merge-3sq s1 (stream-cdr s1) (stream-cdr (stream-cdr s1))))
 
@@ -1697,14 +1750,26 @@ expected
 ;;;--------------------------< ex 3.76 >--------------------------
 ;;; p451
 
+(define (smooth s)
+  (scale-stream (add-streams s
+			     (stream-cdr s))
+		(/ 1 2)))
 
+(display-stream-n sense-data 12)
+(display-stream-n (smooth sense-data) 12)
 
+;; 기존 ex 3.74 의 make-zero-crossings
+(define (make-zero-crossings input-stream last-value)
+  (cons-stream
+   (sign-change-detector (stream-car input-stream) last-value)
+   (make-zero-crossings (stream-cdr input-stream)
+			(stream-car input-stream))))
 
+(define o-zero-crossings (make-zero-crossings sense-data 0))
+(define smoothed-zero-crossings (make-zero-crossings (smooth sense-data) 0))
 
-
-
-
-
+(display-stream-n o-zero-crossings 12)
+(display-stream-n smoothed-zero-crossings 12)
 
 
 
@@ -1748,6 +1813,7 @@ expected
 ;; 일단 y의 첫 원소가 무엇인지 알수 있다면 문제없이 다음으로 진행할 수 있다.
 
 
+;;;-------------------------------------------------------------------
 ;;;
 ;; 위 생각을 반영하여
 ;; 피적분 값들의 스트림이 셈미룬 인자가 되게끔 integral을 다시 정의해 보자.
@@ -1763,20 +1829,10 @@ expected
 (define test-delayed-integral (integral (delay integers) 1 0.1))
 ;;                                      ^^^^^^^^^^^^^^^^		   
 
-(stream-ref test-delayed-integral 0)
-(stream-ref test-delayed-integral 1)
-(stream-ref test-delayed-integral 2)
-(stream-ref test-delayed-integral 3)
-(stream-ref test-delayed-integral 4)
-(stream-ref test-delayed-integral 5)
-(stream-ref test-delayed-integral 6)
-(stream-ref test-delayed-integral 7)
-(stream-ref test-delayed-integral 8)
-(stream-ref test-delayed-integral 9)
-(stream-ref test-delayed-integral 10)
-(stream-ref test-delayed-integral 11)
-(stream-ref test-delayed-integral 12)
+(display-stream-n test-delayed-integral 12)
 
+
+;; dy/dt = f(y)
 ;; 이제 y의 정의에서 dy값 계산을 뒤로 미룸으로써 solve 프로시저의 구현을 마무리할 수 있다.
 (define (solve f y0 dt)
   (define y (integral (delay dy) y0 dt))
@@ -1784,34 +1840,116 @@ expected
   y)
 
 (stream-ref (solve (lambda (y) y) 1 0.001) 1000)
-;; 에러 발생
-;;  === context ===
-;; stdin::13576: stream-car
-;; /usr/lib/racket/collects/racket/mpair.rkt:27:2: mmap
-;; stdin::15558: stream-map
-;; stdin::98352: solve
-;; /usr/lib/racket/collects/racket/private/misc.rkt:74:7
-;; /usr/lib/racket/collects/r5rs/run.rkt: [running body]
 
+;;;
+;;;-------------------------------------------------------------------
 
 
 ;;;--------------------------< ex 3.77 >--------------------------
 ;;; p454
 
+;;; 제시된 코드
+;; (define (integral integrand initial-value dt)
+;;   (cons-stream initial-value
+;; 	       (if (stream-null? integrand)
+;; 		   the-empty-stream
+;; 		   (integral (stream-cdr integrand)
+;; 			     (+ (* dt (stream-car integrand))
+;; 				initial-value)
+;; 			     dt))))
+
+;;---------------
+(define (integral delayed-integrand initial-value dt)
+  (cons-stream initial-value
+	       (let ((integrand (force delayed-integrand)))  ;; <- 지연된 인자 평가하기
+		 (if (stream-null? integrand)
+		     the-empty-stream
+		     (integral (delay (stream-cdr integrand))  ;; <- 되돌기 인자 delay 시키기
+			       (+ (* dt (stream-car integrand))
+				  initial-value)
+			       dt)))))
+
+(define (solve f y0 dt)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (stream-map f y))
+  y)
+
+(define res-int1 (solve (lambda (y) y) 1 0.001))
+
+(display-stream-n res-int1 10)
+(stream-ref res-int1 1000)
 
 ;;;--------------------------< ex 3.78 >--------------------------
 ;;; p455
 
+;; d^2 y      dy
+;; ----- - a*---- - by = 0
+;; d t^2      dt
+
+(define (solve-2nd a b dy0 y0 dt)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (integral (delay ddy) dy0 dt))
+  (define ddy (add-streams (scale-stream dy a)
+			   (scale-stream y b)))
+  y)
+
+(define res-int2 (solve-2nd 2 3 1 2 0.001))
+
+(display-stream-n res-int2 10)
+(stream-ref res-int2 1000)
+
 
 ;;;--------------------------< ex 3.79 >--------------------------
 ;;; p456
+
+;; d^2 y      dy
+;; ----- = f(----, y)
+;; d f^2      dt
+
 
 
 ;;;--------------------------< ex 3.80 >--------------------------
 ;;; p456
 
 
+;; v_R = i_R * R
+;;
+;;            d i_L
+;; v_L = L * -------
+;;             d t
+;;
+;;            d v_C 
+;; i_C = C * -------
+;;             d t
+;;
+;; ->
+;; i_R = i_L = -i_C
+;; v_C = v_L + v_R
+;;
+;; ->
+;; ;; 최종식
+;;  d i_L       i_L
+;; ------- = - -----
+;;   d t         C 
+;;
+;;  d v_C     1         R
+;; ------- = ---*v_C - ---*i_L
+;;   d t      L         L
 
+(define (RLC R L C dt)
+  (lambda (v_C0 i_L0)
+    (define v_C  (integral (delay dv_C) v_C0 dt))
+    (define dv_C (scale-stream (delay i_L) (/ -1 C)))
+    (define i_L  (integral (delay di_L) i_L0 dt))
+    (define di_L (add-streams (scale-stream v_C (/ 1 L))
+			      (scale-stream i_L (/ -R L))))
+    (list v_C i_L))
+)
+
+ 
+;; (define RLC1 ((RLC 1 1 0.2 0.1) 10 0))
+;; 에러
+;; 뭔가 수정 필요
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
