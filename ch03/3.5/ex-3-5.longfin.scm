@@ -1017,3 +1017,29 @@
   (define ddy (stream-map f y))
   y)
 
+;; ex 3.80
+
+;; vR = irR
+;; vL = L * (diL/dt)
+;; ic = C * (dvC/dt)
+
+;;iR = iL = - iC
+;;vC = vL + vR
+
+;; dvC/dt = - iL/C
+;; diL/dt = (1/L)*vC-(R/L)*iL
+
+(define (RLC R L C dt)
+  (lambda (vC0 iL0)
+	(define iL (integral (delay diL) iL0 dt))
+	(define vC (integral (delay dvC) vC0 dt))
+	(define dvC (scale-stream iL (/ -1 C)))
+	(define diL (add-streams
+				 (scale-stream vC (/ 1 L))
+				 (scale-stream iL (* (/ R L) -1))))
+	(cons iL vC)))
+
+(define proc (RLC 1 1 0.2 0.1))
+(define iL (car (proc 0 10)))
+(define vC (cdr (proc 0 10)))
+
