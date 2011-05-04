@@ -68,7 +68,7 @@
 (define (stream-map proc s)
   (if (stream-null? s)
       the-empty-stream
-      (cons-stream (proc (stream-car))
+      (cons-stream (proc (stream-car s))
 		   (stream-map proc (stream-cdr s)))))
 (define (stream-for-each proc s)
   (if (stream-null? s)
@@ -148,9 +148,9 @@
   (if (null? (car argstreams))
       the-empty-stream
       (cons-stream
-	(apply proc (map stream-car argstreams))
-	(apply stream-map
-	       (cons proc (map stream-cdr argstreams))))))
+	   (apply proc (map stream-car argstreams))
+	   (apply stream-map
+			  (cons proc (map stream-cdr argstreams))))))
 
 ;; ex 3.51
 
@@ -942,3 +942,78 @@
 
 (define zero-crossings (make-zero-crossings (smooth sense-data) 0))
   
+;; 3.5.4 Streams and Delayed Evaluation
+
+(define (integral integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+		 (add-streams (scale-stream integrand dt)
+			      int)))
+  int)
+
+
+(define (solve f y0 dt)
+  (define y (integral dy y0 dt))
+  (define dy (stream-map f y))
+  y)
+
+(define (integral delayed-integrand initial-value dt)
+  (define int
+	(cons-stream initial-value
+				 (let ((integrand (force delayed-integrand)))
+				   (add-streams (scale-stream integrand dt)
+								int))))
+  int)
+
+(define (solve f y0 dt)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (stream-map f y))
+  y)
+
+(stream-ref (solve (lambda (y) y) 1 0.001) 1000)
+
+
+;; ex 3.77
+
+(define (integral integrand initial-value dt)
+  (cons-stream initial-value
+			   (if (stream-null? integrand)
+				   the-empty-stream
+				   (integral (stream-cdr integrand)
+							 (+ (* dt (stream-car integrand))
+								initial-value)
+							 dt))))
+
+(define (integral delayed-integrand initial-value dt)
+  (cons-stream initial-value
+			   (let ((integrand (force delayed-integrand)))
+				 (if (stream-null? integrand)
+					 the-empty-stream
+					 (integral (delay (stream-cdr integrand))
+							   (+ (* dt (stream-car integrand))
+								  initial-value)
+							   dt)))))
+
+(stream-ref (solve (lambda (y) y) 1 0.001) 1000)
+
+;; ex 3.78
+
+(define (solve-2nd a b dt y0 dy0)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (integral (delay ddy) dy0 dt))
+  (define ddy (add-streams
+			   (scale-stream dy a)
+			   (scale-stream y b)))
+  y)
+
+(stream-ref (solve-2nd 3 4 0.001 1 1) 1000)
+
+
+;; ex 3.79
+
+(define (solve-2nd f dt y0 dy0)
+  (define y (integral (delay dy) y0 dt))
+  (define dy (integral (delay ddy) dy0 dt))
+  (define ddy (stream-map f y))
+  y)
+
