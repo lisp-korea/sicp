@@ -1043,3 +1043,71 @@
 (define iL (car (proc 0 10)))
 (define vC (cdr (proc 0 10)))
 
+;; normal order evaluation
+
+;; 3.5.5 Modularity of Functional Programs and Modularity of Objects
+
+;; assignment ver.
+(define rand
+  (let ((x random-init))
+	(lambda ()
+	  (set! x (rand-update x))
+	  x)))
+
+;;steram ver.
+(define random-numbers
+  (cons-stream random-init
+			   (stream-map rand-update random-numbers)))
+
+(define cesaro-stream
+  (map-successive-pairs (lambda (r1 r2) (= (gcd r1 r2) 1))
+						random-numbers))
+
+(define (map-successive-pairs f s)
+  (cons-stream
+   (f (stream-car s) (stream-car (stream-cdr s)))
+   (map-successive-pairs f (stream-cdr (stream-cdr s)))))
+
+(define (monte-carlo experiment-stream passed failed)
+  (define (next passed failed)
+	(cons-stream
+	 (/ passed (+ passed failed))
+	 (monte-carlo
+	  (stream-cdr experiment-stream) passed failed)))
+  (if (stream-cdr experiment-stream)
+	  (next (+ passed 1) failed)
+	  (next passed (+ failed 1))))
+
+(define pi
+  (stream-map (lambda (p) (sqrt (/ 6 p)))
+			  (monte-carlo cesaro-stream 0 0)))
+
+;; ex 3.81
+
+(define (random-numbers s-in)
+  (define (action x m)
+    (cond ((eq? m 'generate) (rand-update x))
+          (else m)))
+  (cons-stream
+   random-init
+   (stream-map action (random-numbers s-in) s-in)))
+
+;; ex 3.82
+(define (random-in-range low high)
+  (let ((range (- high low)))
+	(+ low (random range))))
+
+(define (estimate-integral p x1 x2 y1 y2 trials)
+  (define xs
+	(cons-stream x1
+				 (stream-map (lambda (x)
+							   (+ x1 (random (- x1 x2)))) xs)))
+  (define ys
+	(cons-stream y1
+				 (stream-map (lambda (y)
+							   (+ y1 (random (- y1 y2)))) ys)))
+  (define range-stream (stream-map p xs ys))
+  (stream-map (lambda (x)
+				(* x (* (- x2 x1) (- y2 y1))))
+			  (monte-carlo range-stream 0 0)))
+
