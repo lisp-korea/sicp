@@ -1,6 +1,10 @@
 
 ;; 3.5.2 무한 스트림
 
+
+
+
+
 (define-syntax cons-stream
   (syntax-rules ()
     ((cons-stream x y)
@@ -103,9 +107,44 @@
 ;; 3.5.5 모듈로 바라본 함수와 물체
 
 
-(define (rand-update x) (modulo (* x 1664525) 1013904223))
+
+
+;; 정의
+;; 몬테카를로 정의는 마구잡이 수를 테스트함수에 집어넣어 전체 검사 조건을
+;; 만족하는 비율을 통해 원하는 값을 찾아가는 시뮬레이션이다.
+;; 전체 실험 횟수중에 테스트가 참일 확률값을 바탕으로 어떤 결론을 이끌어 내는데
+;; 마구잡이로 고른 두 수의 최대공약수가 1일 확률을 6/pi^2 라고 하면 몬테카를로
+;; 방법을 쓰면 이사실에서 pi 값을 어림잡아 계산할 수 있다.
+
+;; 3.1.2 의 덮어쓰기를 사용한 몬테카를로 시뮬레이션.
 (define random-init 1)
 
+(define (rand-update x)
+  (modulo (* x 1664525) 1013904223))
+
+(define rand
+  (let ((x random-init))
+    (lambda ()
+      (set! x (rand-update x))
+      x)))
+
+(define (estimate-pi trials)
+  (sqrt (/ 6 (monte-carlo trials cesaro-test))))
+
+(define (cesaro-test)
+  (= (gcd (rand) (rand)) 1))
+
+(define (monte-carlo trials experiment)
+  (define (iter trials-remaining trials-passed)
+    (cond ((= trials-remaining 0) (/ trials-passed trials))
+	  ((experiment)
+	   (iter (- trials-remaining 1) (+ trials-passed 1)))
+	  (else
+	   (iter (- trials-remaining 1) trials-passed))))
+    (iter trials 0))
+
+
+;; 덮어쓰기 없이 스트림기법을 사용한 방식
 
 (define random-numbers
   (cons-stream random-init
@@ -126,9 +165,8 @@
      (/ passed (+ passed failed))
      (monte-carlo
       (stream-cdr experiment-stream) passed failed)))
-  (if (stream-car experiment-stream)
-      (next (+ passed 1) failed)
-      (next passed (+ failed 1))))
+  (if (stream-car experiment-stream) (next (+ passed 1) failed)
+                                     (next passed (+ failed 1))))
 
 (define pi
   (stream-map (lambda (p) (sqrt (/ 6 p)))
