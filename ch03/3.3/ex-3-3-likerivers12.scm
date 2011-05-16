@@ -646,7 +646,7 @@ dqi2
   (let ((new-dqi (new-deque-item item)))
     (cond ((empty-deque? deque)
 	   (set-front-deque! deque new-dqi)
-	   (set-rear-ptr! deque new-dqi)
+	   (set-rear-deque! deque new-dqi)
 	   deque)
 	  (else
 	   (set-tail-dqi! new-dqi (front-deque-ptr deque))
@@ -671,8 +671,8 @@ dqi2
 (define (rear-insert-deque! deque item)
   (let ((new-dqi (new-deque-item item)))
     (cond ((empty-deque? deque)
-	   (set-front-ptr! deque new-dqi)
-	   (set-rear-ptr! deque new-dqi)
+	   (set-front-deque! deque new-dqi)
+	   (set-rear-deque! deque new-dqi)
 	   deque)
 	  (else
 	   (set-head-dqi! new-dqi (rear-deque-ptr deque))
@@ -686,7 +686,7 @@ dqi2
 	 (error "DELETE! called with an empty deque" deque))
 	(else
 ;;	 (set-tail-dqi! (front-ptr deque) '())
-	 (set-front-deque! deque (tail-ptr-dqi (front-ptr deque)))
+	 (set-front-deque! deque (tail-ptr-dqi (front-deque-ptr deque)))
 	 deque)))
 
 
@@ -695,12 +695,13 @@ dqi2
 	 (error "DELETE! called with an empty deque" deque))
 	(else
 ;;	 (set-head-dqi! (rear-ptr deque) '())
-	 (set-rear-deque! deque (head-ptr-dqi (rear-ptr deque)))
+	 (set-rear-deque! deque (head-ptr-dqi (rear-deque-ptr deque)))
 	 deque)))
 
 (define (print-deque deque)
   (define (iter-print dqi)
-    (if (not (eq? dqi (rear-ptr deque))) ;(null? dqi))
+    (if (not (eq? dqi (rear-deque-ptr deque)))
+;;    (if (not (empty-deque? deque)))
 	(begin
 	  (display (val-dqi dqi))
 	  (display " ")
@@ -709,15 +710,16 @@ dqi2
 	(begin
 	  (display (val-dqi dqi))
 	  (newline))))
-  (iter-print (front-ptr deque)))
-
-
-(print-deque dq1)
+  (if (not (empty-deque? deque))
+      (iter-print (front-deque-ptr deque))))
 
 	  
 	
 ;;;
 (define dq1 (make-deque))
+
+
+(print-deque dq1)
 
 (front-insert-deque! dq1 'a)
 (print-deque dq1)
@@ -748,6 +750,118 @@ dqi2
 ;;; 3.3.3 표
 ;;; p346
 
+;;; 표 : 레코드의 리스트, 레코드는 열쇠와 값의 쌍
+
+;;; 표에 새 레코드를 집어넣을 대 어디를 고쳐야 하는지 표시하기 위해서 머리 달린 리스트
+
+(define (lookup key table)
+  (let ((record (new-assoc key (cdr table))))
+    (if record
+	(cdr record)
+	#f)))
+
+(define (new-assoc key records)
+  (cond ((null? records) #f)
+	((equal? key (caar records)) (car records))
+	(else (new-assoc key (cdr records)))))
+
+(define (insert! key value table)
+  (let ((record (assoc key (cdr table))))
+    (if record
+	(set-cdr! record value)
+	(set-cdr! table
+		  (cons (cons key value) (cdr table)))))
+  'ok)
+
+(define (make-table)
+  (list '*table*))
+
+;;----------------------
+;; 일차원 표 테스트
+;; a: 1
+;; b: 2
+;; c: 3
+
+(define tb1 (make-table))
+
+(lookup 'a tb1)
+(lookup 'b tb1)
+(lookup 'c tb1)
+
+(insert! 'a 1 tb1)
+(insert! 'b 2 tb1)
+(insert! 'c 3 tb1)
+
+(lookup 'a tb1)
+(lookup 'b tb1)
+(lookup 'c tb1)
+;;----------------------
+
+
+;;;;;;;;;;;;;;;;;;;
+;;; 이차원 표
+
+;; 첫 번째 열쇠로 알맞은 표를 고른다.
+;; 그 표를 두 번째 열쇠로 뒤져보고 알맞은 레코드를 찾아낸다.
+(define (lookup key-1 key-2 table)
+  (let ((subtable (new-assoc key-1 (cdr table))))
+    (if subtable
+	(let ((record (assoc key-2 (cdr subtable))))
+	  (if record
+	      (cdr record)
+	      #f))
+	#f)))
+
+(define (insert! key-1 key-2 value table)
+  (let ((subtable (new-assoc key-1 (cdr table))))
+    (if subtable
+	(let ((record (assoc key-2 (cdr subtable))))
+	  (if record
+	      (set-cdr! record value)
+	      (set-cdr! subtable
+			(cons (cons key-2 value)
+			      (cdr subtable)))))
+	(set-cdr! table
+		  (cons (list key-1
+			      (cons key-2 value))
+			(cdr table)))))
+  'ok)
+
+
+;;----------------------
+;; 이차원 표 테스트
+;; math:
+;;      +: 43
+;;      -: 45
+;;      *: 42
+;; letters:
+;;      a: 97
+;;      b: 98
+
+(define tb2 (make-table))
+
+(lookup 'math '+ tb2)
+(lookup 'math '- tb2)
+(lookup 'math '* tb2)
+(lookup 'letters 'a tb2)
+(lookup 'letters 'b tb2)
+
+(insert! 'math '+ 43 tb2)
+(insert! 'math '- 45 tb2)
+(insert! 'math '* 42 tb2)
+(insert! 'letters 'a 97 tb2)
+(insert! 'letters 'b 98 tb2)
+
+(lookup 'math '+ tb2)
+(lookup 'math '- tb2)
+(lookup 'math '* tb2)
+(lookup 'letters 'a tb2)
+(lookup 'letters 'b tb2)
+;;----------------------
+
+;;;;;;;;;;;;;;;;;;;;;;
+;;; 프로시저 속에 표 감추기
+;;; p350
 
 
 
