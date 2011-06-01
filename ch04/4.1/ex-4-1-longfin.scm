@@ -245,8 +245,8 @@
 		((quoted? exp) (text-of-qutation exp))
 		((assignment? exp) (eval-assignment exp env))
 		((louis-application? exp)
-		 (my-apply (my-eval (operator exp) env)
-				(list-of-values (operands exp) env)))
+		 (my-apply (my-eval (louis-operator exp) env)
+				(list-of-values (louis-operands exp) env)))
 		((definition? exp) (eval-definition exp env))
 		((if? exp) (eval-if exp env))
 		((lambda? exp)
@@ -261,3 +261,9 @@
 
 (define (louis-application? exp)
   (tagged-list? exp 'call))
+(define (louis-operator exp)
+  (cadr exp))
+(define (louis-operands exp)
+  (cddr exp))
+  
+  
