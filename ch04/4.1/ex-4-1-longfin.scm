@@ -126,7 +126,7 @@
   (tagged-list? exp 'quote))
 (define (tagged-list? exp tag)
   (if (pair? exp)
-	  (eq? (Car exp) tag)
+	  (eq? (car exp) tag)
 	  #f))
 
 ;; (set! <var> <exp>)
@@ -196,7 +196,7 @@
 (define (cond-else-clause? clause)
   (eq? (cond-predicate clause) 'else))
 (define (cond-predicate clause) (car clause))
-(define (cond-actinos clause) (cdr clause))
+(define (cond-actions clause) (cdr clause))
 (define (cond->if exp)
   (expand-clauses (cond-clauses exp)))
 
@@ -207,7 +207,7 @@
 			(rest (cdr clauses)))
 		(if (cond-else-clause? first) ;;(else <exp-else>)
 			(if (null? rest)
-				(sequence->exp (cond-actinos first))
+				(sequence->exp (cond-actions first))
 				(error "ELSE clause isn't last -- COND" clauses))
 			(make-if (cond-predicate first)
 					 (sequence->exp (cond-actions first))
@@ -265,5 +265,202 @@
   (cadr exp))
 (define (louis-operands exp)
   (cddr exp))
-  
-  
+
+;; ex 4.3
+
+(define (my-eval-ddp exp env)
+  (let ((f (get 'eval (car exp))))
+	(if (null? f)
+		(cond ((self-evaluating? exp) exp)
+			  ((variable? exp) (lookup-variable-value env))
+			  ((application? exp) (my-apply (my-eval (operator exp) env)
+											(list-of-values (operands exp) env))))
+		(f exp env))))
+			  
+;;quoted?
+(put 'eval 'quote (lambda (exp env)
+					(text-of-qutation)))
+
+;;assignment?
+(put 'eval 'set! eval-assignment)
+
+;;definition?
+(put 'eval 'define eval-definition)
+
+;;if?
+(put 'eval 'if eval-if)
+
+;;lambda?
+(put 'eval 'lambda (lambda (exp env)
+					 (make-procedure (lambda-parameters exp)
+									 (lambda-body exp)
+									 env)))
+;;begin?
+(put 'eval 'begin (lambda (exp env)
+					(eval-sequence (begin-actions exp) env)))
+
+;;cond?
+(put 'eval 'cond (lambda (exp env)
+				   (my-eval-ddp (cond->if exp) env)))
+
+;; ex 4.4
+
+(define (eval-and exp env)
+  (if (null? exp)
+	  'true
+	  (let ((first (car exp))
+			(rest (cdr exp))
+			(val (my-eval (car exp env)))
+			(if val
+				(if (null? rest)
+					val
+					(eval-and rest env))
+				'false)))))
+
+(define (eval-or exp env)
+  (if (null? exp)
+	  'false
+	  (let ((first (car exp))
+			(rest (cdr exp))
+			(val (my-eval (car exp env))))
+		(if val
+			val
+			(if (null? rest)
+				'false
+				(eval-or rest env))))))
+
+
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value env))
+		((quoted? exp) (text-of-qutation exp))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (labmda-parameters exp)
+						 (labmda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((application? exp)
+		 (my-apply (my-eval (operator exp) env)
+				(list-of-values (operands exp) env)))
+		((and? exp) (eval-and exp env))
+		((or? exp) (eval-or exp env))
+		(else
+		 (error "Unknown expression type --EVAL"))))
+
+(define (and? exp)
+  (tagged-list? exp 'and))
+
+(define (or? exp)
+  (tagged-list? exp 'or))
+
+;; derived version.[true/false only]
+
+(define (eval-and exp env)
+  (define (and->if exp)
+	(if (null? exp)
+		'true
+		(make-if (my-eval (car exp) env) (and->if (cdr exp)) 'false)))
+  (my-eval (and->if (cdr exp)) env))
+
+(define (eval-or exp env)
+  (define (or->if exp)
+	(if (null? exp)
+		'false
+		(make-if (my-eval (car exp) env) 'true (or->if (cdr exp)))))
+  (my-eval (or->if (cdr exp)) env))
+
+;; ex 4.5
+
+;; (cond ((<pred1> <exp1>) (<pred2> <exp2>) .. (else <exp-else>)))
+;; (cond (<test> => <recipient>))
+(define (cond? exp) (tagged-list? exp 'cond))
+(define (cond-clauses exp) (cdr exp))
+(define (cond-else-clause? clause)
+  (eq? (cond-predicate clause) 'else))
+(define (cond-predicate clause) (car clause))
+(define (cond-actions clause) (cdr clause))
+(define (cond->if exp)
+  (expand-clauses (cond-clauses exp)))
+(define (cond-test-clause? caluse)
+  (eq? (cadr clause) '=>))
+(define (cond-recipient clause)
+  (caddr clause))
+
+(define (expand-clauses clauses)
+  (if (null? clauses)
+	  'false
+	  (let ((first (car clauses))
+			(rest (cdr clauses)))
+		(if (cond-else-clause? first) ;;(else <exp-else>)
+			(if (null? rest)
+				(sequence->exp (cond-actions first))
+				(error "ELSE clause isn't last -- COND" clauses))
+			(if (cond-test-clause? first)
+				(make-if (cond-predicate first)
+						 (my-apply (cond-recipient first) (my-apply (cond-predicate first))))
+				(make-if (cond-predicate first)
+						 (sequence->exp (cond-actions first))
+						 (expand-clauses rest)))))))
+
+;; ex 4.6
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value env))
+		((quoted? exp) (text-of-qutation exp))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (labmda-parameters exp)
+						 (labmda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((application? exp)
+		 (my-apply (my-eval (operator exp) env)
+				(list-of-values (operands exp) env)))
+		((and? exp) (eval-and exp env))
+		((or? exp) (eval-or exp env))
+		((let? exp) (my-eval (let->combination exp) env))
+		(else
+		 (error "Unknown expression type --EVAL"))))
+
+(define (let? exp)
+  (tagged-list? exp 'let))
+
+;; (let ((<var> <exp>) ... (<var> <exp>))
+;;    <body>)
+;; =>
+;; ((lambda (<var> ... <var>)
+;;     <body>)
+;;   <exp> ... <exp>)
+
+(define (let->combination exp)
+  (let ((bindings (cdr exp))
+		(body (cadr exp)))
+	(cons (make-lambda (map car bindings) body)
+		  (map cdr bindings))))
+
+;; ex 4.7
+
+(define (make-let bindings body)
+  (list 'let bindings body))
+(define (let*->nested-lets exp)
+  (let ((body (caddr exp)))
+	(define (make bindings)
+	  (if (null? bindings) body
+		  (make-let (list (car bindings))
+					(make (cdr bindings)))))
+	(make (cadr exp))))
+
+;; for test
+(eval (let*->nested-lets '(let* ((a 1) (b (+ a 1))) (+ a 3))) (scheme-report-environment 5))
+
+
+		  
