@@ -1091,7 +1091,7 @@
   (cons-stream
    random-init
    (stream-map action (random-numbers s-in) s-in)))
-
+ 
 ;; ex 3.82
 (define (random-in-range low high)
   (let ((range (- high low)))

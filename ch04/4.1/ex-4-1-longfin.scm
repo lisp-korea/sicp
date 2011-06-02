@@ -276,7 +276,7 @@
 			  ((application? exp) (my-apply (my-eval (operator exp) env)
 											(list-of-values (operands exp) env))))
 		(f exp env))))
-			  
+
 ;;quoted?
 (put 'eval 'quote (lambda (exp env)
 					(text-of-qutation)))
@@ -461,6 +461,3 @@
 
 ;; for test
 (eval (let*->nested-lets '(let* ((a 1) (b (+ a 1))) (+ a 3))) (scheme-report-environment 5))
-
-
-		  
