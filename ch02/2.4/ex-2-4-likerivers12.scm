@@ -67,7 +67,7 @@ z2   ; '(1.0000006633972283 . 0.9999993366023316)
 
 ;;; 극좌표 방식
 (define (real-part z)
-  (* (magnitude z) (cons (angle z))))
+  (* (magnitude z) (cos (angle z))))
 
 (define (mag-part z)
   (* (magnitude z) (sin (angle z))))
