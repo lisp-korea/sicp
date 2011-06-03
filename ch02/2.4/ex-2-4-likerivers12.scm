@@ -356,6 +356,10 @@ z2   ; '(1.4142135623730951 . 0.7853975)
 
 ;;;--------------------------< ex 2.73 >--------------------------
 ;;; 239,40
+
+(define (same-variable? v1 v2)
+  (and (variable? v1) (variable? v2) (eq? v1 v2)))
+
 (define (deriv exp var)
   (cond ((number? exp) 0)
 	((variable? exp)
