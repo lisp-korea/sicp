@@ -306,28 +306,32 @@
 ;; ex 4.4
 
 (define (eval-and exp env)
-  (if (null? exp)
-	  #t
-	  (let ((first (car exp))
-			(rest (cdr exp))
-			(val (my-eval (car exp env)))
-			(if val
-				(if (null? rest)
-					val
-					(eval-and rest env))
-				#f)))))
+  (define (iter exp)
+	(if (null? exp)
+		#t
+		(let ((first (car exp))
+			  (rest (cdr exp))
+			  (val (my-eval (car exp) env)))
+		  (if val
+			  (if (null? rest)
+				  val
+				  (iter rest))
+			  #f))))
+  (iter (cdr exp)))
 
 (define (eval-or exp env)
-  (if (null? exp)
-	  #f
-	  (let ((first (car exp))
-			(rest (cdr exp))
-			(val (my-eval (car exp env))))
-		(if val
-			val
-			(if (null? rest)
-				#f
-				(eval-or rest env))))))
+  (define (iter exp)
+	(if (null? exp)
+		#f
+		(let ((first (car exp))
+			  (rest (cdr exp))
+			  (val (my-eval (car exp) env)))
+		  (if val
+			  val
+			  (if (null? rest)
+				  #f
+				  (iter rest env))))))
+  (iter (cdr exp)))
 
 
 (define (my-eval exp env)
