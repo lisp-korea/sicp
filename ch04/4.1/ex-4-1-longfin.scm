@@ -6,7 +6,7 @@
 		  (write arg))
 		args)
       (newline)
-      (scheme-report-environment -1))
+      (scheme-report-environment 5))
 ;; 4. Metalinguistic Abstraction
 
 
@@ -21,14 +21,14 @@
 
 (define (my-eval exp env)
   (cond ((self-evaluating? exp) exp)
-		((variable? exp) (lookup-variable-value env))
+		((variable? exp) (lookup-variable-value exp env))
 		((quoted? exp) (text-of-qutation exp))
 		((assignment? exp) (eval-assignment exp env))
 		((definition? exp) (eval-definition exp env))
 		((if? exp) (eval-if exp env))
 		((lambda? exp)
-		 (make-procedure (labmda-parameters exp)
-						 (labmda-body exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
 						 env))
 		((begin? exp)
 		 (eval-sequence (begin-actions exp) env))
@@ -62,7 +62,7 @@
   (if (no-operands? exps)
 	  '()
 	  (cons (my-eval (first-operand exps) env)
-			(list-of-values (rest-operands exps)))))
+			(list-of-values (rest-operands exps) env))))
 
 ;; Conditionals
 
@@ -99,7 +99,7 @@
   (if (no-operands? exps)
 	  '()
 	  (let ((first (my-eval (first-operand exps) env))
-			(rest (list-of-values (rest-operands exps))))
+			(rest (list-of-values (rest-operands exps) env)))
 		(cons first rest))))
 
 ;;rtl version
@@ -124,6 +124,7 @@
 ;; ('quote apple),('quote banana),('quote orange)
 (define (quoted? exp)
   (tagged-list? exp 'quote))
+(define (text-of-quotation exp) (cadr exp))
 (define (tagged-list? exp tag)
   (if (pair? exp)
 	  (eq? (car exp) tag)
@@ -146,8 +147,8 @@
 (define (definition-value exp)
   (if (symbol? (cadr exp))
 	  (caddr exp)
-	  (make-lambeda (cdadr exp)     ;; arg
-					(cddr exp))))	;; body
+	  (make-lambda (cdadr exp)     ;; arg
+				   (cddr exp))))	;; body
 
 (define (lambda? exp) (tagged-list? exp 'lambda))
 (define (lambda-parameters exp) (cadr exp))
@@ -217,8 +218,8 @@
 
 (define (louis-eval exp env)
   (cond ((self-evaluating? exp) exp)
-		((variable? exp) (lookup-variable-value env))
-		((quoted? exp) (text-of-qutation exp))
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
 		((assignment? exp) (eval-assignment exp env))
 		((application? exp)
 		 (my-apply (my-eval (operator exp) env)
@@ -226,8 +227,8 @@
 		((definition? exp) (eval-definition exp env))
 		((if? exp) (eval-if exp env))
 		((lambda? exp)
-		 (make-procedure (labmda-parameters exp)
-						 (labmda-body exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
 						 env))
 		((begin? exp)
 		 (eval-sequence (begin-actions exp) env))
@@ -241,8 +242,8 @@
 
 (define (louis-eval exp env)
   (cond ((self-evaluating? exp) exp)
-		((variable? exp) (lookup-variable-value env))
-		((quoted? exp) (text-of-qutation exp))
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
 		((assignment? exp) (eval-assignment exp env))
 		((louis-application? exp)
 		 (my-apply (my-eval (louis-operator exp) env)
@@ -250,8 +251,8 @@
 		((definition? exp) (eval-definition exp env))
 		((if? exp) (eval-if exp env))
 		((lambda? exp)
-		 (make-procedure (labmda-parameters exp)
-						 (labmda-body exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
 						 env))
 		((begin? exp)
 		 (eval-sequence (begin-actions exp) env))
@@ -272,14 +273,14 @@
   (let ((f (get 'eval (car exp))))
 	(if (null? f)
 		(cond ((self-evaluating? exp) exp)
-			  ((variable? exp) (lookup-variable-value env))
+			  ((variable? exp) (lookup-variable-value exp env))
 			  ((application? exp) (my-apply (my-eval (operator exp) env)
 											(list-of-values (operands exp) env))))
 		(f exp env))))
 
 ;;quoted?
 (put 'eval 'quote (lambda (exp env)
-					(text-of-qutation)))
+					(text-of-quotation)))
 
 ;;assignment?
 (put 'eval 'set! eval-assignment)
@@ -336,14 +337,14 @@
 
 (define (my-eval exp env)
   (cond ((self-evaluating? exp) exp)
-		((variable? exp) (lookup-variable-value env))
-		((quoted? exp) (text-of-qutation exp))
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
 		((assignment? exp) (eval-assignment exp env))
 		((definition? exp) (eval-definition exp env))
 		((if? exp) (eval-if exp env))
 		((lambda? exp)
-		 (make-procedure (labmda-parameters exp)
-						 (labmda-body exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
 						 env))
 		((begin? exp)
 		 (eval-sequence (begin-actions exp) env))
@@ -414,14 +415,14 @@
 ;; ex 4.6
 (define (my-eval exp env)
   (cond ((self-evaluating? exp) exp)
-		((variable? exp) (lookup-variable-value env))
-		((quoted? exp) (text-of-qutation exp))
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
 		((assignment? exp) (eval-assignment exp env))
 		((definition? exp) (eval-definition exp env))
 		((if? exp) (eval-if exp env))
 		((lambda? exp)
-		 (make-procedure (labmda-parameters exp)
-						 (labmda-body exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
 						 env))
 		((begin? exp)
 		 (eval-sequence (begin-actions exp) env))
@@ -469,12 +470,12 @@
 ;; ex 4.8
 
 ;; (let <letvar> ((<var> <exp>) ...) <body>)
-;; ((labmda (<var> ...)
+;; ((lambda (<var> ...)
 ;;    <body>)
 ;;   <exp> ...)
 
 ;; (let ((<letvar> (lambda (<letvar> <var> ...)
-;;                    (let ((<letvar> (labmda (<exp> ...)
+;;                    (let ((<letvar> (lambda (<exp> ...)
 ;;                                       (<letvar> <letvar> <exp> ...))))
 ;;                            <body>))))
 ;;    (<letvar> <letvar> <exp> ...))
@@ -634,7 +635,7 @@
 
 (define (set-variable-value! var val env)
   (env-loop env (lambda (vars vals)
-						  (set-car! vals val))))))
+						  (set-car! vals val))))
   
 
 (define (define-variable! var val env)
@@ -651,3 +652,94 @@
   (env-loop env (lambda (vars vals)
 				  (set-cdr! (vars (cddr vars)))
 				  (set-cdr! (vals (cddr vals))))))
+
+;; 4.1.4 Running the Evaluator as a Program
+
+(define (setup-environment)
+  (let ((initial-env
+		 (extend-environment (primitive-procedure-names)
+							 (primitive-procedure-objects)
+							 the-empty-environment)))
+	(define-variable! 'true #t initial-env)
+	(define-variable! 'false #f initial-env)
+	initial-env))
+
+(define (primitive-procedure? proc) (tagged-list? proc 'primitive))
+(define (primitive-implementation proc) (cadr proc))
+(define primitive-procedures
+  (list (list 'car car)
+		(list 'cdr cdr)
+		(list 'cons cons)
+		(list 'null? null?)
+		(list '+ +)
+		(list '* *)))
+(define (primitive-procedure-names)
+  (map car primitive-procedures))
+(define (primitive-procedure-objects)
+  (map (lambda (proc) (list 'primitive (cadr proc)))
+	   primitive-procedures))
+(define the-global-environment (setup-environment))
+
+(define (apply-primitive-procedure proc args)
+  (apply-in-underlying-scheme
+   (primitive-implementation proc) args))
+(define apply-in-underlying-scheme apply)
+
+(define input-prompt ";;; M-Eval input:")
+(define output-prompt ";;; M-Eval value:")
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+	(let ((output (my-eval input the-global-environment)))
+	  (announce-output output-prompt)
+	  (user-print output)))
+  (driver-loop))
+
+(define (prompt-for-input string)
+  (newline)
+  (newline)
+  (display string)
+  (newline))
+(define (announce-output string)
+  (newline)
+  (display string)
+  (newline))
+
+ (define (user-print object)
+  (if (compound-procedure? object)
+	  (display (list 'compound-procedure
+					 (procedure-parameters object)
+					 (procedure-body object)
+					 '<procedure-env>))
+	  (display object)))
+
+(define the-global-environment (setup-environment))
+
+(driver-loop)
+
+;; ex 4.14
+
+(define primitive-procedures
+  (list (list 'car car)
+		(list 'cdr cdr)
+		(list 'cons cons)
+		(list 'null? null?)
+		(list '+ +)
+		(list '* *)
+		(list 'map map)))
+(define the-global-environment (setup-environment))
+
+;; (driver-loop)
+
+;; ;;; M-Eval input:
+;; (map (lambda (x) (+ x 1)) '(1 2 3))
+;; (map (lambda (x) (+ x 1)) (quote (1 2 3)))
+;; procedure application: expected procedure, given: (procedure (x) ((+ x 1)) (((false true car cdr cons null? + * map) #f #t (primitive #<procedure:mcar>) (primitive #<procedure:mcdr>) (primitive #<procedure:mcons>) (primitive #<procedure:null?>) (primitive #<procedure:+>) (primitive #<procedure:*>) (pri...; arguments were: 1
+
+;;  === context ===
+;; /Applications/Racket v5.0.1/collects/racket/mpair.rkt:27:2: mmap
+;; stdin::12925: driver-loop
+;; /Applications/Racket v5.0.1/collects/racket/private/misc.rkt:74:7
+;; /Applications/Racket v5.0.1/collects/r5rs/run.rkt: [running body]
+
+;; map(system ver) requires <procedure>(system ver). not procedure that we made
