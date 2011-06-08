@@ -743,3 +743,38 @@
 ;; /Applications/Racket v5.0.1/collects/r5rs/run.rkt: [running body]
 
 ;; map(system ver) requires <procedure>(system ver). not procedure that we made
+
+;; 4.1.5 Data as Programs
+
+(my-eval '(* 5 5) the-global-environment)
+;; 25
+
+(my-eval (cons '* (list 5 5)) the-global-environment)
+;; 25
+
+;; ex 4.15
+
+;; (define (run-forever) (run-forever))
+
+;; (define (try p)
+;;   (if (halts? p p)
+;; 	  (run-forever)
+;; 	  'halted))
+
+
+;; if (try try) runs infinitely, (halts? try try) is true.
+;; if (try try) stops. (halts? try try) is false
+
+;; 4.1.6 Internal Definitions
+
+;; (define (f x)
+;;   (define (even? n)
+;; 	(if (= n 0)
+;; 		#t
+;; 		(odd? (- n 1))))
+;;   (define (odd? n)
+;; 	(if (= n 0)
+;; 		#f
+;; 		(even? (- n 1))))
+;;   <rest of body of f>)
+
