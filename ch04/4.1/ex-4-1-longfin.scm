@@ -427,12 +427,12 @@
 		((begin? exp)
 		 (eval-sequence (begin-actions exp) env))
 		((cond? exp) (my-eval (cond->if exp) env))
-		((application? exp)
-		 (my-apply (my-eval (operator exp) env)
-				(list-of-values (operands exp) env)))
+		((let? exp) (my-eval (let->combination exp) env))
 		((and? exp) (eval-and exp env))
 		((or? exp) (eval-or exp env))
-		((let? exp) (my-eval (let->combination exp) env))
+		((application? exp)
+		 (my-apply (my-eval (operator exp) env)
+				   (list-of-values (operands exp) env)))
 		(else
 		 (error "Unknown expression type --EVAL"))))
 
@@ -629,16 +629,16 @@
 		(else (scan (cdr vars) (cdr vals)))))
   
 
-(define (lookup-variable-value var env)
+(define (ex-lookup-variable-value var env)
   (env-loop env (lambda (vars vals)
 				  (cdr vals))))
 
-(define (set-variable-value! var val env)
+(define (ex-set-variable-value! var val env)
   (env-loop env (lambda (vars vals)
 						  (set-car! vals val))))
   
 
-(define (define-variable! var val env)
+(define (ex-define-variable! var val env)
   (let ((frame (first-frame env)))
 	 (scan (frame-variables frame)
 		   (frame-values frame)
@@ -778,3 +778,84 @@
 ;; 		(even? (- n 1))))
 ;;   <rest of body of f>)
 
+;; ex 4.16
+
+;; a
+
+
+(define (lookup-variable-value var env)
+  (define (env-loop env)
+	(define (scan vars vals)
+	  (cond ((null? vars)
+			 (env-loop (enclosing-environment env)))
+			((eq? var (car vars))
+			 (if (eq? (car vals) '*unassigned*)
+				 (error "Unassigned variable" var)
+				 (car vals)))
+			(else (scan (cdr vars) (cdr vals)))))
+	(if (eq? env the-empty-environment)
+		(error "Unbound variable" var)
+		(let ((frame (first-frame env)))
+		  (scan (frame-variables frame) (frame-values frame)))))
+  (env-loop env))
+
+;; b
+(define (filter pred list)
+  (define (iter list result)
+	(if (null? list)
+		result
+		(iter (cdr list)
+			  (if (pred (car list))
+				  (cons (car list) result)
+				  result))))
+  (iter list '()))
+(define (scan-out-defines proc-body)
+  (let ((defines (filter definition? proc-body))
+		(rest-of-proc (filter (lambda (clause)
+								(not (definition? clause))) proc-body)))
+	(if (null? defines)
+		proc-body
+		(let ((bindings (map (lambda (clause)
+							   (list (definition-variable clause)
+									 ''*unassigned*)) defines))
+			  (assignments (map (lambda (clause)
+								  (list 'set!
+										(definition-variable clause)
+										(definition-value clause))) defines)))
+		  (list (make-let bindings (append assignments rest-of-proc)))))))
+
+(define qf (make-procedure
+			'x
+			'((define (my-even? n)
+				(if (= n 0)
+					#t
+					(my-odd? (- n 1))))
+			  (define (my-odd? n)
+				(if (= n 0)
+					#f
+					(my-even? (- n 1))))
+			  (my-odd? x))
+			the-global-environment))
+
+(scan-out-defines (procedure-body qf))
+
+;;c
+
+;; modify when eval
+(define (make-procedure parameters body env)
+  (list 'procedure parameters (scan-out-defines body) env))
+
+;; modify when apply.
+;; (define (procedure-body proc)
+;;  (scan-out-defines (caddr proc)))
+
+(define qf2 '(define (f x)
+			   (define (adder n)
+				 (+ n x))
+			   (adder x)))
+
+(my-eval '(let ((x 10)) (+ x 5)) the-global-environment)
+(my-eval qf2 the-global-environment)
+(my-eval '(f 3) the-global-environment)
+
+;; I suggest that it place (make-procedure). because it called only eval time.
