@@ -858,4 +858,4 @@
 (my-eval qf2 the-global-environment)
 (my-eval '(f 3) the-global-environment)
 
-;; I suggest that it place (make-procedure). because it called only eval time.
+;; I suggest installing in (make-procedure). because it called only eval time.
