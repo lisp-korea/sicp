@@ -593,7 +593,99 @@
 	  (frame-values frame))))
 
 ;; 연습문제 4.11
+;; 환경연산
+
+(define (make-frame variables values)
+  (define (iter var val acc)
+    (cond ((null? var) acc)
+	  (else (iter (cdr var) (cdr val) (append acc (list (cons (car var) (car val))))))))
+  (iter variables values '()))
+
+(define (frame-variables frame)
+  (define (iter frame acc)
+    (cond ((null? frame) acc)
+	  (else (iter (cdr frame) (append acc (list (caar frame)))))))
+  (iter frame '()))
+
+(define (frame-values frame)
+  (define (iter frame acc)
+    (cond ((null? frame) acc)
+	  (else (iter (cdr frame) (append acc (list (cdar frame)))))))
+  (iter frame '()))
+
+(define (add-binding-to-frame! var val frame)
+  (let ((old-car (car frame))
+	(old-cdr (cdr frame)))
+    (set-car! frame (cons var val))
+    (set-cdr! frame (cons old-car old-cdr))))
 
 
-		   
+(define (enclosing-environment env)
+  (cdr env))
 
+(define (first-frame env) (car env))
+(define the-empty-environment '())
+
+
+(define (extend-environment vars vals base-env)
+  (if (= (length vars) (length vals))
+      (cons (make-frame vars vals) base-env)
+      (if (< (length vars) (length vals))
+	  (error "Too many arguments supplied" vars vals)
+	  (error "Too few arguments supplied" vars vals))))
+
+(define (lookup-variable-value var env)
+  (define (env-loop env)
+    (define (scan frame)
+      (cond ((null? frame) (env-loop (enclosing-environment env)))
+	    ((eq? var (caar frame)) (cdar frame))
+	    (else (scan (cdr frame)))))
+    (if (eq? env the-empty-environment) (error "Unbound variable" var)
+	(let ((frame (first-frame env)))
+	  (scan frame))))
+  (env-loop env))
+
+(define (set-variable-value! var val env)
+  (define (env-loop env)
+    (define (scan frame)
+      (cond ((null? frame) (env-loop (enclosing-environment env)))
+	    ((eq? var (caar frame)) (set-cdr! (car frame) val))
+	    (else (scan (cdr frame)))))
+    (if (eq? env the-empty-environment)
+	(error "Unbound variable -- SET!" var)
+	(let ((frame (first-frame env)))
+	  (scan frame))))
+  (env-loop env))
+
+(define (define-variable! var val env)
+  (let ((fir-frame (first-frame env)))
+    (define (scan frame)
+      (cond ((null? frame) (add-binding-to-frame! var val fir-frame))
+	    ((eq? var (caar frame)) (set-cdr! (car frame) val))
+	    (else (scan (cdr frame)))))
+    (scan fir-frame)))
+
+
+;; 4.1.4 언어실행기를 보통 프로그램처럼 돌려보기
+
+;; 연습문제 4.15
+(define (run-forever)
+  (run-forever))
+
+(define (try p)
+  (if (halts? p p) (run-forever)
+      'halted))
+
+
+;; 4.1.6 안쪽정의
+
+(define (f x)
+  (define (even? n)
+    (if (= n 0) true
+	(odd? (- n 1))))
+  (define (odd? n)
+    (if (= n 0) false
+	(even? (- n 1)))))
+
+
+;; 너무 어렵다...........=_=
