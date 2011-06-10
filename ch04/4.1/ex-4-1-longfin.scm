@@ -434,7 +434,7 @@
 		 (my-apply (my-eval (operator exp) env)
 				   (list-of-values (operands exp) env)))
 		(else
-		 (error "Unknown expression type --EVAL"))))
+		 (error "Unknown expression type --EVAL" exp))))
 
 (define (let? exp)
   (tagged-list? exp 'let))
@@ -726,6 +726,8 @@
 		(list 'null? null?)
 		(list '+ +)
 		(list '* *)
+		(list '- -)
+		(list '= =)
 		(list 'map map)))
 (define the-global-environment (setup-environment))
 
@@ -859,3 +861,383 @@
 (my-eval '(f 3) the-global-environment)
 
 ;; I suggest installing in (make-procedure). because it called only eval time.
+
+;; ex 4.17
+
+;; ex 4.18
+
+
+;; (define (solve f y0 dt)
+;;   (define y (integral (delay dy) y0 dt))
+;;   (define dy (stream-map f y))
+;;   y)
+		  
+;; transform a
+;; 
+;; (lambda <vars>
+;;   (let ((u '*unassigned*)
+;; 		(v '*unassigned*))
+;; 	(set! u <e1>)
+;; 	(set! v <e2>)
+;; 	<e3>))
+
+;; (define (solve f y0 dt)
+;;   (let ((y '*unassigned*)
+;; 		(dy '*unassigned*))
+;; 	(set! y (integral (delay dy) y0 dt))
+;; 	(set! dy (stream-map f y))
+;; 	y))
+
+;; (define (solve f y0 dt)
+;;   ((lambda (y dy)
+;; 	 (set! y (integral (delay dy) y0 dt))
+;; 	 (set! dy (stream-map f y))
+;; 	 y)
+;;    '*unassigned*
+;;    '*unassigned*))
+
+;; transform b
+;;
+;; (lambda <vars>
+;;   (let ((u '*unassigned*)
+;; 		(v '*unassigned*))
+;; 	(let ((a <e1>)
+;; 		  (b <e2>))
+;; 	  (set! u a)
+;; 	  (set! v b))
+;; 	<e3>))
+
+
+;; (define (solve f y0 dt)
+;;   (let ((y '*unassigned*)
+;; 		dy '*unassigned*)
+;; 	(let ((a (integral (delay dy) y0 dt))
+;; 		  (b (stream-map f y)))
+;; 	  (set! y a)
+;; 	  (set! dy b))
+;; 	y))
+
+;; (define (solve f y0 dt)
+;;   ((lambda (y dy)
+;; 	 ((lambda (a b)
+;; 		(set! y a)
+;; 		(set! dy b)
+;; 		y)
+;; 	  (integral (delay dy) y0 dt)
+;; 	  (stream-map f y)))
+;;    '*unassigned*
+;;    '*unassigned*))
+
+;; ex 4.19
+
+(let ((a 1))
+  (define (f x)
+	(define b (+ a x))
+	(define a 5)
+	(+ a b))
+  f 10)
+
+;; ben
+;; b = 11
+;; a = 5
+;; result 16
+
+;; alyssa
+;; b = undefined + 10 => error
+
+;; eva
+;; b = 15
+;; a = 5
+;; result 20
+
+;; I support alyssa.
+;; how to implement eva's rule => dependency check & resolve.
+
+;; ex 4.20
+
+;; (letrec ((<var1> <exp1>)
+;; 		 (<var2> <exp2>)
+;; 		 ...
+;; 		 (<varn> <expn>))
+;;   <body>)
+
+(letrec ((fact
+		  (lambda (n)
+			(if (= n 1)
+				1
+				(* n (fact (- n 1)))))))
+  (fact 10))
+
+
+;; a
+
+(define (make-let bindings body)
+  (append (list 'let bindings) body))
+				  
+(define (letrec->let exp)
+  (let ((bindings (cadr exp))
+		(body (caddr exp)))
+	(let ((vars (map car bindings))
+		  (exps (map cdr bindings)))
+	  (make-let (map (lambda (var)
+					   (list var ''*unassigned*)) vars)
+				(append (map (lambda (binding)
+							   (list 'set!
+									 (car binding)
+									 (cadr binding)))
+							 bindings)
+						(list body))))))
+
+(eval (letrec->let '(letrec ((fact
+							  (lambda (n)
+								(if (= n 1)
+									1
+									(* n (fact (- n 1)))))))
+					  (fact 10))) (scheme-report-environment 5))
+
+
+;; b
+
+(define (f x)
+  (let ((even?
+		 (lambda (n)
+		   (if (= n 0)
+			   true
+			   (odd? (- n 1)))))
+		(odd?
+		 (lambda (n)
+		   (if (= n 0)
+			   false
+			   (even? (- n 1))))))
+	<body>))
+
+(define (f x)
+  ((lambda (even? odd?)
+	 <body>)
+   (lambda (n)
+	 (if (= n 0)
+		 true
+		 (odd? (- n 1))))
+   (lambda (n)
+	 (if (= n 0)
+		 false
+		 (even? (- n 1))))))
+;; if using let can't resolve odd? when apply (f)
+
+;; ex 4.21
+;; a.
+
+((lambda (n)
+   ((lambda (fact)
+	  ;; (lambda (ft k)) goes to hear
+	  (fact fact n))
+	(lambda (ft k)
+	  ;;ft is it self (for recursion)
+	  (if (= k 1)
+		  1
+		  (* k (ft ft (- k 1)))))))
+ 10)
+
+
+
+(define (fibo n)
+  (cond ((= n 0) 1)
+		((= n 1) 1)
+		(else (+ (fibo (- n 1))
+				 (fibo (- n 2))))))
+
+(fibo 10)
+
+((lambda (n)
+   ((lambda (fibo)
+	  (fibo fibo n))
+	(lambda (fb n)
+	  (cond ((= n 0) 1)
+			((= n 1) 1)
+			(else (+ (fb fb (- n 1))
+					 (fb fb (- n 2))))))))
+ 10)
+
+;;b
+
+(define (f x)
+  (define (even? n)
+	(if (= n 0)
+		true
+		(odd? (- n 1))))
+  (define (odd? n)
+	(if (= n 0)
+		false
+		(even? (- n 1))))
+  (even? x))
+
+(define (f x)
+  ((lambda (even? odd?)
+	 (even? even? odd? x))
+   (lambda (ev? od? n)
+	 (if (= n 0) #t (od? ev? od? (- n 1))))
+   (lambda (ev? od? n)
+	 (if (= n 0) #f (ev? ev? od? (- n 1))))))
+
+;; 4.1.7 Separating Syntactic Analysis from Execution
+
+(define (factorial n)
+  (if (= n 1)
+	  1
+	  (* (factorial (- n 1)) n)))
+
+;; 1. check it's (if)
+;; 2. get predicate[(= n 1)]
+;; 3. eval (* (factorial (- n 1)) n) or 1
+
+(define (my-eval-with-analyze exp env)
+  ((analyze exp) env))
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp)
+		 (analyze-self-evaluating exp))
+		((quoted? exp) (analyze-quoted exp))
+		((variable? exp) (analyze-variable exp))
+		((assignment? exp) (analyze-assignment exp))
+		((definition? exp) (analyze-definition exp))
+		((if? exp) (analyze-if exp))
+		((lambda? exp) (analyze-lambda exp))
+		((begin? exp) (analyze-sequence (begin-actions exp)))
+		((cond? exp) (analyze (cond->if exp)))
+		((application? exp) (analyze-application exp))
+		(else
+		 (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (analyze-self-evaluating exp)
+  (lambda (env) exp))
+
+(define (analyze-quoted exp)
+  (let ((qval (text-of-quotation exp)))
+	(lambda (env) qval)))
+
+(define (analyze-variable exp)
+  (lambda (env) (lookup-variable-value exp env)))
+
+(define (analyze-assignment exp)
+  (let ((var (assignment-variable exp))
+		(vproc (analyze (assignment-value exp))))
+	(lambda (env)
+	  (set-variable-value! var (vproc env) env)
+	  'ok)))
+
+(define (analyze-definition exp)
+  (let ((var (definition-variable exp))
+		(vproc (analyze (definition-value exp))))
+	(lambda (env)
+	  (define-variable! var (vproc env) env)
+	  'ok)))
+
+(define (analyze-if exp)
+  (let ((pproc (analyze (if-predicate exp)))
+		(cporc (analyze (if-consequent exp)))
+		(aproc (analyze (if-alternative exp))))
+	(lambda (env)
+	  (if (true? (pproc env))
+		  (cporc env)
+		  (aproc env)))))
+
+(define (analyze-lambda exp)
+  (let ((vars (lambda-parameters exp))
+		(bproc (analyze-sequence (lambda-body exp))))
+	(lambda (env) (make-procedure-with-analyze vars bproc env))))
+
+(define (analyze-sequence exps)
+  (define (sequentially proc1 proc2)
+	(lambda (env) (proc1 env) (proc2 env)))
+  (define (loop first-proc rest-procs)
+	(if (null? rest-procs)
+		first-proc
+		(loop (sequentially first-proc (car rest-procs))
+			  (cdr rest-procs))))
+  (let ((procs (map analyze exps)))
+	(if (null? procs)
+		(error "Empty sequence -- ANALYZE"))
+	(loop (car procs) (cdr procs))))
+
+(define (analyze-application exp)
+  (let ((fproc (analyze (operator exp)))
+		(aprocs (map analyze (operands exp))))
+	(lambda (env)
+	  (execute-application (fproc env)
+						   (map (lambda (aproc) (aproc env))
+								aprocs)))))
+(define (execute-application proc args)
+  (cond ((primitive-procedure? proc)
+		 (apply-primitive-procedure proc args))
+		((compound-procedure? proc)
+		 ((procedure-body proc)
+		  (extend-environment (procedure-parameters proc)
+							  args
+							  (procedure-environment proc))))
+		(else
+		 (error
+		  "Unknown procedure type -- EXECUTE-APPLICATION"
+		  proc))))
+
+;; ex 4.22
+(define (make-procedure-with-analyze parameters body env)
+  (list 'procedure parameters body env))
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp)
+		 (analyze-self-evaluating exp))
+		((quoted? exp) (analyze-quoted exp))
+		((variable? exp) (analyze-variable exp))
+		((assignment? exp) (analyze-assignment exp))
+		((definition? exp) (analyze-definition exp))
+		((if? exp) (analyze-if exp))
+		((lambda? exp) (analyze-lambda exp))
+		((begin? exp) (analyze-sequence (begin-actions exp)))
+		((cond? exp) (analyze (cond->if exp)))
+		((let? exp) (analyze (let->combination exp)))
+		((application? exp) (analyze-application exp))
+		(else
+		 (error "Unknown expression type -- ANALYZE" exp))))
+
+(my-eval-with-analyze '(let ((x 1)) (+ x 1)) the-global-environment)
+
+
+;; ex 4.23
+
+(define (analyze-sequence-alyssa exps)
+  (define (execute-sequence procs env)
+	(cond ((null? (cdr procs)) ((car procs) env))
+		  (else ((car procs) env)
+				(execute-sequence (cdr procs) env))))
+  (let ((procs (map analyze exps)))
+	(if (null? procs)
+		(error "Empty sequence -- ANALYZE"))
+	(lambda (env) (execute-sequence procs env))))
+
+((analyze-sequence-alyssa '((define x 3) (+ x 5))) the-global-environment)
+;; (lambda (env) (execute-sequence [(define x 3) (+ x 5)]) env)
+((analyze-sequence '((define y 3) (+ y 5))) the-global-environment)
+;; (lambda (env) (define y 3))
+;; (lambda (env) (+ y 5))
+
+;; ex 4.24
+
+;; can't run on r5rs...
+(define test-exp '(define (test-f n)
+					(if (= n 1)
+						1
+						(+ (test-f (- n 1)) n))))
+(let ((start-time (current-seconds)))
+  (begin
+	(my-eval test-exp the-global-environment)
+	(my-eval '(test-f 1000000) the-global-environment)
+	(display (- (current-seconds) start-time))
+	(newline)))
+
+(define the-global-environment (setup-environment))
+(let ((start-time (current-seconds)))
+  (begin
+	(my-eval-with-analyze test-exp the-global-environment)
+	(my-eval-with-analyze '(test-f 1000000) the-global-environment)
+	(display (- (current-seconds) start-time))
+	(newline)))
