@@ -79,10 +79,10 @@
 			 (lambda-body exp)
 			 env))
 	((begin? exp)
-	 (eval-sequence (begin-actings exp) env))
-	((cond? exp) (my-eval (cond-if exp) env))
+	 (eval-sequence (begin-actions exp) env))
+	((cond? exp) (my-eval (cond->if exp) env))
 	((application? exp)
-	 (my-apply (eval (operator exp) env)
+	 (my-apply (my-eval (operator exp) env)
 		(list-of-values (operands exp) env)))
 	(else
 	 (error "Unknown expression type -- EVAL" exp))))
@@ -100,8 +100,12 @@
 
 (define (my-apply procedure arguments)
   (cond ((primitive-procedure? procedure)
+	 (display "<<my-apply : primitive-procedure>>")
+	 (newline)
 	 (apply-primitive-procedure procedure arguments))
 	((compound-procedure? procedure)
+	 (display "<<my-apply : compound-procedure>>")
+	 (newline)
 	 (eval-sequence
 	  (procedure-body procedure)
 	  (extend-environment
@@ -126,13 +130,16 @@
 	    (list-of-values (rest-operands exps) env))))
 
 
+(list-of-values '(1 2 3) '())
+;(list-of-values '((+ 1 2) (* 1 2)) the-global-environment)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 조건 식 
 ;;; p479
 ;;; eval-if는 지정된 환경에서 if 식의 술어를 계산한다.
 
 (define (eval-if exp env)
-  (if (ture? (eval (if-predicate exp) env))
+  (if (true? (my-eval (if-predicate exp) env))
       (my-eval (if-consequent exp) env)
       (my-eval (if-alternative exp) env)))
 
@@ -148,6 +155,10 @@
 	(else (my-eval (first-exp exps) env)
 	      (eval-sequence (rest-exps exps) env))))
 
+;;(eval-sequence (begin-actions '(begin (define a 1) (set! a 2)))
+;;	       '())
+;; ->
+;;(eval-sequence '((define a 1) (set! a 2)) '())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 덮어쓰기와 정의
@@ -159,13 +170,25 @@
 		       env)
   'ok)
 
+;(assignment-variable '(set! a 1))
+;(assignment-value '(set! a 1))
+
+;in driver loop
+;(set! a 1)
 
 (define (eval-definition exp env)
+  (display "eval-definition")
+  (newline)
   (define-variable! (definition-variable exp)
-    (my-eval (definition-variable exp) env)
+    (my-eval (definition-value exp) env)
     env)
   'ok)
-	  
+
+;(definition-variable '(define a 1))
+;(definition-value '(define a 1))	  
+
+;in driver loop
+;(define b 2)
 
 
 
@@ -231,15 +254,18 @@
 ;;; 4.1.2 식을 나타내는 방법
 ;;; p481
 
+;;--------------------------------------------------------
 ;; * 곧바로 값을 구할 수 있는 것은 수와 글줄(문자열-string) 뿐 이다.
 (define (self-evaluating? exp)
   (cond ((number? exp) #t) ;true)
 	((string? exp) #t) ;true)
 	(else #f))) ;false)))
 
+;;--------------------------------------------------------
 ;; * 변수는 글자로 나타낸다.
 (define (variable? exp) (symbol? exp))
 
+;;--------------------------------------------------------
 ;; * 따온 식은 (quote <text-of-quotation>) 꼴로 나타낸다.
 (define (quoted? exp)
   (tagged-list? exp 'quote))
@@ -251,6 +277,7 @@
       (eq? (car exp) tag)
       #f))
 
+;;--------------------------------------------------------
 ;; * 덮어쓰기는 (set! <var> <value>)꼴로 나타낸다.
 (define (assignment? exp)
   (tagged-list? exp 'set!))
@@ -259,6 +286,7 @@
 
 (define (assignment-value exp) (caddr exp))
 
+;;--------------------------------------------------------
 ;; * 정의는 다음 두 꼬러 가운데 하나다.
 ;; - (define <var> <value>)
 ;; - (define (<var> <parameter1> ... <parameter_n>) 
@@ -281,6 +309,7 @@
       (make-lambda (cdadr exp)  ; 매개변수 이름
 		   (cddr exp))))
 
+;;--------------------------------------------------------
 ;; * lambda 식은 lambda 글자로 시작하는 리스트다.
 (define (lambda? exp) (tagged-list? exp 'lambda))
 
@@ -291,6 +320,10 @@
 (define (make-lambda parameters body)
   (cons 'lambda (cons parameters body)))
 
+;; in driver loop
+;(lambda (x) (+ x 1))
+
+;;--------------------------------------------------------
 ;; * 조건식은 if로 시작하여 술어, 결과 식, 다른 결과 식으로 구성된다.
 ;;   다른 결과 식이 없으면 그 값은 언제나 false
 (define (if? exp) (tagged-list? exp 'if))
@@ -307,6 +340,7 @@
 (define (make-if predicate consequent alternative)
   (list 'if predicate consequent alternative))
 
+;;--------------------------------------------------------
 ;; * begin은 잇단식을 하나로 묶어낸다.
 ;; - 첫 식과 나머지 모든 식을 골라내는 고르개
 (define (begin? exp) (tagged-list? exp 'begin))
@@ -327,6 +361,10 @@
 
 (define (make-begin seq) (cons 'begin seq))
 
+;(begin? '(begin (define a 1) (set! a 2)))
+;(begin-actions '(begin (define a 1) (set! a 2)))
+;(sequence->exp '((define a 1) (set! a 2)))
+
 ;; * 프로시적 적용은 또 다른 합친 식이다.
 ;;   식의 car는 연산자, cdr는 피연산자
 (define (application? exp) (pair? exp))
@@ -344,6 +382,9 @@
 (define (first-operand ops) (car ops))
 
 (define (rest-operands ops) (cdr ops))
+
+;; in driver-loop
+;((lambda (x) (+ x 1)) 1)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -378,6 +419,8 @@
 (define (cond-actions clause) (cdr clause))
 
 (define (cond->if exp)
+  (display "cond->if")
+  (newline)
   (expand-clauses (cond-clauses exp)))
 
 (define (expand-clauses clauses)
@@ -394,6 +437,11 @@
 		     (sequence->exp (cond-actions first))
 		     (expand-clauses rest))))))
 
+;; in driver-loop
+;; (cond (true (+ 1 2) (* 1 2))
+;;       (else 4))
+;; (cond (false (+ 1 2) (* 1 2))
+;;       (else 4))
 
 
 ;;;--------------------------< ex 4.2 >--------------------------
@@ -426,6 +474,68 @@
 
 ;; (my-eval '(define a 1) '())
 
+;;;-----------------------------------------------
+;;; put, get 구현
+;; 별파란님 구현
+(define *table* '())
+
+(define (get key)
+  (define (iter table)
+    (cond ((null? table) #f)
+	  ((eq? key (caar table)) (cdar table))
+	  (else (iter (cdr table)))))
+  (iter *table*))
+
+(define (put key proc)
+  (define (remove table acc)
+    (cond ((null? table) acc)
+	  ((eq? key (caar table)) (remove (cdr table) acc))
+	  (else (remove (cdr table) (append acc (list (car table)))))))
+  (if (get key) 
+      (set! *table* (append (remove *table* '()) (list (cons key proc))))
+      (set! *table* (append *table* (list (cons key proc))))))
+;;;-----------------------------------------------
+
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+        ((variable? exp) (lookup-variable-value exp env))
+        ((get (car exp))
+         ((get (car exp)) exp env))
+        ((application? exp)
+         (my-apply (my-eval (operator exp) env)
+                (list-of-values (operands exp) env)))
+        (else
+         (error "Unknown expression type -- EVAL"))))
+
+(put 'quote
+     (lambda (exp env)
+       (text-of-quotation exp)))
+
+(put 'set!
+     (lambda (exp env)
+       (eval-assignment exp env)))
+
+(put 'define
+     (lambda (exp env) 
+       (eval-definition exp env)))
+
+(put 'if
+     (lambda (exp env)
+       (eval-if exp env)))
+
+(put 'lambda
+     (lambda (exp env)
+       (make-procedure (lambda-parameters exp)
+		       (lambda-body exp)
+		       env)))
+
+(put 'begin
+     (lambda (exp env)
+       (eval-sequence (begin-actions exp) env)))
+
+(put 'cond
+     (lambda (exp env)
+       (my-eval (cond->if exp) env)))
 
 ;;;-----------------------------------------------
 ;;; put, get 구현
@@ -454,8 +564,8 @@
 ;; 			 (lambda-body exp)
 ;; 			 env))
 ;; 	((begin? exp)
-;; 	 (eval-sequence (begin-actings exp) env))
-;; 	((cond? exp) (my-eval (cond-if exp) env))
+;; 	 (eval-sequence (begin-actions exp) env))
+;; 	((cond? exp) (my-eval (cond->if exp) env))
 ;; 	((application? exp)
 ;; 	 (my-apply (eval (operator exp) env)
 ;; 		(list-of-values (operands exp) env)))
@@ -589,11 +699,11 @@
 (define (eval-and exp env)
   (define (eval-and-inner predicates env2)
     (let ((a-predicates (car predicates)))
-      (let ((a-res (my-eval a-preicates env2)))
+      (let ((a-res (my-eval a-predicates env2)))
 	(if a-res
 	    (if (null? (cdr predicates))
 		a-res
-		(eval-and-inner (resdt-predicates predicates) env2))
+		(eval-and-inner (rest-predicates predicates) env2))
 	    #f))))
   (eval-and-inner (rest-predicates exp) env))
 
@@ -601,17 +711,35 @@
 (define (eval-or exp env)
   (define (eval-or-inner predicates env2)
     (let ((a-predicates (car predicates)))
-      (let ((a-res (my-eval a-preicates env2)))
+      (let ((a-res (my-eval a-predicates env2)))
 	(if a-res
-	    #t
+	    a-res
 	    (if (null? (cdr predicates))
 		a-res
-		(eval-or-inner (resdt-predicates predicates) env2))))))
+		(eval-or-inner (rest-predicates predicates) env2))))))
   (eval-or-inner (rest-predicates exp) env))
+
+
+(put 'and
+     (lambda (exp env)
+       (eval-and exp env)))
+
+; in driver loop
+;(and 1 2 3)
+;(and true 2 false)
+
+(put 'or
+     (lambda (exp env)
+       (eval-or exp env)))
+
+; in driver loop
+;(or 1 2 3)
+;(or true 2 3)
 
 ;; b) 이끌어낸 식으로 정의
 ;; cond를 expand할 때는 표현의 문법 구조만 보고 그대로 확장한다
 ;; and/or를 확장할 때는 표현 각각의 값을 평가한 다음에 결과에 따라서 확장한다.
+
 
 
 ;;;--------------------------< ex 4.5 >--------------------------
@@ -653,7 +781,7 @@
 
 ;;; 겉으로 드러나는 식의 문법 뿐 아니라
 ;;; 실행기 프로그램이 돌아가는 데 꼭 필요한 데이터 구조를 정의해야 한다.
-;;; ( 프로시저, 화녁ㅇ의 표현 방법, 참이나 거짓 값의 표현 방법 )
+;;; ( 프로시저, 환경의 표현 방법, 참이나 거짓 값의 표현 방법 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; 술어 검사하기
@@ -780,6 +908,7 @@ env2
 		(frame-values frame)))))
   (env-loop env))
 
+(lookup-variable-value 'a env2)
 
 
 ;; 정해진 환경에서 어떤 변수 값을 고쳐쓸 때
@@ -799,16 +928,24 @@ env2
   (env-loop env))
 
 ;;;-----------
+
 env2
+(lookup-variable-value 'a env2)
+
 (set-variable-value! 'a 5 env2)
 env2
+(lookup-variable-value 'a env2)
+
 (set-variable-value! 'a 1 env2)
 env2
+(lookup-variable-value 'a env2)
 ;;;-----------
 
 
 ;; 변수를 정의할 때
 (define (define-variable! var val env)
+  (display "define-varialbe!")
+  (newline)
   (let ((frame (first-frame env)))
     (define (scan vars vals)
       (cond ((null? vars)
@@ -838,4 +975,178 @@ env2 ;(((e c d) 5 3 4) ((a b) 1 2))
 
 
 
+
+
+;;;==========================================
+;;; 4.1.4 언어 실행기를 보통 프로그램처럼 돌려보기
+;;; p497
+
+;; 언어 실행기가 있음으로 하여, Lisp 식의 계산 프로세스를 설명하는 프로그램 하나를 손에 쥐게 되었다.
+
+;; 남은 일은 기본 프로시저가 돌아가도록 밑바탕에 있는 Lisp 시스템에서 힘을 빌려 쓰는 것
+
+;; 각 기본 프로시저 미리 환경
+(define (setup-environment)
+  (let ((initial-env
+	 (extend-environment (primitive-procedure-names)
+			     (primitive-procedure-objects)
+			     the-empty-environment)))
+    (define-variable! 'true #t initial-env)
+    (define-variable! 'false #f initial-env)
+    initial-env))
+
+(define (primitive-procedure? proc)
+  (tagged-list? proc 'primitive))
+
+(define (primitive-implementation proc) (cadr proc))
+
+
+(define (primitive-procedure-names)
+  (map car
+       primitive-procedures))
+
+
+(define (primitive-procedure-objects)
+  (map (lambda (proc) (list 'primitive (cadr proc)))
+       primitive-procedures))
+     
+
+(define primitive-procedures
+  (list (list 'car car)
+	(list 'cdr cdr)
+	(list 'cons cons)
+	(list 'null? null?)
+	;;<추가되는 기본 원소들>
+;;	(list 'define define)
+	(list '+ +)
+	(list '- -)
+	(list '* *)
+	(list '/ /)
+	))
+
+
+(define the-global-environment (setup-environment))
+
+(define (apply-primitive-procedure proc args)
+  (apply-in-underlying-scheme
+   (primitive-implementation proc) args))
+
+;;;----------
+;; (define (apply-in-underlying-scheme proc args)
+;;   (apply proc args))
+;;(define apply-in-underlying-scheme my-apply)
+(define apply-in-underlying-scheme apply)
+
+;;-----------
+
+;;;---------------------
+;;; 드라이버 루프 만들기
+(define input-prompt ";;; M-Eval input:")
+(define output-prompt ";;; M-Eval value:")
+
+
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+    (let ((output (my-eval input the-global-environment)))
+      (announce-output output-prompt)
+      (user-print output)))
+  (driver-loop))
+
+(define (prompt-for-input string)
+  (newline) (newline) (display string) (newline))
+
+(define (announce-output string)
+  (newline) (display string) (newline))
+
+
+(define (user-print object)
+  (if (compound-procedure? object)
+      (display (list 'compound-procedure
+		     (procedure-parameters object)
+		     (procedure-body object)
+		     '<procedure-env>))
+      (display object)))
+
+
+;; 드라이버 루프 시작
+(define the-global-environment (setup-environment))
+
+;;(driver-loop)
+
+
+;;;--------------------------< ex 4.14 >--------------------------
+;;; p501
+
+
+
+
+
+;;;==========================================
+;;; 4.1.5 프로그램도 데이터처럼
+;;; p501
+
+;; 언어 실행기는 만능기계이다(universal machine)
+;; 언어 실행기는 프로그래밍 언어로 처리하는 데이터 물체와,
+;;             프로그래밍 언어 자체를 이어주는 다리 구실을 한다.
+
+;; 대부분의 lisp 구현은 식과 환경을 인자로 받아 식의 값을 셈할 수 있도록
+;; eval을 기본 프로시저로 내놓는다.
+;;(eval '(* 5 5) user-initial-environment)
+;;(eval (cons '* (list 5 5)) user-initial-environment)
+
+
+
+;;;--------------------------< ex 4.15 >--------------------------
+;;; p505
+
+;; halting problem 이 unsolvable 임을 밝혀라.
+
+
+
+
+;;;==========================================
+;;; 4.1.6 안쪽 정의
+;;; p506
+
+
+
+;;;--------------------------< ex 4.16 >--------------------------
+;;; p508
+
+
+;;;--------------------------< ex 4.17 >--------------------------
+;;; p509
+
+
+;;;--------------------------< ex 4.18 >--------------------------
+;;; p509
+
+;;;--------------------------< ex 4.19 >--------------------------
+;;; p510
+
+;;;--------------------------< ex 4.20 >--------------------------
+;;; p511
+
+;;;--------------------------< ex 4.21 >--------------------------
+;;; p512
+
+
+
+;;;==========================================
+;;; 4.1.7 문법 분석과 실행 과정을 떼어놓기
+;;; p514
+
+
+
+;;;--------------------------< ex 4.22 >--------------------------
+;;; p519
+
+
+;;;--------------------------< ex 4.23 >--------------------------
+;;; p519
+
+
+;;;--------------------------< ex 4.24 >--------------------------
+;;; p520
 
