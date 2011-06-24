@@ -360,6 +360,8 @@
 		(list 'cdr cdr)
 		(list 'cons cons)
 		(list 'null? null?)
+		(list 'display display)
+		(list 'newline newline)
 		(list '+ +)
 		(list '* *)
 		(list '/ /)
@@ -427,8 +429,6 @@
 		((cond? exp) (my-eval (cond->if exp) env))
 		((let? exp) (my-eval (let->combination exp) env))
 		((application? exp)
-		 (display "application:")(display exp)
-		 (newline)
 		 (my-apply (actual-value (operator exp) env)
 				   (operands exp)
 				   env))
@@ -436,8 +436,6 @@
 		 (error "Unknown expression type --EVAL" exp))))
 
 (define (actual-value exp env)
-  (display "actual-value:")(display exp)
-  (newline)
   (force-it (my-eval exp env)))
 
 (define (my-apply procedure arguments env)
@@ -545,5 +543,313 @@ w
 count
 ;;; L-Eval value: 2
 
+;; ex 4.28
+
+;; if eval doesn't use force-it...
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((let? exp) (my-eval (let->combination exp) env))
+		((application? exp)
+		 (my-apply (my-eval (operator exp) env)
+				   (operands exp)
+				   env))
+		(else
+		 (error "Unknown expression type --EVAL" exp))))
 
 
+(my-eval '((lambda (f)
+			 (f 1 2)) +) the-global-environment)
+
+;; error occured (f is thunk.)
+
+
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((let? exp) (my-eval (let->combination exp) env))
+		((application? exp)
+		 (my-apply (actual-value (operator exp) env)
+				   (operands exp)
+				   env))
+		(else
+		 (error "Unknown expression type --EVAL" exp))))
+
+(my-eval '((lambda (f)
+			 (f 1 2)) +) the-global-environment)
+;;3
+
+
+;; ex 4.29
+
+((lambda (n)
+   ((lambda (fibo)
+	  (fibo fibo n))
+	(lambda (fb n)
+	  (cond ((= n 0) 1)
+			((= n 1) 1)
+			(else (+ (fb fb (- n 1))
+					 (fb fb (- n 2))))))))
+ 10)
+
+;; fb is always evaluated twice.
+
+;; in applicative order
+(define (square x)
+  (* x x))
+(square (id 10))
+;;100
+
+count
+;;1
+
+;; in normal order (memoized ver.)
+(define (square x)
+  (* x x))
+(square (id 10))
+;;100
+
+count
+;;1
+
+;; in normal order (non-memoized ver.)
+(define (force-it obj)
+  (if (thunk? obj)
+	  (actual-value (thunk-exp obj) (thunk-env obj))
+	  obj))
+(define (square x)
+  (* x x))
+(square (id 10))
+;;100
+
+count
+;;2
+
+
+;; ex 4.30
+
+;; a.
+
+(define (for-each proc items)
+  (if (null? items)
+	  'done
+	  (begin (proc (car items))
+			 (for-each proc (cdr items)))))
+
+(for-each (lambda (x)
+				  (newline)
+				  (display x))
+		  '(57 321 88))
+
+;; (if pred cons alter) is one statement. (begin (proc) (for-each)) hasn't side effect...
+
+
+;; b.
+
+(define (p1 x)
+  (set! x (cons x '(2)))
+  x)
+
+(define (p2 x)
+  (define (p e)
+	e
+	x)
+  (p (set! x (cons x '(2)))))
+
+(p1 1)
+;; (1 2)
+
+(p2 1)
+;; 1
+
+(define (eval-sequence exps env)
+  (cond ((last-exp? exps)
+		 (my-eval (first-exp exps) env))
+		(else
+		 (actual-value (first-exp exps) env)
+		 (eval-sequence (rest-exps exps) env))))
+
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((let? exp) (my-eval (let->combination exp) env))
+		((application? exp)
+		 (my-apply (actual-value (operator exp) env)
+				   (operands exp)
+				   env))
+		(else
+		 (error "Unknown expression type --EVAL" exp))))
+
+(define (my-apply procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+		 (apply-primitive-procedure
+		  procedure
+		  (list-of-arg-values arguments env))) ;; changed
+
+		((compound-procedure? procedure)
+		 (eval-sequence
+		  (procedure-body procedure)
+		  (extend-environment
+		   (procedure-parameters procedure)
+		   (list-of-delayed-args arguments env) ;; changed
+		   (procedure-environment procedure))))
+
+		(else
+		 (error
+		  "Unknown procedure type -- APPLY" procedure))))
+
+(p1 1)
+;; (1 2)
+
+(p2 1)
+;; (1 2)
+
+
+;; c
+
+(define (for-each proc items)
+  (if (null? items)
+	  'done
+	  (begin (proc (car items))
+			 (for-each proc (cdr items)))))
+
+(for-each (lambda (x)
+				  (newline)
+				  (display x))
+		  '(57 321 88))
+
+;; (if pred cons alter) is one statement. (begin (proc) (for-each)) hasn't side effect...
+
+;; d
+
+
+;; ex 4.31
+;; (define (f a (b lazy) c (d lazy-memo)))
+
+(define (procedure-parameters p)
+  (let ((params (cadr p)))
+	(map (lambda (param)
+		   (if (pair? param)
+			   (car param)
+			   param)) params)))
+
+(define (list-of-args exps params env)
+  (if (no-operands? exps)
+	  '()
+	  (let ((first-p (car params))
+			(first-op (first-operand exps)))
+		(let ((value 
+			   (cond ((not (pair? first-p)) first-op)
+					 ((eq? 'lazy (cadr first-p))
+					  (delay-it first-op env))
+					 ((eq? 'lazy-memo (cadr first-p))
+					  (memoizied-delay-it first-op env)))))
+		  (cons value 
+				(list-of-args (rest-operands exps)
+							  (cdr params)
+							  env))))))
+		  
+	
+
+(define (my-apply procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+		 (apply-primitive-procedure
+		  procedure
+		  (list-of-arg-values arguments env)))
+
+		((compound-procedure? procedure)
+		 (eval-sequence
+		  (procedure-body procedure)
+		  (extend-environment
+		   (procedure-parameters procedure)
+		   (list-of-args arguments (cadr procedure) env)
+		   (procedure-environment procedure))))
+
+		(else
+		 (error
+		  "Unknown procedure type -- APPLY" procedure))))
+
+(define (memoizied-delay-it exp env)
+  (list 'memoizied-thunk exp env))
+
+(define (memo-thunk? obj)
+  (tagged-list? obj 'memoizied-thunk))
+(define (force-it obj)
+  (cond ((thunk? obj)
+		 (actual-value (thunk-exp obj) (thunk-env obj)))
+		((memo-thunk? obj)
+		 (let ((result (actual-value
+						(thunk-exp obj)
+						(thunk-env obj))))
+		   (set-car! obj 'evaluated-thunk)
+		   (set-car! (cdr obj) result)
+		   (set-cdr! (cdr obj) '())
+		   result))
+		 ((evaluated-thunk? obj)
+		  (thunk-value obj))
+		 (else obj)))
+
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((let? exp) (my-eval (let->combination exp) env))
+		((application? exp)
+		 (my-apply (actual-value (operator exp) env)
+				   (operands exp)
+				   env))
+		(else
+		 (error "Unknown expression type --EVAL" exp))))
+
+(my-eval '(define (f a (b lazy) c (d lazy-memo))
+			(if (= a 0)
+				(/ b 0)
+				(if (= c 1)
+					(/ d 0)
+					(display "success"))))
+		 the-global-environment)
+
+(my-eval '(f 1 3 0 10) the-global-environment)
