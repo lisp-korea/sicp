@@ -5,6 +5,7 @@
   (cons v (cdr x)))
 (define (set-cdr! x v)
   (cons x v))
+(define apply-in-underlying-scheme apply)
 
 (define true #t)
 (define false #f)
@@ -303,11 +304,136 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ex.4.26
 
+;; sol) derived expresssion
+(define (unless? exp) (tagged-list? exp 'unless))
+(define (unless-clauses exp) (cdr exp))
+(define (unless-condition clauses) (car clauses))
+(define (unless-usual-value clauses) (cadr clauses))
+(define (unless-exceptional-value clauses) (caddr clauses))
+(define (unless->if exp)
+  (expand-unless-clauses (unless-clauses exp)))
+(define (expand-unless-clauses clauses)
+  (make-if (unless-condition clauses)
+           (unless-exceptional-value clauses)
+           (unless-usual-value clauses)))
+
+;; sol) special form VS function
+(define (unless-wrapper u condition u-value e-value)
+  (u condition u-value e-value))
+
+(unless-wrapper unless (> 2 10) 1 2) ;에러
+
+(define (unless-proc condition u-value e-value)
+  (if condition e-value u-value))
+
+(unless-wrapper unless-proc (> 2 10) 1 2) ;성공
+
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; 4.2.2 제때 계산법을 따르는 실행기
+((application? exp)
+ (my-apply (actual-value (operator exp) env)
+        (operands exp)
+        env))
+(define (actual-value exp env)
+  (force-it (my-eval exp env)))
+(define (my-apply procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure
+          procedure
+          (list-of-arg-values arguments env)))  ; changed
+        ((compound-procedure? procedure)
+         (eval-sequence
+          (procedure-body procedure)
+          (extend-environment
+           (procedure-parameters procedure)
+           (list-of-delayed-args arguments env) ; changed
+           (procedure-environment procedure))))
+        (else
+         (error
+          "Unknown procedure type -- APPLY" procedure))))
+(define (list-of-arg-values exps env)
+  (if (no-operands? exps)
+      '()
+      (cons (actual-value (first-operand exps) env)
+            (list-of-arg-values (rest-operands exps)
+                                env))))
+(define (list-of-delayed-args exps env)
+  (if (no-operands? exps)
+      '()
+      (cons (delay-it (first-operand exps) env)
+            (list-of-delayed-args (rest-operands exps)
+                                  env))))
+(define (eval-if exp env)
+  (if (true? (actual-value (if-predicate exp) env))
+      (my-eval (if-consequent exp) env)
+      (my-eval (if-alternative exp) env)))
+(define input-prompt ";;; L-Eval input:")
+(define output-prompt ";;; L-Eval value:")
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+    (let ((output
+           (actual-value input the-global-environment)))
+      (announce-output output-prompt)
+      (user-print output)))
+  (driver-loop))
+(define (force-it obj)
+  (if (thunk? obj)
+      (actual-value (thunk-exp obj) (thunk-env obj))
+      obj))
+(define (delay-it exp env)
+  (list 'thunk exp env))
+(define (thunk? obj)
+  (tagged-list? obj 'thunk))
+(define (thunk-exp thunk) (cadr thunk))
+(define (thunk-env thunk) (caddr thunk))
+(define (evaluated-thunk? obj)
+  (tagged-list? obj 'evaluated-thunk))
+(define (thunk-value evaluated-thunk) (cadr evaluated-thunk))
+(define (force-it obj)
+  (cond ((thunk? obj)
+         (let ((result (actual-value
+                        (thunk-exp obj)
+                        (thunk-env obj))))
+           (set-car! obj 'evaluated-thunk)
+           (set-car! (cdr obj) result)  ; replace exp with its value
+           (set-cdr! (cdr obj) '())     ; forget unneeded env
+           result))
+        ((evaluated-thunk? obj)
+         (thunk-value obj))
+        (else obj)))
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ex.4.27
 
+(define count 0)
+(define (id x)
+  (set! count (+ count 1))
+  x)
+; sol)
+(define w (id (id 10)))
+;; ;;; L-Eval input:
+;; count
+;; ;;; L-Eval value:
+;; 0
+;; ????
+
+;; ;;; L-Eval input:
+;; w
+;; ;;; L-Eval value:
+;; 10
+;; 당연한거 아닌가???
+
+;; ;;; L-Eval input:
+;; count
+;; ;;; L-Eval value:
+;; 2
+
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ex.4.28
+
+; sol) thunk를 만나면 
+;; ???
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ex.4.29
