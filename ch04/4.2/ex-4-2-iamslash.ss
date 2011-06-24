@@ -222,38 +222,38 @@
       '()
       (cons (my-eval (first-operand exps) env)
             (list-of-values (rest-operands exps) env))))
-;; (define (my-apply procedure arguments)
-;;   (cond ((primitive-procedure? procedure)
-;;          (apply-primitive-procedure procedure arguments))
-;;         ((compound-procedure? procedure)
-;;          (eval-sequence
-;;            (procedure-body procedure)
-;;            (extend-environment
-;;              (procedure-parameters procedure)
-;;              arguments
-;;              (procedure-environment procedure))))
-;;         (else
-;;          (error
-;;           "Unknown procedure type -- APPLY" procedure))))
-;; (define (my-eval exp env)
-;;   (cond ((self-evaluating? exp) exp)
-;;         ((variable? exp) (lookup-variable-value exp env))
-;;         ((quoted? exp) (text-of-quotation exp))
-;;         ((assignment? exp) (eval-assignment exp env))
-;;         ((definition? exp) (eval-definition exp env))
-;;         ((if? exp) (eval-if exp env))
-;;         ((lambda? exp)
-;;          (make-procedure (lambda-parameters exp)
-;;                          (lambda-body exp)
-;;                          env))
-;;         ((begin? exp) 
-;;          (eval-sequence (begin-actions exp) env))
-;;         ((cond? exp) (my-eval (cond->if exp) env))
-;;         ((application? exp)
-;;          (my-apply (my-eval (operator exp) env)
-;;                 (list-of-values (operands exp) env)))
-;;         (else
-;;          (error "Unknown expression type -- EVAL" exp))))
+(define (my-apply procedure arguments)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure procedure arguments))
+        ((compound-procedure? procedure)
+         (eval-sequence
+           (procedure-body procedure)
+           (extend-environment
+             (procedure-parameters procedure)
+             arguments
+             (procedure-environment procedure))))
+        (else
+         (error
+          "Unknown procedure type -- APPLY" procedure))))
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+        ((variable? exp) (lookup-variable-value exp env))
+        ((quoted? exp) (text-of-quotation exp))
+        ((assignment? exp) (eval-assignment exp env))
+        ((definition? exp) (eval-definition exp env))
+        ((if? exp) (eval-if exp env))
+        ((lambda? exp)
+         (make-procedure (lambda-parameters exp)
+                         (lambda-body exp)
+                         env))
+        ((begin? exp) 
+         (eval-sequence (begin-actions exp) env))
+        ((cond? exp) (my-eval (cond->if exp) env))
+        ((application? exp)
+         (my-apply (my-eval (operator exp) env)
+                (list-of-values (operands exp) env)))
+        (else
+         (error "Unknown expression type -- EVAL" exp))))
 (define (setup-environment)
   (let ((initial-env
          (extend-environment (primitive-procedure-names)
@@ -367,9 +367,9 @@
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (my-eval (cond->if exp) env))
         ((application? exp)
-         (my-apply (operator exp)
-                   (operands exp)
-                   env))
+         (apply (actual-value (operator exp) env)
+                (operands exp)
+                env))
         (else
          (error "Unknown expression type -- EVAL" exp))))
 (define (list-of-arg-values exps env)
@@ -437,14 +437,14 @@
 ;; ;;; L-Eval input:
 ;; count
 ;; ;;; L-Eval value:
-;; 0
-;; ????
+;; 1
+;; w를 정의하는 과정에서 count변화????
 
 ;; ;;; L-Eval input:
 ;; w
 ;; ;;; L-Eval value:
 ;; 10
-;; 당연한거 아닌가???
+;; ???
 
 ;; ;;; L-Eval input:
 ;; count
