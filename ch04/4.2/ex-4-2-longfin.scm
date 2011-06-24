@@ -427,6 +427,8 @@
 		((cond? exp) (my-eval (cond->if exp) env))
 		((let? exp) (my-eval (let->combination exp) env))
 		((application? exp)
+		 (display "application:")(display exp)
+		 (newline)
 		 (my-apply (actual-value (operator exp) env)
 				   (operands exp)
 				   env))
@@ -434,6 +436,8 @@
 		 (error "Unknown expression type --EVAL" exp))))
 
 (define (actual-value exp env)
+  (display "actual-value:")(display exp)
+  (newline)
   (force-it (my-eval exp env)))
 
 (define (my-apply procedure arguments env)
@@ -522,3 +526,24 @@
 		 ((evaluated-thunk? obj)
 		  (thunk-value obj))
 		 (else obj)))
+
+
+;; ex 4.27
+(define count 0)
+(define (id x) (set! count (+ count 1)) x)
+(define w (id (id 10)))
+;;; L-Eval input:
+count
+;; force-it (id (id 10))
+;;; L-Eval value: 1
+;;; L-Eval input:
+w
+;; force-it (id (id 10))
+;; force-it (id 10)
+;;; L-Eval value: 10
+;;; L-Eval input:
+count
+;;; L-Eval value: 2
+
+
+
