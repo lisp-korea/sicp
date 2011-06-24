@@ -1,11 +1,3 @@
-;; -*- coding: utf-8 -*-
-;; evaluator
-;; mzscheme은 set-car!, set-cdr!이 없다.
-(define (set-car! x v)
-  (cons v (cdr x)))
-(define (set-cdr! x v)
-  (cons x v))
-
 (define apply-in-underlying-scheme apply)
 (define true #t)
 (define false #f)
@@ -222,38 +214,38 @@
       '()
       (cons (my-eval (first-operand exps) env)
             (list-of-values (rest-operands exps) env))))
-;; (define (my-apply procedure arguments)
-;;   (cond ((primitive-procedure? procedure)
-;;          (apply-primitive-procedure procedure arguments))
-;;         ((compound-procedure? procedure)
-;;          (eval-sequence
-;;            (procedure-body procedure)
-;;            (extend-environment
-;;              (procedure-parameters procedure)
-;;              arguments
-;;              (procedure-environment procedure))))
-;;         (else
-;;          (error
-;;           "Unknown procedure type -- APPLY" procedure))))
-;; (define (my-eval exp env)
-;;   (cond ((self-evaluating? exp) exp)
-;;         ((variable? exp) (lookup-variable-value exp env))
-;;         ((quoted? exp) (text-of-quotation exp))
-;;         ((assignment? exp) (eval-assignment exp env))
-;;         ((definition? exp) (eval-definition exp env))
-;;         ((if? exp) (eval-if exp env))
-;;         ((lambda? exp)
-;;          (make-procedure (lambda-parameters exp)
-;;                          (lambda-body exp)
-;;                          env))
-;;         ((begin? exp) 
-;;          (eval-sequence (begin-actions exp) env))
-;;         ((cond? exp) (my-eval (cond->if exp) env))
-;;         ((application? exp)
-;;          (my-apply (my-eval (operator exp) env)
-;;                 (list-of-values (operands exp) env)))
-;;         (else
-;;          (error "Unknown expression type -- EVAL" exp))))
+(define (my-apply procedure arguments)
+  (cond ((primitive-procedure? procedure)
+         (apply-primitive-procedure procedure arguments))
+        ((compound-procedure? procedure)
+         (eval-sequence
+           (procedure-body procedure)
+           (extend-environment
+             (procedure-parameters procedure)
+             arguments
+             (procedure-environment procedure))))
+        (else
+         (error
+          "Unknown procedure type -- APPLY" procedure))))
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+        ((variable? exp) (lookup-variable-value exp env))
+        ((quoted? exp) (text-of-quotation exp))
+        ((assignment? exp) (eval-assignment exp env))
+        ((definition? exp) (eval-definition exp env))
+        ((if? exp) (eval-if exp env))
+        ((lambda? exp)
+         (make-procedure (lambda-parameters exp)
+                         (lambda-body exp)
+                         env))
+        ((begin? exp) 
+         (eval-sequence (begin-actions exp) env))
+        ((cond? exp) (my-eval (cond->if exp) env))
+        ((application? exp)
+         (my-apply (my-eval (operator exp) env)
+                (list-of-values (operands exp) env)))
+        (else
+         (error "Unknown expression type -- EVAL" exp))))
 (define (setup-environment)
   (let ((initial-env
          (extend-environment (primitive-procedure-names)
@@ -264,77 +256,6 @@
     initial-env))
 (define the-global-environment (setup-environment))
 
-
-
-
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 4.2 scheme바꿔보기-제때계산법(lazy evaluation)
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 4.2.1 식의값을 구하는 차례-정의대로 계산법과 인자 먼저 계산법
-(define (try a b)
-  (if (= a 0) 1 b))
-(define (unless condition usual-value exceptional-value)
-  (if condition exceptional-value usual-value))
-(unless (= b 0)
-  (/ a b)
-  (begin (display "excetion: returning 0")
-         0))
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ex.4.25
-(define (factorial n)
-  (unless (= n 1)
-    (* n (factorial (- n 1)))
-    1))
-
-;; sol) applicative order의 경우 무한 반복한다.
-;; ;; (factorial 5)
-;; (unless #f
-;;   (* 5 (factorial 4))
-;;   1)
-;; ;; ...
-;; ;; (factorial 1)
-;; (unless #t
-;;   (* 1 (factorial 0))
-;;   1)
-;; ;; (factorial 0)
-;; (unless #f
-;;   (* 1 (factorial -1))
-;;   1)
-;; ;; ...
-;; normal order의 경우 계산가능
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ex.4.26
-
-;; sol) derived expresssion
-(define (unless? exp) (tagged-list? exp 'unless))
-(define (unless-clauses exp) (cdr exp))
-(define (unless-condition clauses) (car clauses))
-(define (unless-usual-value clauses) (cadr clauses))
-(define (unless-exceptional-value clauses) (caddr clauses))
-(define (unless->if exp)
-  (expand-unless-clauses (unless-clauses exp)))
-(define (expand-unless-clauses clauses)
-  (make-if (unless-condition clauses)
-           (unless-exceptional-value clauses)
-           (unless-usual-value clauses)))
-
-;; sol) special form VS function
-(define (unless-wrapper u condition u-value e-value)
-  (u condition u-value e-value))
-
-(unless-wrapper unless (> 2 10) 1 2) ;에러
-
-(define (unless-proc condition u-value e-value)
-  (if condition e-value u-value))
-
-(unless-wrapper unless-proc (> 2 10) 1 2) ;성공
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; 4.2.2 제때 계산법을 따르는 실행기
 (define (actual-value exp env)
   (force-it (my-eval exp env)))
 (define (my-apply procedure arguments env)
@@ -424,50 +345,3 @@
         ((evaluated-thunk? obj)
          (thunk-value obj))
         (else obj)))
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ex.4.27
-
-(define count 0)
-(define (id x)
-  (set! count (+ count 1))
-  x)
-; sol)
-(define w (id (id 10)))
-;; ;;; L-Eval input:
-;; count
-;; ;;; L-Eval value:
-;; 0
-;; ????
-
-;; ;;; L-Eval input:
-;; w
-;; ;;; L-Eval value:
-;; 10
-;; 당연한거 아닌가???
-
-;; ;;; L-Eval input:
-;; count
-;; ;;; L-Eval value:
-;; 2
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ex.4.28
-
-; sol) thunk를 만나면 
-;; ???
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ex.4.29
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ex.4.30
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; ex.4.31
-
-
-
-
-
-
