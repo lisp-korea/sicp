@@ -772,7 +772,7 @@ count
 	  (let ((first-p (car params))
 			(first-op (first-operand exps)))
 		(let ((value 
-			   (cond ((not (pair? first-p)) first-op)
+			   (cond ((not (pair? first-p)) (actual-value first-op env))
 					 ((eq? 'lazy (cadr first-p))
 					  (delay-it first-op env))
 					 ((eq? 'lazy-memo (cadr first-p))
