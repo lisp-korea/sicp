@@ -853,3 +853,80 @@ count
 		 the-global-environment)
 
 (my-eval '(f 1 3 0 10) the-global-environment)
+
+;; 4.2.3 Streams as Lazy lists
+
+(define (cons x y) (lambda (m) (m x y)))
+(define (car z) (z (lambda (p q) p)))
+(define (cdr z) (z (lambda (p q) q)))
+
+(define (list-ref items n)
+  (if (= n 0)
+	  (car items)
+	  (list-ref (cdr items) (- n 1))))
+
+(define (map proc items)
+  (if (null? items) '()
+	  (cons (proc (car items)) (map proc (cdr items)))))
+
+(define (scale-list items factor)
+  (map (lambda (x) (* x factor)) items))
+
+(define (add-lists list1 list2)
+  (cond ((null? list1) list2)
+		((null? list2) list1)
+		(else
+		 (cons (+ (car list1) (car list2))
+			   (add-lists (cdr list1) (cdr list2))))))
+(define ones (cons 1 (cons 1 ones)))
+(define integers (cons 1 (add-lists ones integers)))
+
+(define (integral integrand initial-value dt)
+  (define int
+	(cons initial-value (add-lists
+						 (scale-list integrand dt) int)))
+  int)
+(define (solve f y0 dt)
+  (define y (integral dy y0 dt))
+  (define dy (map f y)) y)
+
+;; ex 4.32
+
+;; streams
+
+(define (stream-car stream) (car stream)) ;; car
+(define (stream-cdr stream) (force (cdr stream))) ;; cdr (with squeeze)
+
+;; using macro (arguemnt x, y aren't evaluated.)
+(define-syntax cons-stream
+  (syntax-rules ()
+    ((cons-stream x y)
+     (cons x (delay y))))) ;; delay only y.
+
+(define test-pair (cons-stream x y)) ;; error occured because x is evaluated immediately.
+
+(define test-pair (cons-stream 10 y))
+
+(define z (cons-stream
+		   (stream-cdr test-pair)
+		   (stream-car test-pair))) ;; error occured because y is evaluated calling (stream-cdr)
+
+	  
+;; *lazier* lazy list
+
+(driver-loop)
+
+(define test-pair (cons x y))
+
+(define z (cons (cdr test-pair) (car test-pair)))
+
+(define x 10)
+
+(define y 20)
+
+(car z)
+
+(cdr z)
+
+
+
