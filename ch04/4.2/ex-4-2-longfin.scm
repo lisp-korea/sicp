@@ -969,3 +969,29 @@ count
 
 ;; ex 4.34
 
+;; add to primitive procedure
+(define primitive-procedures
+  (list (list 'car (lambda (z)
+					 ((cadr z) (lambda (p q) p))))
+		(list 'cdr (lambda (z)
+					 ((cadr z) (lambda (p q) q))))
+		(list 'cons (lambda (x y)
+					  (list 'lazy-pair (lambda (m) (m x y)))))
+		(list 'null? null?)
+		(list 'display display)
+		(list 'newline newline)
+		(list '+ +)
+		(list '* *)
+		(list '/ /)
+		(list '- -)
+		(list '= =)))
+(define (primitive-procedure-names)
+  (map car primitive-procedures))
+(define (primitive-procedure-objects)
+  (map (lambda (proc) (list 'primitive (cadr proc)))
+	   primitive-procedures))
+(define the-global-environment (setup-environment))
+
+
+
+  
