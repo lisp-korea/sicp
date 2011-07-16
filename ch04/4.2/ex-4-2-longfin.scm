@@ -929,4 +929,43 @@ count
 (cdr z)
 
 
+;; ex 4.33
+
+
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (value-of-quotation exp env))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((let? exp) (my-eval (let->combination exp) env))
+		((application? exp)
+		 (my-apply (actual-value (operator exp) env)
+				   (operands exp)
+				   env))
+		(else
+		 (error "Unknown expression type --EVAL" exp))))
+
+(define (value-of-quotation exp env)
+  (let ((value (cadr exp)))
+	(if (pair? value)
+		(my-eval (quoted-exp->list value) env)
+		value)))
+
+(define (quoted-exp->list exp)
+  (if (null? exp)
+	  ''()
+	  (let ((value (car exp)))
+		(list 'cons (list 'quote value)
+			  (quoted-exp->list (cdr exp))))))
+
+;; ex 4.34
 
