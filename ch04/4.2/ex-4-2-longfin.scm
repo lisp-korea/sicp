@@ -780,9 +780,7 @@ count
 		  (cons value 
 				(list-of-args (rest-operands exps)
 							  (cdr params)
-							  env))))))
-		  
-	
+							  env))))))	
 
 (define (my-apply procedure arguments env)
   (cond ((primitive-procedure? procedure)
@@ -844,17 +842,161 @@ count
 		(else
 		 (error "Unknown expression type --EVAL" exp))))
 
-(my-eval '(define (f a (b lazy) c (d lazy-memo))
-			(if (= a 0)
-				(/ b 0)
-				(if (= c 1)
-					(/ d 0)
-					(display "success"))))
-		 the-global-environment)
+;; test
 
-(my-eval '(f 1 3 0 10) the-global-environment)
+(my-eval '(define (test-f a b)
+			(if (= a 0)
+				'()
+				b)) the-global-environment)
+(my-eval '(test-f 0 (/ 1 0)) the-global-environment)
+
+(my-eval '(define (test-f a (b lazy))
+			(if (= a 0)
+				'()
+				b)) the-global-environment)
+(my-eval '(test-f 0 (/ 1 0)) the-global-environment)
+
+(my-eval '(define (test-f a (b lazy-memo))
+			(if (= a 0)
+				'()
+				b)) the-global-environment)
+(my-eval '(test-f 0 (/ 1 0)) the-global-environment)
+
+
+(my-eval '(define count 0) the-global-environment)
+(my-eval '(define (id x) (set! count (+ 1 count)) x) the-global-environment)
+(my-eval '(define (square (x lazy)) (* x x)) the-global-environment)
+
+(my-eval '(square (id 10)) the-global-environment)
+(my-eval 'count the-global-environment)
+
+
+(my-eval '(define count 0) the-global-environment)
+(my-eval '(define (id x) (set! count (+ 1 count)) x) the-global-environment)
+(my-eval '(define (square (x lazy-memo)) (* x x)) the-global-environment)
+
+(my-eval '(square (id 10)) the-global-environment)
+(my-eval 'count the-global-environment)
+
 
 ;; 4.2.3 Streams as Lazy lists
+
+;; restore evaluator
+
+(define (my-eval exp env)
+  (cond ((self-evaluating? exp) exp)
+		((variable? exp) (lookup-variable-value exp env))
+		((quoted? exp) (text-of-quotation exp))
+		((assignment? exp) (eval-assignment exp env))
+		((definition? exp) (eval-definition exp env))
+		((if? exp) (eval-if exp env))
+		((lambda? exp)
+		 (make-procedure (lambda-parameters exp)
+						 (lambda-body exp)
+						 env))
+		((begin? exp)
+		 (eval-sequence (begin-actions exp) env))
+		((cond? exp) (my-eval (cond->if exp) env))
+		((let? exp) (my-eval (let->combination exp) env))
+		((application? exp)
+		 (my-apply (actual-value (operator exp) env)
+				   (operands exp)
+				   env))
+		(else
+		 (error "Unknown expression type --EVAL" exp))))
+
+(define (actual-value exp env)
+  (force-it (my-eval exp env)))
+
+(define (my-apply procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+		 (apply-primitive-procedure
+		  procedure
+		  (list-of-arg-values arguments env))) ;; changed
+
+		((compound-procedure? procedure)
+		 (eval-sequence
+		  (procedure-body procedure)
+		  (extend-environment
+		   (procedure-parameters procedure)
+		   (list-of-delayed-args arguments env) ;; changed
+		   (procedure-environment procedure))))
+
+		(else
+		 (error
+		  "Unknown procedure type -- APPLY" procedure))))
+
+(define (list-of-arg-values exps env)
+  (if (no-operands? exps)
+	  '()
+	  (cons (actual-value (first-operand exps) env)
+			(list-of-arg-values (rest-operands exps)
+								env))))
+
+(define (list-of-delayed-args exps env)
+  (if (no-operands? exps)
+	  '()
+	  (cons (delay-it (first-operand exps) env)
+			(list-of-delayed-args (rest-operands exps)
+								  env))))
+
+(define (eval-if exp env)
+  (if (true? (actual-value (if-predicate exp) env))
+	  (my-eval (if-consequent exp) env)
+	  (my-eval (if-alternative exp) env)))
+
+(define input-prompt ";;; L-Eval input:")
+(define output-prompt ";;; L-Eval value:")
+
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+	(let ((output
+		   (actual-value input the-global-environment)))
+	  (announce-output output-prompt)
+	  (user-print output)))
+  (driver-loop))
+
+;; Representing thunks
+
+(define (force-it obj)
+  (if (thunk? obj)
+	  (actual-value (thunk-exp obj) (thunk-env obj))
+	  obj))
+
+(define (delay-it exp env)
+  (list 'thunk exp env))
+
+(define (thunk? obj)
+  (tagged-list? obj 'thunk))
+
+(define (thunk-exp thunk)
+  (cadr thunk))
+
+(define (thunk-env thunk)
+  (caddr thunk))
+
+;; memoized ver.
+(define (evaluated-thunk? obj)
+  (tagged-list? obj 'evaluated-thunk))
+
+(define (thunk-value evaluated-thunk) (cadr evaluated-thunk))
+
+(define (force-it obj)
+  (cond ((thunk? obj)
+		 (let ((result (actual-value
+						(thunk-exp obj)
+						(thunk-env obj))))
+		   (set-car! obj 'evaluated-thunk)
+		   (set-car! (cdr obj) result)
+		   (set-cdr! (cdr obj) '())
+		   result))
+		 ((evaluated-thunk? obj)
+		  (thunk-value obj))
+		 (else obj)))
+
+
+(driver-loop)
 
 (define (cons x y) (lambda (m) (m x y)))
 (define (car z) (z (lambda (p q) p)))
@@ -878,7 +1020,7 @@ count
 		(else
 		 (cons (+ (car list1) (car list2))
 			   (add-lists (cdr list1) (cdr list2))))))
-(define ones (cons 1 (cons 1 ones)))
+(define ones (cons 1 ones))
 (define integers (cons 1 (add-lists ones integers)))
 
 (define (integral integrand initial-value dt)
@@ -969,14 +1111,33 @@ count
 
 ;; ex 4.34
 
-;; add to primitive procedure
+
+;; modify displaying
+
+(define (lazy-pair? exp)
+  (tagged-list? exp 'lazy-pair))
+
+(define (user-print object)
+  (cond ((compound-procedure? object)
+		 (display (list 'compound-procedure
+						(procedure-parameters object)
+						(procedure-body object)
+						'<procedure-env>)))
+		((lazy-pair? object)
+		 (let ((proc (cadr object)))
+		   (let ((env (procedure-environment proc)))
+			 (display (list 'lazy-pair
+							(actual-value 'x env)
+							'...)))))
+		(else
+		 (display object))))
+
+;; embed primitive car, cdr
 (define primitive-procedures
-  (list (list 'car (lambda (z)
-					 ((cadr z) (lambda (p q) p))))
-		(list 'cdr (lambda (z)
-					 ((cadr z) (lambda (p q) q))))
-		(list 'cons (lambda (x y)
-					  (list 'lazy-pair (lambda (m) (m x y)))))
+  (list (list '_car car)
+		(list '_cdr cdr)
+		(list 'cons cons)
+		(list 'list list)
 		(list 'null? null?)
 		(list 'display display)
 		(list 'newline newline)
@@ -985,13 +1146,11 @@ count
 		(list '/ /)
 		(list '- -)
 		(list '= =)))
-(define (primitive-procedure-names)
-  (map car primitive-procedures))
-(define (primitive-procedure-objects)
-  (map (lambda (proc) (list 'primitive (cadr proc)))
-	   primitive-procedures))
+
 (define the-global-environment (setup-environment))
 
-
-
-  
+;; add tag
+(driver-loop)
+(define (cons x y) (list 'lazy-pair (lambda (m) (m x y))))
+(define (car z) ((_car (_cdr z)) (lambda (p q) p)))
+(define (cdr z) ((_car (_cdr z)) (lambda (p q) q)))
