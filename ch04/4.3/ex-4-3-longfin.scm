@@ -304,3 +304,128 @@
 				(list 'miller miller)
 				(list 'smith smith)))))))
 
+;; ex 4.41
+
+(define (multiple-dwelling2)
+  (let ((*answer* '()))
+	(let ((baker '(1 2 3 4 5)))
+	  (for-each (lambda (b)
+				  (let ((copper '(1 2 3 4 5)))
+					(for-each (lambda (c)
+								(let ((fletcher '(1 2 3 4 5)))
+								  (for-each (lambda (f)
+											  (let ((miller '(1 2 3 4 5)))
+												(for-each (lambda (m)
+															(let ((smith '(1 2 3 4 5)))
+															  (for-each (lambda (s)
+																		  (let ((result (list b c f m s)))
+																			(if (distinct? result)
+																				(if (not (= b 5))
+																					(if (not (= c 1))
+																						(if (and (not (= f 5))
+																								 (not (= f 1)))
+																							(if (> m c)
+																								(if (not (= (abs (- s f)) 1))
+																									(if (not (= (abs (- f c)) 1))
+																										(set! *answer* result))))))))))
+																		smith)))
+														  miller)))
+											fletcher)))
+							  copper))
+				  baker)))
+	*answer*))
+  
+
+
+;; ex 4.42
+
+(define (solve-lairs)
+  (let ((betty (amb 1 2 3 4 5))
+		(ethel (amb 1 2 3 4 5))
+		(kitty (amb 1 2 3 4 5))
+		(joan (amb 1 2 3 4 5))
+		(mary (amb 1 2 3 4 5)))
+	(require (distinct? (list betty
+							  ethel
+							  kitty
+							  joan
+							  mary)))
+	(require (or (and (= kitty 2) (not (= betty 3)))
+				 (and (not (= kitty 2)) (= betty 3))))
+	(require (or (and (= ethel 1) (not (= joan 2)))
+				 (and (not (= ethel 1)) (= joan 2))))
+	(require (or (and (= joan 3) (not (= ethel 5)))
+				 (and (not (= joan 3)) (= ethel 5))))
+	(require (or (and (= kitty 2) (not (= mary 4)))
+				 (and (not (= kitty 2)) (= mary 4))))
+	(require (or (and (= mary 4) (not (= betty 1)))
+				 (and (not (= mary 4)) (= betty 1))))
+
+	(list (list 'betty betty)
+		  (list 'ethel ethel)
+		  (list 'kitty kitty)
+		  (list 'joan joan)
+		  (list 'mary mary))))
+
+;; ex 4.43
+(define (distinct? list)
+  (define (find el lst)
+	(let ((pred (if (symbol? el) eq? =)))
+	  (cond
+	   ((null? lst) #f)
+	   ((pred el (car lst)) #t)
+	   (else (find el (cdr lst))))))
+  (cond ((null? list) #t)
+		((= 1 (length list)) #t)
+		(else
+		 (if (find (car list) (cdr list))
+			 #f
+			 (distinct? (cdr list))))))
+
+(define (who-is-lornas-father)
+  (let ((mary (amb 'moore 'downing 'hall 'hood 'parker)))
+;;	(require (eq? mary 'moore))
+	(let ((gabrielle (amb 'moore 'downing 'hall 'hood 'parker))
+		  (lorna (amb 'moore 'downing 'hall 'hood 'parker))
+		  (rosalind (amb 'moore 'downing 'hall 'hood 'parker))
+		  (melissa (amb 'moore 'downing 'hall 'hood 'parker)))
+	  (require (distinct? (list mary gabrielle lorna rosalind melissa)))
+	  (require (not (eq? gabrielle 'hood))) ;; hood
+	  (require (not (eq? lorna 'moore))) ;; moore
+	  (require (not (eq? rosalind 'hall))) ;; hall
+	  (require (eq? melissa 'hood)) ;; downing
+	  lorna)))
+
+;; ex 4.44
+
+(define (solve-eight-queens)
+  (let ((q1 (amb 1 2 3 4 5 6 7 8))
+		(q2 (amb 1 2 3 4 5 6 7 8))
+		(q3 (amb 1 2 3 4 5 6 7 8))
+		(q4 (amb 1 2 3 4 5 6 7 8))
+		(q5 (amb 1 2 3 4 5 6 7 8))
+		(q6 (amb 1 2 3 4 5 6 7 8))
+		(q7 (amb 1 2 3 4 5 6 7 8))
+		(q8 (amb 1 2 3 4 5 6 7 8)))
+	(require (distinct? (list q1 q2 q3 q4 q5 q6 q7 q8)))
+	(require (distinct? (list (- q1 1)
+	 						  (- q2 2)
+	 						  (- q3 3)
+							  (- q4 4)
+							  (- q5 5)
+							  (- q6 6)
+							  (- q7 7)
+							  (- q8 8))))
+	(require (distinct? (list (+ q1 1)
+							  (+ q2 2)
+							  (+ q3 3)
+							  (+ q4 4)
+							  (+ q5 5)
+							  (+ q6 6)
+							  (+ q7 7)
+							  (+ q8 8))))
+	(list q1 q2 q3 q4 q5 q6 q7 q8)))
+	
+			
+
+	  
