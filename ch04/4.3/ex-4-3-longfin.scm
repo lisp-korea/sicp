@@ -274,3 +274,33 @@
 ;; ((baker 1) (cooper 2) (fletcher 4) (miller 3) (smith 5))
 ;; > (try-again)
 ;; ((baker 1) (cooper 2) (fletcher 4) (miller 5) (smith 3))
+
+
+;; ex 4.39
+
+;; Ordering condition doesn't effect whole time complexity.(it's effected only # of branches), but if all predicate on condition aren't same, ordering condition can effect performance...(if (distinct?) costs more than '=, checking '= first is efficient way.)
+
+
+;; ex 4.40
+
+(define (multiple-dwelling)
+  (let ((baker (amb 1 2 3 4 5)))
+	(require (not (= baker 5)))
+	(let (cooper (amb 1 2 3 4 5))
+	  (require (not (= cooper 1)))
+	  (let (fletcher (amb 1 2 3 4 5))
+		(require (not (= fletcher 5)))
+		(require (not (= fletcher 1)))
+		(let ((miller (amb 1 2 3 4 5))
+			  (smith (amb 1 2 3 4 5)))
+		  (require
+		   (distinct? (list baker cooper fletcher miller smith)))
+		  (require (> miller cooper))
+		  (require (not (= (abs (- smith fletcher)) 1)))
+		  (require (not (= (abs (- fletcher cooper)) 1)))
+		  (list (list 'baker baker)
+				(list 'cooper cooper)
+				(list 'fletcher fletcher)
+				(list 'miller miller)
+				(list 'smith smith)))))))
+
