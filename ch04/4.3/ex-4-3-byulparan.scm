@@ -222,4 +222,145 @@
 	  (list 'mary mary))))
      
 ;; ex 4.43
+(define (yachts)
+  (let ((gabrielle (amb 'moore 'downing 'hall 'barnacle 'parker))
+	(lorna (amb 'moore 'downing 'hall 'barnacle 'parker))
+	(rosalind (amb 'moore 'downing 'hall 'barnacle 'parker))
+	(melissa (amb 'moore 'downing 'hall 'barnacle 'parker))
+	(maryann (amb 'moore 'downing 'hall 'barnacle 'parker)))
+    (require (not (eq? gabrielle 'barnacle)))
+    (require (not (eq? lorna 'moore)))
+    (require (not (eq? rosalind 'hall)))
+    (require (eq? melissa 'barnacle))
+    (require (eq? maryann 'moore))
+    (require
+     (cond ((eq? gabrielle 'moore) (eq? lorna 'parker))
+	   ((eq? gabrielle 'downing) (eq? melissa 'parker))
+	   ((eq? gabrielle 'hall) (eq? rosalind 'parker))
+	   (else false)))
+    (require
+     (distinct? (list gabrielle lorna rosalind melissa maryann)))
+    (list (list 'gabrielle gabrielle)
+	  (list 'lorna lorna)
+	  (list 'rosalind rosalind)
+	  (list 'melissa melissa)
+	  (list 'maryann maryann))))
+
 ;; ex 4.44
+
+
+;; 자연어 문법 분석
+
+(define (parse-sentence)
+  (list 'sentence
+	(parse-noun-phrase)
+	(parse-word verbs)))
+
+(define (parse-noun-phrase)
+  (list 'noun-phrase
+	(parse-word articles)
+	(parse-word nouns)))
+
+(define (parse-word word-list)
+  (require (not (null? *unparsed*)))
+  (require (memq (car *unparsed*) (cdr word-list)))
+  (let ((found-word (car *unparsed*)))
+    (set! *unparsed* (cdr *unparsed*))
+    (list (car word-list) found-word)))
+
+(define *unparsed* '())
+
+(define (parse input)
+  (set! *unparsed* input)
+  (let ((sent (parse-sentence)))
+    (require (null? *unparsed*))
+    sent))
+
+(define nouns '(noun student professor cat class))
+(define verbs '(verb studies lectures eats sleeps))
+(define articles '(article the a))
+(define prepositions '(prep for to in by with))
+
+(define (parse-prepositional-phrase)
+  (list 'prep-phrase
+	(parse-word prepositions)
+	(parse-noun-phrase)))
+
+(define (parse-sentence)
+  (list 'sentence
+	(parse-noun-phrase)
+	(parse-verb-phrase)))
+
+(define (parse-verb-phrase)
+  (define (maybe-extend verb-phrase)
+    (amb verb-phrase
+	 (maybe-extend (list 'verb-phrase
+			     verb-phrase
+			     (parse-prepositional-phrase)))))
+  (maybe-extend (parse-word verbs)))
+
+
+(define (parse-simple-noun-phrase)
+  (list 'simple-noun-phrase
+	(parse-word articles)
+	(parse-word nouns)))
+
+(define (parse-noun-phrase)
+  (define (maybe-extend noun-phrase)
+    (amb noun-phrase
+	 (maybe-extend (list 'noun-phrase
+			     noun-phrase
+			     (parse-prepositional-phrase)))))
+  (maybe-extend (parse-simple-noun-phrase)))
+
+
+;(parse '(the student with the cat sleeps in the class))
+
+;; ex 4.45
+
+
+;; ex 4.46
+
+;; ex 4.47
+
+(define (parse-verb-phrase)
+  (amb (parse-word verbs)
+       (list 'verb-phrase
+	     (parse-verb-phrase)
+	     (parse-prepositional-phrase))))
+
+;; 무한 룹??
+
+;; ex 4.48
+(define adjectives '(adjective gray tired nice))
+
+(define (parse-simple-noun-phrase)
+  (amb
+   (list 'simple-noun-phrase
+	 (parse-word articles)
+	 (parse-word nouns))
+   (list 'adjective-noun-phrase
+	 (parse-word articles)
+	 (parse-word adjectives)
+	 (parse-word nouns))))
+
+(parse '(The tired professor lectures to a gray cat))
+
+
+;; ex 4.49
+
+(define (parse-word word-list)
+  (require (not (null? *unparsed*)))
+  (let ((found-word (random-list-element (cdr word-list))))
+    (set! *unparsed* (cdr *unparsed*))
+    (list (car word-list) found-word)))
+
+(define (nth i lst)
+  (cond ((null? lst) '())
+	((= i 0) (car lst))
+	(else (nth (- i 1) (cdr lst)))))
+
+(define (random-list-element lst)
+  (nth (random (length lst)) lst))
+
+(parse '(The professor lectures))
