@@ -427,5 +427,311 @@
 	(list q1 q2 q3 q4 q5 q6 q7 q8)))
 	
 			
+;; Parsing natural language
 
-	  
+
+;; setup amb evaluator
+(load "ch4-ambeval.scm")
+(define the-global-environment (setup-environment))
+
+(driver-loop)
+
+(define (require p)
+  (if (not p) (amb)))
+
+(define nouns '(noun student professor cat class))
+(define verbs '(verb studies lectures eats sleeps))
+(define articles '(article the a))
+
+;; (sentence (noun-phrase (article the) (noun cat))
+;;           (verb eats))
+
+(define (parse-sentence)
+  (list 'sentence
+		(parse-noun-phrase)
+		(parse-word verbs)))
+
+(define (parse-noun-phrase)
+  (list 'noun-phrase
+		(parse-word articles)
+        (parse-word nouns)))
+
+(define (parse-word word-list)
+  (require (not (null? *unparsed*)))
+  (require (memq (car *unparsed*) (cdr word-list)))
+  (let ((found-word (car *unparsed*)))
+    (set! *unparsed* (cdr *unparsed*))
+    (list (car word-list) found-word)))
+
+(define *unparsed* '())
+(define (parse input)
+  (set! *unparsed* input)
+  (let ((sent (parse-sentence)))
+    (require (null? *unparsed*))
+	sent))
+
+(parse '(the cat eats))
+
+(define prepositions '(prep for to in by with))
+
+(define (parse-prepositional-phrase)
+  (list 'prep-phrase
+        (parse-word prepositions)
+        (parse-noun-phrase)))
+
+(define (parse-sentence)
+  (list 'sentence
+         (parse-noun-phrase)
+         (parse-verb-phrase)))
+
+(define (parse-verb-phrase)
+  (define (maybe-extend verb-phrase)
+    (amb verb-phrase
+         (maybe-extend (list 'verb-phrase
+                             verb-phrase
+                             (parse-prepositional-phrase)))))
+  (maybe-extend (parse-word verbs)))
+
+(define (parse-simple-noun-phrase)
+  (list 'simple-noun-phrase
+        (parse-word articles)
+        (parse-word nouns)))
+
+(define (parse-noun-phrase)
+  (define (maybe-extend noun-phrase)
+    (amb noun-phrase
+         (maybe-extend (list 'noun-phrase
+                             noun-phrase
+                             (parse-prepositional-phrase)))))
+  (maybe-extend (parse-simple-noun-phrase)))
+
+(parse '(the student with the cat sleeps in the class))
+
+(parse '(the professor lectures to the student with the cat))
+
+;; (sentence
+;;  (simple-noun-phrase (article the) (noun professor))
+;;  (verb-phrase (verb-phrase (verb lectures)
+;; 						   (prep-phrase (prep to)
+;; 										(simple-noun-phrase (article the) (noun student))))
+;; 			  (prep-phrase (prep with)
+;; 						   (simple-noun-phrase (article the) (noun cat)))))
+
+;; (sentence
+;;  (simple-noun-phrase (article the) (noun professor))
+;;  (verb-phrase
+;;   (verb lectures)
+;;   (prep-phrase (prep to)
+;;                (noun-phrase
+;;                 (simple-noun-phrase
+;;                  (article the) (noun student))
+;;                 (prep-phrase (prep with)
+;;                              (simple-noun-phrase
+;;                               (article the) (noun cat)))))))
+
+
+;; ex 4.45
+
+
+;; sentence := noun phrase + verb phrase
+
+;; noun phrase := article word + noun word
+;; noun phrase := noun phrase + prepositional phrase
+
+;; verb phrase := verb word
+;; verb phrase := verb word + prepositional phrase
+
+;; prepositional phrase := prepositional word + noun phrase
+
+;; "the professor lectures to the student in the class with the cat"
+;; 1. (the professor)
+;; 2. (lectures)
+;; 3. (to)
+;; 4. (the student)
+;; 5. (in)
+;; 6. (the class)
+;; 7. (with)
+;; 8. (the cat)
+
+(parse '(the professor lectures to the student in the class with the cat))
+
+;; (sentence
+;;  (simple-noun-phrase (article the) (noun professor)) ;; 1
+;;  (verb-phrase
+;;   (verb-phrase
+;;    (verb-phrase
+;; 	(verb lectures) ;;2
+;; 	(prep-phrase
+;; 	 (prep to) ;; 3
+;; 	 (simple-noun-phrase (article the) (noun student)))) ;; 4	
+;;    (prep-phrase
+;; 	(prep in) ;; 5
+;; 	(simple-noun-phrase (article the) (noun class)))) ;; 6
+;;   (prep-phrase
+;;    (prep with) ;; 7
+;;    (simple-noun-phrase (article the) (noun cat))))) ;; 8
+
+;; [1 (((2 <3 4>) <5 6>) <7 8>)]
+
+try-again
+
+;; (sentence
+;;  (simple-noun-phrase (article the) (noun professor))
+;;  (verb-phrase
+;;   (verb-phrase
+;;    (verb lectures)
+;;    (prep-phrase
+;; 	(prep to)
+;; 	(simple-noun-phrase (article the) (noun student))))
+;;   (prep-phrase
+;;    (prep in)
+;;    (noun-phrase
+;; 	(simple-noun-phrase (article the) (noun class))
+;; 	(prep-phrase
+;; 	 (prep with)
+;; 	 (simple-noun-phrase (article the) (noun cat)))))))
+
+;; [1 ((2 <3 4>) (<5 (6 <7 8>)))]
+
+;; (sentence
+;;  (simple-noun-phrase (article the) (noun professor))
+;;  (verb-phrase
+;;   (verb-phrase
+;;    (verb lectures)
+;;    (prep-phrase
+;; 	(prep to)
+;; 	(noun-phrase
+;; 	 (simple-noun-phrase (article the) (noun student))
+;; 	 (prep-phrase
+;; 	  (prep in)
+;; 	  (simple-noun-phrase (article the) (noun class))))))
+;;   (prep-phrase
+;;    (prep with)
+;;    (simple-noun-phrase (article the) (noun cat)))))
+
+;; [1 ((2 <3 (4 <5 6>)>) <7 8>)]
+
+;; (sentence
+;;  (simple-noun-phrase (article the) (noun professor))
+;;  (verb-phrase
+;;   (verb lectures)
+;;   (prep-phrase
+;;    (prep to)
+;;    (noun-phrase
+;; 	(noun-phrase
+;; 	 (simple-noun-phrase (article the) (noun student))
+;; 	 (prep-phrase
+;; 	  (prep in)
+;; 	  (simple-noun-phrase (article the) (noun class))))
+;; 	(prep-phrase
+;; 	 (prep with)
+;; 	 (simple-noun-phrase (article the) (noun cat)))))))
+
+;; [1 (2 <3 ((4 <5 6>) <7 8>)>)]
+
+;; (sentence
+;;  (simple-noun-phrase (article the) (noun professor))
+;;  (verb-phrase
+;;   (verb lectures)
+;;   (prep-phrase
+;;    (prep to)
+;;    (noun-phrase
+;; 	(simple-noun-phrase (article the) (noun student))
+;; 	(prep-phrase
+;; 	 (prep in)
+;; 	 (noun-phrase
+;; 	  (simple-noun-phrase (article the) (noun class))
+;; 	  (prep-phrase
+;; 	   (prep with)
+;; 	   (simple-noun-phrase (article the) (noun cat)))))))))
+
+;; [1 (2 <3 (4 <5 (6 <7 8>)>))]
+
+
+;; ex 4.46
+
+;; if amb evaluator evaluates right to left...
+
+;; (parse '(the cat eats))
+
+;; (set! *unparsed* '(the cat eats))
+;; (parse-sentence)
+
+;; (parse-word verbs)
+;; found-word = the
+;; it's not found in verbs!
+
+
+;; ex 4.47
+
+(define (parse-verb-phrase)
+  (amb (parse-word verbs)
+       (list 'verb-phrase
+             (parse-verb-phrase)
+             (parse-prepositional-phrase))))
+
+;; it parses this illegal sentence and goes infinte loop. because it matches 2nd direction and it also calls parse-verb-phrase.
+
+(define (parse-verb-phrase)
+  (define (maybe-extend verb-phrase)
+    (amb verb-phrase
+         (maybe-extend (list 'verb-phrase
+                             verb-phrase
+                             (parse-prepositional-phrase)))))
+  (maybe-extend (parse-word verbs)))
+
+;; ex 4.48
+
+(define adjectives '(adj big small old))
+(define adverbs '(adv slowly quickly))
+
+(define (parse-noun-phrase)
+  (define (inner rules)
+	(require (not (null? rules)))
+	(amb
+	 (parse-word nouns)
+	 ((car rules) rules)
+	 (inner (cdr rules))))
+  (let ((article-noun-rule (lambda (rules)
+							 (list 'noun-phrase
+								   (parse-word articles)
+								   (inner rules))))
+		(adjectives-noun-rule (lambda (rules)
+								(list 'noun-phrase
+									  (parse-word adjectives)
+									  (inner rules)))))
+	(inner (list article-noun-rule
+				 adjectives-noun-rule))))
+
+(define (parse-verb-phrase)
+  (define (inner rules)
+	(require (not (null? rules)))
+	(amb
+	 (parse-word verbs)
+	 ((car rules) rules)
+	 (inner (cdr rules))))
+  (let ((adverb-verb-rule (lambda (rules)
+							(list 'verb-phrase
+								  (parse-word adverbs)
+								  (inner rules))))
+		(verb-prep-rule (lambda (rules)
+						  (list 'verb-phrase
+								(parse-word verbs)
+								(parse-prepositional-phrase)))))
+	(inner (list
+			adverb-verb-rule
+			verb-prep-rule))))
+
+
+;; ex 4.49
+
+
+(define (parse-word word-list)
+  (require (not (null? *unparsed*)))
+  (set! *unparsed* (cdr *unparsed*))
+  (define (generate lst)
+	(require (not (null? lst)))
+	(amb
+	 (car lst)
+	 (generate (cdr lst))))
+  (list (car word-list) (generate (cdr word-list))))
