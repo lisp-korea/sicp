@@ -8,12 +8,12 @@
 
 (define (prime? x)
   (define (iter n)
-	(cond ((= n x) #t)
-		  ((= (remainder x n) 0) #f)
+	(cond ((= n x) true)
+		  ((= (remainder x n) 0) false)
 		  (else
 		   (iter (+ 1 n)))))
   (if (< x 2)
-	  #f
+	  false
 	  (iter 2)))
 
 ;; 4.3.1 Amb and Search
@@ -1122,5 +1122,444 @@ try-again
 						   (lambda ()
 							 (try-next rest))))))))
 	  (try-next cprocs))))
+;; it helps 4.48, 4.49. because it always chooeses different branch(by random). so it doesn't go into infinite loop.
+
+;; ex 4.51
+(define (permanent-assignment? exp) (tagged-list? exp 'permanent-set!))
+(define (analyze exp)
+  (cond ((self-evaluating? exp) 
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+		((permanent-assignment? exp) (analyze-permanent-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;**
+        ((amb? exp) (analyze-amb exp))                ;**
+		((ramb? exp) (analyze-ramb exp))
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (analyze-permanent-assignment exp)
+  (let ((var (assignment-variable exp))
+        (vproc (analyze (assignment-value exp))))
+    (lambda (env succeed fail)
+      (vproc env
+             (lambda (val fail2)        ; *1*
+                 (set-variable-value! var val env)
+                 (succeed 'ok fail2))
+             fail))))
+
+
+(driver-loop)
+
+(define (an-element-of items)
+  (require (not (null? items)))
+  (amb (car items) (an-element-of (cdr items))))
+
+(define count 0)
+
+(let ((x (an-element-of '(a b c)))
+	  (y (an-element-of '(a b c))))
+  (permanent-set! count (+ count 1))
+  (require (not (eq? x y)))
+  (list x y count))
+
+
+(define count 0)
+
+(let ((x (an-element-of '(a b c)))
+	  (y (an-element-of '(a b c))))
+  (set! count (+ count 1))
+  (require (not (eq? x y)))
+  (list x y count))
+
+;; it always returns 1.(set! was reverted.)
+
+
+;; ex 4.52
+(define (analyze exp)
+  (cond ((self-evaluating? exp) 
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+		((permanent-assignment? exp) (analyze-permanent-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+		((if-fail? exp) (analyze-if-fail exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;**
+        ((amb? exp) (analyze-amb exp))                ;**
+		((ramb? exp) (analyze-ramb exp))
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (if-fail? exp) (tagged-list? exp 'if-fail))
+
+(define (if-fail-proc exp) (cadr exp))
+(define (if-fail-onfailure exp) (caddr exp))
+
+  
+(define (analyze-if-fail exp)
+  (let ((proc (analyze (if-fail-proc exp)))
+        (fproc (analyze (if-fail-onfailure exp))))
+    (lambda (env succeed fail)
+	  (proc env
+			;; go ahead.
+			succeed
+			;; override failure contiuation.
+			(lambda ()
+			  (fproc env succeed fail))))))
+
+(driver-loop)
+
+(if-fail (let ((x (an-element-of '(1 3 5))))
+		   (require (even? x))
+		   x)
+		 'all-odd)
+
+(if-fail (let ((x (an-element-of '(1 3 5 8))))
+		   (require (even? x))
+		   x)
+		 'all-odd)
+
+
+;; ex 4.53
+
+(let ((pairs '()))
+ (if-fail (let ((p (prime-sum-pair '(1 3 5 8) '(20 35 110))))
+			(permanent-set! pairs (cons p pairs))
+			(amb))
+		  pairs))
+
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+;; ((8 35) (3 110) (3 20))
+
+;;; Amb-Eval input:
+;; try-again
+
+;;; There are no more values of
+;; (let ((pairs (quote ()))) (if-fail (let ((p (prime-sum-pair (quote (1 3 5 8)) (quote (20 35 110))))) (permanent-set! pairs (cons p pairs)) (amb)) pairs))
+
+
+;; pairs was assigned by (permanent-set!). it doesn't revert (founded) pairs. then jumped to alternative of (if-fail) by (amb)
+
+
+;; ex 4.54
+
+(define (require? exp) (tagged-list? exp 'require))
+(define (require-predicate exp) (cadr exp))
+
+
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp) 
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+		((permanent-assignment? exp) (analyze-permanent-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+		((if-fail? exp) (analyze-if-fail exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;**
+        ((amb? exp) (analyze-amb exp))                ;**
+		((ramb? exp) (analyze-ramb exp))
+		((require? exp) (analyze-require exp))
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+	(lambda (env succeed fail)
+	  (pproc env
+			 (lambda (pred-value fail2)
+			   (if (true? (not pred-value))
+				   (fail)
+				   (succeed 'ok fail2)))
+			 fail))))
+
+
+
+
+;; ex 4.53
+
+(let ((pairs '()))
+ (if-fail (let ((p (prime-sum-pair '(1 3 5 8) '(20 35 110))))
+			(permanent-set! pairs (cons p pairs))
+			(amb))
+		  pairs))
+
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+;; ((8 35) (3 110) (3 20))
+
+;;; Amb-Eval input:
+;; try-again
+
+;;; There are no more values of
+;; (let ((pairs (quote ()))) (if-fail (let ((p (prime-sum-pair (quote (1 3 5 8)) (quote (20 35 110))))) (permanent-set! pairs (cons p pairs)) (amb)) pairs))
+
+
+;; pairs was assigned by (permanent-set!). it doesn't revert (founded) pairs. then jumped to alternative of (if-fail) by (amb)
+
+
+;; ex 4.54
+
+(define (require? exp) (tagged-list? exp 'require))
+(define (require-predicate exp) (cadr exp))
+
+
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp) 
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+		((permanent-assignment? exp) (analyze-permanent-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+		((if-fail? exp) (analyze-if-fail exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;**
+        ((amb? exp) (analyze-amb exp))                ;**
+		((ramb? exp) (analyze-ramb exp))
+		((require? exp) (analyze-require exp))
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+	(lambda (env succeed fail)
+	  (pproc env
+			 (lambda (pred-value fail2)
+			   (if (true? (not pred-value))
+				   (fail)
+				   (succeed 'ok fail2)))
+			 fail))))
+
+
+
+
+;; ex 4.53
+
+(let ((pairs '()))
+ (if-fail (let ((p (prime-sum-pair '(1 3 5 8) '(20 35 110))))
+			(permanent-set! pairs (cons p pairs))
+			(amb))
+		  pairs))
+
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+;; ((8 35) (3 110) (3 20))
+
+;;; Amb-Eval input:
+;; try-again
+
+;;; There are no more values of
+;; (let ((pairs (quote ()))) (if-fail (let ((p (prime-sum-pair (quote (1 3 5 8)) (quote (20 35 110))))) (permanent-set! pairs (cons p pairs)) (amb)) pairs))
+
+
+;; pairs was assigned by (permanent-set!). it doesn't revert (founded) pairs. then jumped to alternative of (if-fail) by (amb)
+
+
+;; ex 4.54
+
+(define (require? exp) (tagged-list? exp 'require))
+(define (require-predicate exp) (cadr exp))
+
+
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp) 
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+		((permanent-assignment? exp) (analyze-permanent-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+		((if-fail? exp) (analyze-if-fail exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;**
+        ((amb? exp) (analyze-amb exp))                ;**
+		((ramb? exp) (analyze-ramb exp))
+		((require? exp) (analyze-require exp))
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+	(lambda (env succeed fail)
+	  (pproc env
+			 (lambda (pred-value fail2)
+			   (if (true? (not pred-value))
+				   (fail)
+				   (succeed 'ok fail2)))
+			 fail))))
+
+
+
+
+;; ex 4.53
+
+(let ((pairs '()))
+ (if-fail (let ((p (prime-sum-pair '(1 3 5 8) '(20 35 110))))
+			(permanent-set! pairs (cons p pairs))
+			(amb))
+		  pairs))
+
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+;; ((8 35) (3 110) (3 20))
+
+;;; Amb-Eval input:
+;; try-again
+
+;;; There are no more values of
+;; (let ((pairs (quote ()))) (if-fail (let ((p (prime-sum-pair (quote (1 3 5 8)) (quote (20 35 110))))) (permanent-set! pairs (cons p pairs)) (amb)) pairs))
+
+
+;; pairs was assigned by (permanent-set!). it doesn't revert (founded) pairs. then jumped to alternative of (if-fail) by (amb)
+
+
+;; ex 4.54
+
+(define (require? exp) (tagged-list? exp 'require))
+(define (require-predicate exp) (cadr exp))
+
+
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp) 
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+		((permanent-assignment? exp) (analyze-permanent-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+		((if-fail? exp) (analyze-if-fail exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;**
+        ((amb? exp) (analyze-amb exp))                ;**
+		((ramb? exp) (analyze-ramb exp))
+		((require? exp) (analyze-require exp))
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+	(lambda (env succeed fail)
+	  (pproc env
+			 (lambda (pred-value fail2)
+			   (if (true? (not pred-value))
+				   (fail)
+				   (succeed 'ok fail2)))
+			 fail))))
+
+
+
+
+;; ex 4.53
+
+(let ((pairs '()))
+ (if-fail (let ((p (prime-sum-pair '(1 3 5 8) '(20 35 110))))
+			(permanent-set! pairs (cons p pairs))
+			(amb))
+		  pairs))
+
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+;; ((8 35) (3 110) (3 20))
+
+;;; Amb-Eval input:
+;; try-again
+
+;;; There are no more values of
+;; (let ((pairs (quote ()))) (if-fail (let ((p (prime-sum-pair (quote (1 3 5 8)) (quote (20 35 110))))) (permanent-set! pairs (cons p pairs)) (amb)) pairs))
+
+
+;; pairs was assigned by (permanent-set!). it doesn't revert (founded) pairs. then jumped to alternative of (if-fail) by (amb)
+
+
+;; ex 4.54
+
+(define (require? exp) (tagged-list? exp 'require))
+(define (require-predicate exp) (cadr exp))
+
+
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp) 
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+		((permanent-assignment? exp) (analyze-permanent-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+		((if-fail? exp) (analyze-if-fail exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;**
+        ((amb? exp) (analyze-amb exp))                ;**
+		((ramb? exp) (analyze-ramb exp))
+		((require? exp) (analyze-require exp))
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+	(lambda (env succeed fail)
+	  (pproc env
+			 (lambda (pred-value fail2)
+			   (if (true? (not pred-value))
+				   (fail)
+				   (succeed 'ok fail2)))
+			 fail))))
+
+;;test
+
+(if-fail (let ((x (an-element-of '(1 3 5))))
+		   (require (even? x))
+		   x)
+		 'all-odd)
+
+(if-fail (let ((x (an-element-of '(1 3 5 8))))
+		   (require (even? x))
+		   x)
+		 'all-odd)
 
 

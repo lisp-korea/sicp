@@ -282,6 +282,7 @@
         (list '* *)
         (list '= =)
         (list '> >)
+		(list '< <)
         (list '>= >=)
         (list 'abs abs)
         (list 'remainder remainder)
@@ -291,6 +292,7 @@
 		(list 'display display)
 		(list 'newline newline)
 		(list 'reverse reverse)
+		(list 'even? even?)
 ;;      more primitives
         ))
 
