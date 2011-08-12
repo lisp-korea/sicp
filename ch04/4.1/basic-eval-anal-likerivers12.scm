@@ -91,3 +91,4 @@
 	  proc))))
 
 
+'basic-meta-circular-eval-using-analyze-loaded
