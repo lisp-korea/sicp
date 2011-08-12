@@ -276,6 +276,7 @@
 	(list 'newline newline)
 	(list 'reverse reverse)
 	(list 'even? even?)
+	(list 'length length)  ;; add
 ;;      more primitives
         ))
 
