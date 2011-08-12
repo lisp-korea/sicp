@@ -1,4 +1,51 @@
 
+;; racket -l r5rs/run
+
+
+;;;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+(define-syntax amb
+  (syntax-rules ()
+    ((amb) (try-again))
+    ((amb x) x)
+    ((amb x . xs)
+     (amb+ (lambda () x)
+           (lambda () (amb . xs))))))
+
+(define (try-again)
+  (if (null? amb-stack)
+      (error "amb search tree exhausted")
+      (let ((r (car amb-stack)))
+        (set! amb-stack (cdr amb-stack))
+        (r))))
+
+(define (amb-reset)
+  (set! amb-stack '()))
+      
+(define amb-stack '())
+
+(define (amb+ a b)
+  (define s '())
+  (set! s amb-stack)
+  (call/cc
+   (lambda (r)
+     (call/cc
+      (lambda (c)
+        (set! amb-stack 
+              (cons c amb-stack))
+        (r (a))))
+	 (set! amb-stack s)
+     (b))))  
+
+(define call/cc call-with-current-continuation)
+
+;;;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+
+
 ;;;;;;;;;;;;;;;;;
 ;;; 실행기의 구조
 ;;; p560
@@ -213,9 +260,9 @@
 
 
 
-;; (load "~/data/pr/lisp/sicp/git-hub/sicp/ch04/4.1/meta-eval.scm")
-;; (load "~/data/pr/lisp/sicp/git-hub/sicp/ch04/4.1/meta-anal-eval.scm")
-;; (load <this-file:amb-eval.scm>)
+;; (load "../4.1/basic-eval-likerivers12.scm")
+;; (load "../4.1/basic-eval-anal-likerivers12.scm")
+;; (load "./amb-eval-likerivers12.scm")
 
 ;;;--------------------------------
 ;;;
