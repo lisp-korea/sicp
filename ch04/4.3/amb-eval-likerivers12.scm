@@ -262,8 +262,8 @@
 
 
 
-
-
+;;---------------------------------------------------------------
+;; from longfin's code
 (define primitive-procedures
   (list (list 'car car)
         (list 'cdr cdr)
@@ -292,7 +292,6 @@
 ;;      more primitives
         ))
 
-
 (define the-global-environment (setup-environment))
 
 ;; add error procedure
@@ -306,6 +305,7 @@
 		args)
       (newline)
       (scheme-report-environment 5))
+;;---------------------------------------------------------------
 
 'amb-eval-loaded
 
@@ -313,6 +313,7 @@
 
 
 ;;;--------------------------------
+;;; test code
 ;;; amb 실행기에서 수행
 
 ;; (define (require p)
