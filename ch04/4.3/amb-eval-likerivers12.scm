@@ -2,61 +2,61 @@
 ;; racket -l r5rs/run
 
 
-;;;<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+(load "../4.1/basic-eval-likerivers12.scm")
+(load "../4.1/basic-eval-anal-likerivers12.scm")
+
+;;===================================================================
+
+(define (my-eval exp env)
+  ((analyze exp) env))
+
+(define (analyze exp)
+  (cond ((self-evaluating? exp)
+	 (analyze-self-evaluating exp))
+	((quoted? exp) (analyze-quoted exp))
+	((variable? exp) (analyze-variable exp))
+	((assignment? exp) (analyze-assignment exp))
+	((definition? exp) (analyze-definition exp))
+	((if? exp) (analyze-if exp))
+	((lambda? exp) (analyze-lambda exp))
+	((begin? exp) (analyze-sequence (begin-actions exp)))
+	((cond? exp) (analyze (cond->if exp)))
+
+        ((let? exp) (analyze (let->combination exp))) ;**
+
+	;; analyze에 추가
+	((amb? exp) (analyze-amb exp))
+
+	((application? exp) (analyze-application exp))
+	(else
+	 (error "Unknown expression type -- ANALYZE" exp))))
 
 
-(define-syntax amb
-  (syntax-rules ()
-    ((amb) (try-again))
-    ((amb x) x)
-    ((amb x . xs)
-     (amb+ (lambda () x)
-           (lambda () (amb . xs))))))
+;; let 문법 추가 - from longfin's code
+(define (let? exp) (tagged-list? exp 'let))
+(define (let-bindings exp) (cadr exp))
+(define (let-body exp) (cddr exp))
 
-(define (try-again)
-  (if (null? amb-stack)
-      (error "amb search tree exhausted")
-      (let ((r (car amb-stack)))
-        (set! amb-stack (cdr amb-stack))
-        (r))))
+(define (let-var binding) (car binding))
+(define (let-val binding) (cadr binding))
 
-(define (amb-reset)
-  (set! amb-stack '()))
-      
-(define amb-stack '())
+(define (make-combination operator operands) (cons operator operands))
 
-(define (amb+ a b)
-  (define s '())
-  (set! s amb-stack)
-  (call/cc
-   (lambda (r)
-     (call/cc
-      (lambda (c)
-        (set! amb-stack 
-              (cons c amb-stack))
-        (r (a))))
-	 (set! amb-stack s)
-     (b))))  
+(define (let->combination exp)
+  ;;make-combination defined in earlier exercise
+  (let ((bindings (let-bindings exp)))
+    (make-combination (make-lambda (map let-var bindings)
+                                   (let-body exp))
+                      (map let-val bindings))))
 
-(define call/cc call-with-current-continuation)
-
-;;;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
-
+;;===================================================================
 
 ;;;;;;;;;;;;;;;;;
 ;;; 실행기의 구조
 ;;; p560
 
 (define (amb? exp) (tagged-list? exp 'amb))
-
 (define (amb-choices exp) (cdr exp))
-
-
-;; analyze에 추가
-;;((amb? exp) (analyze-amb exp))
 
 
 (define (ambeval exp env succeed fail)
@@ -260,33 +260,82 @@
 
 
 
-;; (load "../4.1/basic-eval-likerivers12.scm")
-;; (load "../4.1/basic-eval-anal-likerivers12.scm")
-;; (load "./amb-eval-likerivers12.scm")
+
+
+
+
+(define primitive-procedures
+  (list (list 'car car)
+        (list 'cdr cdr)
+        (list 'cons cons)
+        (list 'null? null?)
+        (list 'list list)
+        (list 'memq memq)
+        (list 'member member)
+        (list 'not not)
+        (list '+ +)
+        (list '- -)
+        (list '* *)
+        (list '= =)
+        (list '> >)
+	(list '< <)
+        (list '>= >=)
+        (list 'abs abs)
+        (list 'remainder remainder)
+        (list 'integer? integer?)
+        (list 'sqrt sqrt)
+        (list 'eq? eq?)
+	(list 'display display)
+	(list 'newline newline)
+	(list 'reverse reverse)
+	(list 'even? even?)
+;;      more primitives
+        ))
+
+
+(define the-global-environment (setup-environment))
+
+;; add error procedure
+
+(define (error reason . args)
+      (display "Error: ")
+      (display reason)
+      (for-each (lambda (arg) 
+                  (display " ")
+		  (write arg))
+		args)
+      (newline)
+      (scheme-report-environment 5))
+
+'amb-eval-loaded
+
+
+
 
 ;;;--------------------------------
-;;;
-(define (require p)
-  (if (not p) (amb)))
+;;; amb 실행기에서 수행
 
-(define (an-element-of items)
-  (require (not (null? items)))
-  (amb (car items) (an-element-of (cdr items))))
+;; (define (require p)
+;;   (if (not p) (amb)))
 
-(define (an-integer-starting-from n)
-  (amb n (an-integer-starting-from (+ n 1))))
+;; (define (an-element-of items)
+;;   (require (not (null? items)))
+;;   (amb (car items) (an-element-of (cdr items))))
 
-;;; 피타고라스 수
-;;; i^2 + j^2 = k^2
-(define (a-pythagorean-triple-between low high)
-  ((lambda (i)
-     ((lambda (j)
-	((lambda (k)
-	   (require (= (+ (* i i) (* j j)) (* k k)))
-	   (list i j k))
-	 (an-integer-between j high)))
-      (an-integer-between i high)))
-   (an-integer-between low high)))
+;; (define (an-integer-starting-from n)
+;;   (amb n (an-integer-starting-from (+ n 1))))
+
+;; ;;; 피타고라스 수
+;; ;;; i^2 + j^2 = k^2
+;; ;; (define (a-pythagorean-triple-between low high)
+;; ;;   ((lambda (i)
+;; ;;      ((lambda (j)
+;; ;; 	((lambda (k)
+;; ;; 	   (require (= (+ (* i i) (* j j)) (* k k)))
+;; ;; 	   (list i j k))
+;; ;; 	 (an-integer-between j high)))
+;; ;;       (an-integer-between i high)))
+;; ;;    (an-integer-between low high)))
 
 ;; (define (a-pythagorean-triple-between low high)
 ;;   (let ((i (an-integer-between low high)))
@@ -296,10 +345,12 @@
 ;; 	(list i j k)))))
 
 
-(define (an-integer-between low high)
-  (require (not (> low high)))
-  (amb low (an-integer-between (+ 1 low) high)))
+;; (define (an-integer-between low high)
+;;   (require (not (> low high)))
+;;   (amb low (an-integer-between (+ 1 low) high)))
 
-(a-pythagorean-triple-between 1 10)
+;; (a-pythagorean-triple-between 1 10)
+
+
 ;;;
 ;;;-------------------------------------------------------
