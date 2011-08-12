@@ -224,7 +224,7 @@
 	 (maybe-extend (list 'noun-phrase
 			     noun-phrase
 			     (parse-prepositional-phrase)))))
-  (mayhbe-extend (parse-simple-noun-phrase)))
+  (maybe-extend (parse-simple-noun-phrase)))
 
 ;;
 (parse '(the student with the cat sleeps in the class))
@@ -464,3 +464,13 @@
      (display ";; There is no current problem")
      (driver-loop))))
 
+
+;;;--------------------------< ex 4.50 >--------------------------
+
+;;;--------------------------< ex 4.51 >--------------------------
+
+;;;--------------------------< ex 4.52 >--------------------------
+
+;;;--------------------------< ex 4.53 >--------------------------
+
+;;;--------------------------< ex 4.54 >--------------------------
