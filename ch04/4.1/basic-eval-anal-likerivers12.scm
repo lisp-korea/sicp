@@ -2,6 +2,7 @@
 (define (my-eval exp env)
   ((analyze exp) env))
 
+;; analyze -> 분석 후 최종 수행할 함수 리턴
 (define (analyze exp)
   (cond ((self-evaluating? exp)
 	 (analyze-self-evaluating exp))
@@ -16,6 +17,8 @@
 	((application? exp) (analyze-application exp))
 	(else
 	 (error "Unknown expression type -- ANALYZE" exp))))
+
+;; --------------------------------------------------------
 
 (define (analyze-self-evaluating exp)
   (lambda (env) exp))

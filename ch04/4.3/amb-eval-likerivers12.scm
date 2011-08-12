@@ -32,23 +32,6 @@
 	 (error "Unknown expression type -- ANALYZE" exp))))
 
 
-;; let 문법 추가 - from longfin's code
-(define (let? exp) (tagged-list? exp 'let))
-(define (let-bindings exp) (cadr exp))
-(define (let-body exp) (cddr exp))
-
-(define (let-var binding) (car binding))
-(define (let-val binding) (cadr binding))
-
-(define (make-combination operator operands) (cons operator operands))
-
-(define (let->combination exp)
-  ;;make-combination defined in earlier exercise
-  (let ((bindings (let-bindings exp)))
-    (make-combination (make-lambda (map let-var bindings)
-                                   (let-body exp))
-                      (map let-val bindings))))
-
 ;;===================================================================
 
 ;;;;;;;;;;;;;;;;;
@@ -279,6 +262,24 @@
 	(list 'length length)  ;; add
 ;;      more primitives
         ))
+
+
+;; let 문법 추가 
+(define (let? exp) (tagged-list? exp 'let))
+(define (let-bindings exp) (cadr exp))
+(define (let-body exp) (cddr exp))
+
+(define (let-var binding) (car binding))
+(define (let-val binding) (cadr binding))
+
+(define (make-combination operator operands) (cons operator operands))
+
+(define (let->combination exp)
+  ;;make-combination defined in earlier exercise
+  (let ((bindings (let-bindings exp)))
+    (make-combination (make-lambda (map let-var bindings)
+                                   (let-body exp))
+                      (map let-val bindings))))
 
 (define the-global-environment (setup-environment))
 
