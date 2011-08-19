@@ -46,8 +46,10 @@
 
 
 
+(define *count* 0)
 
 (define (distinct? items)
+  (set! *count* (+ 1 *count*))
   (cond ((null? items) #t)
 	((null? (cdr items)) #t)
 	((member (car items) (cdr items)) #f)
@@ -66,7 +68,7 @@
     (require (not (= fletcher 5)))
     (require (not (= fletcher 1)))
     (require (> miller cooper))
-    (require (not (= (abs (- smith fletcher)) 1)))
+    ;(require (not (= (abs (- smith fletcher)) 1)))
     (require (not (= (abs (- fletcher cooper)) 1)))
     (list (list 'baker baker)
 	  (list 'cooper cooper)
@@ -113,6 +115,8 @@
         (fletcher (amb 1 2 3 4 5))
         (miller (amb 1 2 3 4 5))
         (smith (amb 1 2 3 4 5)))
+    (require
+     (distinct? (list baker cooper fletcher miller smith)))
     (require (not (= cooper 1)))
     (require (not (= fletcher 1)))
     (require (not (= fletcher 5)))
@@ -120,8 +124,6 @@
     (require (> miller cooper))
     (require (not (= (abs (- smith fletcher)) 1)))
     (require (not (= (abs (- fletcher cooper)) 1)))
-    (require
-     (distinct? (list baker cooper fletcher miller smith)))
     (list (list 'baker baker)
           (list 'cooper cooper)
           (list 'fletcher fletcher)
@@ -220,7 +222,10 @@
 	  (list 'joan joan)
 	  (list 'kitty kitty)
 	  (list 'mary mary))))
-     
+
+
+
+
 ;; ex 4.43
 (define (yachts)
   (let ((gabrielle (amb 'moore 'downing 'hall 'barnacle 'parker))
@@ -314,7 +319,8 @@
   (maybe-extend (parse-simple-noun-phrase)))
 
 
-;(parse '(the student with the cat sleeps in the class))
+(parse '(the student with the cat sleeps in the class))
+(parse '(the professor lectures to the student with the cat))
 
 ;; ex 4.45
 
