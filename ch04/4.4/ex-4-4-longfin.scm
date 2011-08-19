@@ -250,5 +250,79 @@
            (not (same ?person-1 ?person-2))
 		   (lisp-value dic< ?person-1 ?person-2)))
 
+;; Logic as programs
 
+(rule (append-to-form () ?y ?y))
+(rule (append-to-form (?u . ?v) ?y (?u . ?z))
+	  (append-to-form ?v ?y ?z))
 				
+;;; Query input:
+(append-to-form (a b) (c d) ?z)
+;;; Query results:
+(append-to-form (a b) (c d) (a b c d))
+
+;;; Query input:
+(append-to-form (a b) ?y (a b c d))
+;;; Query results:
+(append-to-form (a b) (c d) (a b c d))
+
+;;; Query input:
+(append-to-form ?x ?y (a b c d))
+;;; Query results:
+(append-to-form () (a b c d) (a b c d))
+(append-to-form (a) (b c d) (a b c d))
+(append-to-form (a b) (c d) (a b c d))
+(append-to-form (a b c) (d) (a b c d))
+(append-to-form (a b c d) () (a b c d))
+
+
+;; ex 4.61
+
+(rule (?x next-to ?y in (?x ?y . ?u)))
+(rule (?x next-to ?y in (?v . ?z))
+      (?x next-to ?y in ?z))
+
+;; Query input:
+(?x next-to ?y in (1 (2 3) 4))
+
+;; Query result
+(1 next-to (2 3) in (1 (2 3) 4))
+((2 3) next-to 4 in (1 (2 3) 4))
+
+;; Query input:
+(?x next-to 1 in (2 1 3 1))
+
+;; Query result
+(2 next-to 1 in (2 1 3 1))
+(3 next-to 1 in (2 1 3 1))
+
+
+;; ex 4.62
+(rule (last-pair (?x) ?x))
+(rule (last-pair (?y . ?ys) ?x)
+	  (last-pair ?ys ?x))
+;; can't check (last-pair ?x (3)). (it seems so strange.)
+
+
+;; ex 4.63
+
+(son Adam Cain)
+(son Cain Enoch)
+(son Enoch Irad)
+(son Irad Mehujael)
+(son Mehujael Methushael)
+(son Methushael Lamech)
+(wife Lamech Ada)
+(son Ada Jabal)
+(son Ada Jubal)
+
+(rule (grandfather-son ?g ?s)
+	  (and (son ?g ?f)
+		   (son ?f ?s)))
+(rule (father-son ?m ?s)
+	  (and (wife ?m ?w)
+		   (son ?w ?s)))
+
+
+				 
+	  
