@@ -178,3 +178,77 @@
 (rule (wheel ?person)
       (and (supervisor ?middle-manager ?person)
            (supervisor ?x ?middle-manager)))
+
+;; input
+(lives-near ?x (Bitdiddle Ben))
+
+;; result
+(lives-near (Reasoner Louis) (Bitdiddle Ben))
+(lives-near (Aull DeWitt) (Bitdiddle Ben))
+
+
+;; ex 4.57
+
+(rule (alternative ?person1 ?person2)
+	  (or (and (job ?person1 ?job)
+			   (job ?person2 ?job))
+		  (and (job ?person1 ?job1)
+			   (job ?person2 ?job2)
+			   (not (same ?person1 ?person2))
+			   (can-do-job ?job1 ?job2))))
+
+;; a.
+(alternative (Fect Cy D) ?x)
+
+;;b.
+(and (salary ?person ?amount1)
+	 (salary ?other ?amount2)
+	 (alternative ?person ?other)
+	 (lisp-value < ?amount1 ?amount2))
+
+;; ex 4.58
+
+(rule (big-shot ?person)
+	  (and (job ?person (?depart . ?rest))
+		   (not (and (supervisor ?person ?boss)
+					 (job ?boss (?depart . ?dont-care))))))
+
+;; ex 4.59
+
+(meeting accounting (Monday 9am))
+(meeting administration (Monday 10am))
+(meeting computer (Wednesday 3pm))
+(meeting administration (Friday 1pm))
+
+(meeting whole-company (Wednesday 4pm))
+
+;; a.
+(or (and (job (Ben Bitdiddle) (?depart . ?rest))
+		 (meeting ?depart (Friday . ?time)))
+	(meeting whole-company (Friday . ?time)))
+
+;; b.
+(rule (meeting-time ?person ?day-and-time)
+	  (or (and (job ?person (?depart . ?rest))
+			   (meeting ?depart ?day-and-time))
+		  (meeting whole-company ?day-and-time)))
+	  
+;; c.
+(meeting-time (Alyssa P Hacker) (Wednesday . ?))
+
+;; ex 4.60
+
+(lives-near (Hacker Alyssa P) (Fect Cy D))
+(lives-near (Fect Cy D) (Hacker Alyssa P))
+
+;; two assertion is true.
+;; add order condition...(assume dic< exists)
+
+(rule (lives-near ?person-1 ?person-2)
+      (and (address ?person-1 (?town . ?rest-1))
+           (address ?person-2 (?town . ?rest-2))
+           (not (same ?person-1 ?person-2))
+		   (lisp-value dic< ?person-1 ?person-2)))
+
+
+				
