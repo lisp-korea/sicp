@@ -234,14 +234,15 @@
 		  (meeting whole-company ?day-and-time)))
 	  
 ;; c.
-(meeting-time (Alyssa P Hacker) (Wednesday . ?))
+(and (meeting-time (Alyssa P Hacker) (Wednesday . ?time))
+	 (meeting ?subject (Wednesday ?time)))
 
 ;; ex 4.60
 
 (lives-near (Hacker Alyssa P) (Fect Cy D))
 (lives-near (Fect Cy D) (Hacker Alyssa P))
 
-;; two assertion is true.
+;; two assertion are true.
 ;; add order condition...(assume dic< exists)
 
 (rule (lives-near ?person-1 ?person-2)
