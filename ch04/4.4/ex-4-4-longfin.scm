@@ -190,12 +190,12 @@
 ;; ex 4.57
 
 (rule (alternative ?person1 ?person2)
-	  (or (and (job ?person1 ?job)
-			   (job ?person2 ?job))
-		  (and (job ?person1 ?job1)
-			   (job ?person2 ?job2)
-			   (not (same ?person1 ?person2))
-			   (can-do-job ?job1 ?job2))))
+	  (and (not (same ?person1 ?person2))
+		   (or (and (job ?person1 ?job)
+					(job ?person2 ?job))
+			   (and (job ?person1 ?job1)
+					(job ?person2 ?job2)
+					(can-do-job ?job1 ?job2)))))
 
 ;; a.
 (alternative (Fect Cy D) ?x)
