@@ -321,8 +321,9 @@
 	  (and (son ?g ?f)
 		   (son ?f ?s)))
 (rule (father-son ?m ?s)
-	  (and (wife ?m ?w)
-		   (son ?w ?s)))
+	  (or (son ?m ?s)
+		  (and (wife ?m ?w)
+			   (son ?w ?s))))
 
 
 				 
