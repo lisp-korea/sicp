@@ -328,3 +328,164 @@
 
 				 
 	  
+;; 4.4.2 How the Query System Works
+
+;; Pattern matching
+
+;; ((a b) c (a b)) matches (?x c ?x) [?x = (a b)] it also matches (?x c ?y)[?x = (a b), ?y = (a b)]. but doesn't match (?x a ?x).
+
+
+;; Stream of frames
+
+;; In our system, a query takes an input stream of frames and performs the above matching operation for every frame in the stream, as indicated in figure 4.4. 
+
+;; Compound queries
+
+;; (and (can-do-job ?x (computer programmer trainee))
+;;     (job ?person ?x))
+;; process (can-do-job ... ) first, and (job ...). (logical conjunction)
+
+;; (or (can-do-job ?x (computer programmer trainee))
+;; 	(can-do-job ?y (administration secretary)))
+;; process two assertion parallelly. (process first with original frames and next, then merge result)(logical disjunction)
+
+;; (not (job ?x (computer programmer)))
+;; check all frames and remove it satisfies assertion. (logical negation)
+
+
+;; Unification
+
+;; unifying (?x a ?y) and (?y ?z a) will specify a frame in which ?x, ?y, and ?z must all be bound to a.
+
+;; With complex patterns, performing unification may seem to require deduction.
+;; To unify (?x ?x) and ((a ?y c) (a b ?z))
+;; ?x  =  (a ?y c)
+;; ?x  =  (a b ?z)
+;; (a ?y c)  =  (a b ?z)
+;; a  =  a, ?y  =  b, c  =  ?z,
+;; ?x = (a b c)
+
+;; (?x a) and ((b ?y) ?z)
+;; ?x = (b ?y)
+;; ?z = a
+;; ?y = ????
+
+
+;; Applying rules
+
+;; (lives-near ?x (Hacker Alyssa P))
+;; 1. check assertions. (fail)
+;; 2. check rules. (success)
+;; 3. bind pattern variables(?x, (Hacker Alyssa P))
+;; 4. apply assertions in rule
+
+;; Just as procedure definitions are the means of abstraction in Lisp, rule definitions are the means of abstraction in the query language.
+
+
+;; Simple queries
+
+;; Given the query pattern and a stream of frames, we produce, for each frame in the input stream, two streams:
+;; 1. a stream of extended frames obtained by matching the pattern against all assertions in the data base (using the pattern matcher),
+;; 2. a stream of extended frames obtained by applying all possible rules (using the unifier)
+;; These streams (one for each frame in the input stream) are now all combined to form one large stream, which therefore consists of all the ways that any of the frames in the original input stream can be extended to produce a match with the given pattern.
+
+
+;; The query evaluator and the driver loop
+
+;; (qeval <query> <stream of frames>) => <stream of frames>
+
+;; assert isn't query.(special form)
+;; (assert! (job (Bitdiddle Ben) (computer wizard)))
+;; (assert! (rule (wheel ?person)
+;;                (and (supervisor ?middle-manager ?person)
+;;                     (supervisor ?x ?middle-manager))))
+
+
+
+;; 4.4.3 Is Logic Programming Mathematical Logic?
+
+
+;; (and (job ?x (computer programmer))
+;;      (supervisor ?x ?y))
+
+;; or
+
+;; (and (supervisor ?x ?y)
+;;      (job ?x (computer programmer)))
+
+;; two queries are logically equivalent.(same for *what*), but aren't same for *how*.
+
+
+;; Infinite loop
+;; (assert! (married Minnie Mickey))
+;; (married Mickey ?who) => none[it doesn't match (married Minnie Mickey)]
+
+;; (assert! (rule (married ?x ?y)
+;;                (married ?y ?x)))
+;; (married Mickey ?who)
+;; (married ?x ?y) [?x = Mickey, ?y = ?who]
+;; (married ?who Mickey)
+;; (married ?x ?y) [?x = ?who, ?y = Mickey]
+;; (married Mickey ?who)
+;; ...
+;; => fall in the infinite loop.
+
+
+;; Problems with not
+
+;; 1. (and (supervisor ?x ?y)
+;;         (not (job ?x (computer programmer))))
+;; 2.(and (not (job ?x (computer programmer)))
+;;        (supervisor ?x ?y))
+
+;; case 1.
+;; 1. (supervisor ?x ?y) => fetch all supervisor information from database, and bind ?x and ?y
+;; 2. (not (job ?x (computer programmer))) => fetch all (job ?x (computer programmer)) and remove it.
+
+;; case 2.
+;; 1. (not (job ?x (computer programmer))) => fetch all computer programmer information from database and remove from stream(but it's empty!)
+;; 2. (supervisor ?x ?y) => return empty stream because ?x( and its stream of frames) is empty.
+
+;; In logic, we interpret the statement ``not P'' to mean that P is not true.
+;; In the query system, however, ``not P'' means that P is not deducible from the knowledge in the data base.
+
+
+;; ex 4.64
+
+;; before
+;; (rule (outranked-by ?staff-person ?boss)
+;;       (or (supervisor ?staff-person ?boss)
+;;           (and (supervisor ?staff-person ?middle-manager)
+;;                (outranked-by ?middle-manager ?boss))))
+
+(rule (outranked-by ?staff-person ?boss)
+      (or (supervisor ?staff-person ?boss)
+          (and (outranked-by ?middle-manager ?boss)
+               (supervisor ?staff-person ?middle-manager))))
+
+(outranked-by (Bitdiddle Ben) ?who)
+
+;; it falls to infinite loop because (and (outranked-by ... )) enters infinitely.(it matches itself)
+
+
+;; ex 4.65
+
+(rule (wheel ?person)
+      (and (supervisor ?middle-manager ?person)
+           (supervisor ?x ?middle-manager)))
+
+(wheel ?who)
+
+;; (wheel ?who) returns person have ?middle-manager and ?x(?middle-manager's inferior). so Bitdiddle matches. and it matches all inferiors combinated pattern.
+
+
+;; ex 4.66
+
+(sum ?amount
+     (and (job ?x (computer programmer))
+          (salary ?x ?amount)))
+
+;; (accumulation-function <variable> <query pattern>)
+
+;; <query pattern>(exactly rule) doesn't match exactly one pattern we wanted but matches all pattern include not desired(DON'T CARE). if Ben wants to use accumulation-function, he must distinct pattern produce by rule.
+
