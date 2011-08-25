@@ -316,7 +316,7 @@
 (wife Lamech Ada)
 (son Ada Jabal)
 (son Ada Jubal)
-
+ 
 (rule (grandfather-son ?g ?s)
 	  (and (son ?g ?f)
 		   (son ?f ?s)))
@@ -489,3 +489,47 @@
 
 ;; <query pattern>(exactly rule) doesn't match exactly one pattern we wanted but matches all pattern include not desired(DON'T CARE). if Ben wants to use accumulation-function, he must distinct pattern produce by rule.
 
+
+;; ex 4.67
+
+;; 1. when apply rule, check if history is null
+;; 2-a. if history isn't null, return empty stream.
+;; 2-b. if history is null, set query to history and apply rule.
+
+;; ex 4.68
+
+(rule (append-to-form () ?y ?y))
+(rule (append-to-form (?u . ?v) ?y (?u . ?z))
+	  (append-to-form ?v ?y ?z))
+
+(rule (reverse () ()))
+(rule (reverse (?x . ?xs) ?y)
+	  (and (reverse ?xs ?z)
+		   (append-to-from ?z (?x) ?y)))
+
+;; ex 4.69
+
+(son Adam Cain)
+(son Cain Enoch)
+(son Enoch Irad)
+(son Irad Mehujael)
+(son Mehujael Methushael)
+(son Methushael Lamech)
+(wife Lamech Ada)
+(son Ada Jabal)
+(son Ada Jubal)
+
+
+(rule (grandson ?g ?s)
+	  (and (son ?g ?f)
+		   (son ?f ?s)))
+(rule (ends-with-grandson ?x)
+	  (append-to-from ?y (grandson) ?x))
+
+(rule ((great . ?relation) ?x ?y)
+	  (and
+	   (ends-with-grandson ?relation) ;; check illegal relation (ex. ((great great)))
+	   (?rel ?son-of-x ?y)
+	   (son ?x ?son-of-x)))
+	  
+	  
