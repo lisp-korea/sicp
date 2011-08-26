@@ -523,6 +523,10 @@
 (rule (grandson ?g ?s)
 	  (and (son ?g ?f)
 		   (son ?f ?s)))
+
+(rule ((grandson) ?g ?s)
+	  (grandson ?g ?s))
+
 (rule (ends-with-grandson ?x)
 	  (append-to-from ?y (grandson) ?x))
 
@@ -531,5 +535,4 @@
 	   (ends-with-grandson ?relation) ;; check illegal relation (ex. ((great great)))
 	   (?rel ?son-of-x ?y)
 	   (son ?x ?son-of-x)))
-	  
-	  
+
