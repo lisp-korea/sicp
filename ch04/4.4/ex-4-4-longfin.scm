@@ -1094,3 +1094,88 @@
 
 ;; b. maybe nothing.
 
+
+;; ex 4.75
+
+(define (uniquely-asserted query frames)
+  (stream-flatmap
+   (lambda (frame)
+	 (let ((result (qeval (car query)
+						  (singleton-stream frame))))
+	   (cond ((stream-null? result) the-empty-stream)
+			 ((stream-null? (stream-cdr result)) result)
+			 (else the-empty-stream))))
+   frames))
+(put 'unique 'qeval uniquely-asserted)
+
+;; Ben's information
+(assert! (address (Bitdiddle Ben) (Slumerville (Ridge Road) 10)))
+(assert! (job (Bitdiddle Ben) (computer wizard)))
+(assert! (salary (Bitdiddle Ben) 60000))
+
+;; Alyssa's information
+(assert! (address (Hacker Alyssa P) (Cambridge (Mass Ave) 78)))
+(assert! (job (Hacker Alyssa P) (computer programmer)))
+(assert! (salary (Hacker Alyssa P) 40000))
+(assert! (supervisor (Hacker Alyssa P) (Bitdiddle Ben)))
+
+;; Fect's information
+(assert! (address (Fect Cy D) (Cambridge (Ames Street) 3)))
+(assert! (job (Fect Cy D) (computer programmer)))
+(assert! (salary (Fect Cy D) 35000))
+(assert! (supervisor (Fect Cy D) (Bitdiddle Ben)))
+
+;; Tweakit's information
+(assert! (address (Tweakit Lem E) (Boston (Bay State Road) 22)))
+(assert! (job (Tweakit Lem E) (computer technician)))
+(assert! (salary (Tweakit Lem E) 25000))
+(assert! (supervisor (Tweakit Lem E) (Bitdiddle Ben)))
+
+;; Reasoner's information
+(assert! (address (Reasoner Louis) (Slumerville (Pine Tree Road) 80)))
+(assert! (job (Reasoner Louis) (computer programmer trainee)))
+(assert! (salary (Reasoner Louis) 30000))
+(assert! (supervisor (Reasoner Louis) (Hacker Alyssa P)))
+
+;; Warbucks's information
+(assert! (supervisor (Bitdiddle Ben) (Warbucks Oliver)))
+(assert! (address (Warbucks Oliver) (Swellesley (Top Heap Road))))
+(assert! (job (Warbucks Oliver) (administration big wheel)))
+(assert! (salary (Warbucks Oliver) 150000))
+
+;; Scrooge's information
+(assert! (address (Scrooge Eben) (Weston (Shady Lane) 10)))
+(assert! (job (Scrooge Eben) (accounting chief accountant)))
+(assert! (salary (Scrooge Eben) 75000))
+(assert! (supervisor (Scrooge Eben) (Warbucks Oliver)))
+
+;; Cratchet's information
+(assert! (address (Cratchet Robert) (Allston (N Harvard Street) 16)))
+(assert! (job (Cratchet Robert) (accounting scrivener)))
+(assert! (salary (Cratchet Robert) 18000))
+(assert! (supervisor (Cratchet Robert) (Scrooge Eben)))
+
+;; Aull's information
+(assert! (address (Aull DeWitt) (Slumerville (Onion Square) 5)))
+(assert! (job (Aull DeWitt) (administration secretary)))
+(assert! (salary (Aull DeWitt) 25000))
+(assert! (supervisor (Aull DeWitt) (Warbucks Oliver)))
+
+
+(assert! (can-do-job (computer wizard) (computer programmer)))
+(assert! (can-do-job (computer wizard) (computer technician)))
+
+(assert! (can-do-job (computer programmer)
+					 (computer programmer trainee)))
+
+(assert! (can-do-job (administration secretary)
+					 (administration big wheel)))
+
+
+(unique (job ?x (computer wizard)))
+
+(unique (job ?x (computer programmer)))
+
+(and (job ?x ?j)
+	 (unique (job ?anyone ?j)))
+
