@@ -901,6 +901,22 @@
 
 ;; ex 4.70
 
+;; (define (add-assertion! assertion)
+;;   (store-assertion-in-index assertion)
+;;   (let ((old-assertions THE-ASSERTIONS))
+;; 	   (set! THE-ASSERTIONS
+;;           (cons-stream assertion old-assertions))
+;; 	'ok))
+
+;; (define (add-assertion! assertion)
+;;   (store-assertion-in-index assertion)
+;;   (set! THE-ASSERTIONS
+;;         (cons-stream assertion THE-ASSERTIONS))
+;;   'ok)
+
+;; if didn't use olad-assertions, THE-ASSERTIONS becomes infinite stream.
+
+
 ;; 4.4.4.6 Stream Operations
 
 (define (stream-append-delayed s1 delayed-s2)
@@ -1035,3 +1051,46 @@
  (rule (grandson ?g ?s)
 	   (and (son ?g ?f)
 			(son ?f ?s))))
+
+
+;; ex 4.71
+;; (define (simple-query query-pattern frame-stream)
+;;   (stream-flatmap
+;;    (lambda (frame)
+;;      (stream-append (find-assertions query-pattern frame)
+;;                     (apply-rules query-pattern frame)))
+;;    frame-stream))
+;; (define (disjoin disjuncts frame-stream)
+;;   (if (empty-disjunction? disjuncts)
+;;       the-empty-stream
+;;       (interleave
+;;        (qeval (first-disjunct disjuncts) frame-stream)
+;;        (disjoin (rest-disjuncts disjuncts) frame-stream))))
+
+;; If query system falls infinite loop.(see 4.4.3) Alyssa's version occurs stack overflow on evalution time.
+
+;; (query-driver-loop)
+;; (assert! (married Minnie Mickey))
+;; (assert! (rule (married ?x ?y)
+;;                 (married ?y ?x)))
+;; (married Minie ?who)
+
+;; ex 4.72
+;; When appending, if we use simple append instead of interleave and first stream is infinite stream, we can't access second stream.
+
+;; ex 4.73
+;; same to 4.71.(4.71, 4.72, and 4.73 are related to same topic - infinite stream)
+
+;; ex 4.74
+
+;; a.
+(define (simple-stream-flatmap proc s)
+  (simple-flatten (stream-map proc s)))
+(define (simple-flatten stream)
+  (stream-map stream-car ;;assume emtpy or singletone (ignore rest)
+			  (stream-filter (lambda (s)
+							   (not (stream-null? s))) ;; filter empty stream.
+							 stream)))
+
+;; b. maybe nothing.
+
