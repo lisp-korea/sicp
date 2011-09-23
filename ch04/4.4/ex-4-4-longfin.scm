@@ -576,6 +576,11 @@
       'done
       (begin (proc (stream-car s))
 	     (stream-for-each proc (stream-cdr s)))))
+
+(define (stream-ref s n)
+  (if (= n 0)
+      (stream-car s)
+      (stream-ref (stream-cdr s) (- n 1))))
  
 (define (display-stream s)
   (stream-for-each display-line s))
@@ -1178,4 +1183,42 @@
 
 (and (job ?x ?j)
 	 (unique (job ?anyone ?j)))
+
+;; ex 4.76
+
+(define (first-binding frame) (car frame))
+(define (rest-bindings frame) (cdr frame))
+(define (empty-frame? frame) (null? frame))
+
+(define (unify-if-possible var val frame)
+  (let ((b (binding-in-frame var frame)))
+    (cond ((not b) (extend var val frame))
+          ((equal? (binding-value b) val) frame)
+          ((var? val)
+           (unify-if-possible val
+                              (binding-value b)
+                              frame))
+          (else 'failed))))
+
+(define (unify-frames f1 f2)
+  (cond ((empty-frame? f1) f2)
+        ((eq? f2 'failed) 'failed)
+        (else
+         (let ((b (first-binding f1)))
+           (unify-frames
+            (rest-bindings f1)
+            (unify-if-possible (binding-variable b)
+                               (binding-value b)
+                               f2))))))
+
+(define (unify-frame-streams fs1 fs2)
+  (stream-flatmap
+   (lambda (f1)
+     (stream-filter
+      (lambda (f) (not (eq? f 'failed)))
+      (stream-map (lambda (f2) (unify-frames f1 f2))
+                  fs2)))
+   fs1))
+
+
 
