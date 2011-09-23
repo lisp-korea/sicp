@@ -152,3 +152,229 @@ gcd-done)
     (assign guess (reg t2))
     (goto (label test-guess))
   sqrt-done)
+
+
+;; 5.1.3 Subroutine
+
+;; using same data path... but gcd is duplicated
+gcd-1
+ (test (op =) (reg b) (const 0))
+ (branch (label after-gcd-1))
+ (assign t (op rem) (reg a) (reg b))
+ (assign a (reg b))
+ (assign b (reg t))
+ (goto (label gcd-1))
+after-gcd-1
+
+...
+
+gcd-2
+ (test (op =) (reg b) (const 0))
+ (branch (label after-gcd-2))
+ (assign t (op rem) (reg a) (reg b))
+ (assign a (reg b))
+ (assign b (reg t))
+ (goto (label gcd-2))
+after-gcd-2
+
+
+;; using continue to remove duplication. but it's very restrict solution.
+gcd
+ (test (op =) (reg b) (const 0))
+ (branch (label gcd-done))
+ (assign t (op rem) (reg a) (reg b))
+ (assign a (reg b))
+ (assign b (reg t))
+ (goto (label gcd))
+gcd-done
+ (test (op =) (reg continue) (const 0))
+ (branch (label after-gcd-1))
+ (goto (label after-gcd-2))
+;; Before branching to gcd from the first place where
+;; it is needed, we place 0 in the continue register
+ (assign continue (const 0))
+ (goto (label gcd))
+after-gcd-1
+;; Before the second use of gcd, we place 1 in the continue register
+ (assign continue (const 1))
+ (goto (label gcd))
+after-gcd-2
+
+
+;; save return point to continue register...
+gcd
+ (test (op =) (reg b) (const 0))
+ (branch (label gcd-done))
+ (assign t (op rem) (reg a) (reg b))
+ (assign a (reg b))
+ (assign b (reg t))
+ (goto (label gcd))
+gcd-done
+ (goto (reg continue))
+;; Before calling gcd, we assign to continue
+;; the label to which gcd should return.
+ (assign continue (label after-gcd-1))
+ (goto (label gcd))
+after-gcd-1
+;; Here is the second call to gcd, with a different continuation.
+ (assign continue (label after-gcd-2))
+ (goto (label gcd))
+after-gcd-2
+
+
+;; 5.1.4 Using a Stack to Implement Recursion
+
+(define (factorial n)
+  (if (= n 1)
+      1
+      (* (factorial (- n 1)) n)))
+
+;; it's recursive. when solve factorial n-1, must remeber n to multiply.
+
+(controller
+ (assign continue (label fact-done))
+ fact-loop
+   (test (op =) (reg n) (const 1)) 
+   (branch (label base-case))
+   (save continue)
+   (save n)
+   (assign n (op -) (reg n) (const 1))
+   (assign continue (label after-fact))
+   (goto (label fact-loop))
+ after-fact
+   (restore n)
+   (restore continue)
+   (assign val (op *) (reg n) (reg val))
+   (goto (reg continue))
+ base-case
+   (assign val (const 1))
+   (goto (reg continue))
+ fact-done)
+
+
+;; double recursion
+
+(controller
+   (assign continue (label fib-done))
+ fib-loop
+   (test (op <) (reg n) (const 2))
+   (branch (label immediate-answer))
+   (save continue)
+   (assign continue (label afterfib-n-1))
+   (save n)
+   (assign n (op -) (reg n) (const 1))
+   (goto (label fib-loop)) 
+ afterfib-n-1
+   (restore n)
+   (restore continue)
+   (assign n (op -) (reg n) (const 2))
+   (save continue)
+   (assign continue (label afterfib-n-2))
+   (save val)
+   (goto (label fib-loop))
+ afterfib-n-2
+   (assign n (reg val))
+   (restore val)
+   (restore continue)
+   (assign val
+		   (op +) (reg val) (reg n))
+   (goto (reg continue))
+ immediate-answer
+   (assign val (reg n))
+   (goto (reg continue))
+ fib-done)
+
+
+;; ex 5.4
+
+;; a.
+
+(define (expt b n)
+  (if (= n 0)
+      1
+      (* b (expt b (- n 1)))))
+
+(controller
+ (assign continue (label expt-done))
+ expt-loop
+   (test (op =) (reg n) (const 0))
+   (branch (label base-case))
+   (save continue)
+   (save n)
+   (assign n (op -) (reg n) (const 1))
+   (assign continue (label after-expt))
+   (goto (label expt-loop))
+ after-expt
+   (restore n)
+   (restore continue)
+   (assign (op *) (reg n) (reg b))
+   (goto (reg continue))
+ base-case
+   (assign val (const 1))
+   (goto (reg continue))
+ expt-done)
+
+;; b.
+
+(define (expt b n)
+  (define (expt-iter counter product)
+	(if (= counter 0)
+		product
+		(expt-iter (- counter 1) (* b product))))
+  (expt-iter n 1))
+
+(controller
+ (assign counter (reg n))
+ (assign product (const 1))
+
+ expt-iter-loop
+   (test (op =) (reg counter) (const 0))
+   (goto (label expt-done))
+   (assign t (op -) (reg counter) (const 1))
+   (assign counter (reg t))
+   (assign t (op *) (reg b) (reg product))
+   (assign product (reg t))
+   (goto (label expt-iter-loop))
+
+ expt-done)
+
+;; ex 5.5
+;; --;
+
+;; ex 5.6
+
+
+(controller
+   (assign continue (label fib-done))
+ fib-loop
+   (test (op <) (reg n) (const 2))
+   (branch (label immediate-answer))
+   (save continue)
+   (assign continue (label afterfib-n-1))
+   (save n)
+   (assign n (op -) (reg n) (const 1))
+   (goto (label fib-loop)) 
+ afterfib-n-1 
+   (restore n) 
+
+   ;; continue wasn't modified in this section...
+   (restore continue)
+   (assign n (op -) (reg n) (const 2))
+   (save continue)
+
+   
+   (assign continue (label afterfib-n-2))
+   (save val)
+   (goto (label fib-loop))
+ afterfib-n-2
+   (assign n (reg val))
+   (restore val)
+   (restore continue)
+   (assign val
+		   (op +) (reg val) (reg n))
+   (goto (reg continue))
+ immediate-answer
+   (assign val (reg n))
+   (goto (reg continue))
+ fib-done)
+
