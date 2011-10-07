@@ -1302,3 +1302,316 @@
 ((factorial-machine 'trace-on))
 (start factorial-machine)
 
+;; ex 5.18
+
+(define (make-register-ex-5-18 name)
+  (let ((contents '*unassigned*)
+		(trace #f)
+		(history '()))
+    (define (dispatch message)
+      (cond ((eq? message 'get) contents)
+            ((eq? message 'set)
+             (lambda (value)
+				 (if trace
+					 (begin
+					   (set! history (cons contents history))
+					   (display "reg-")(display name)(display "'s value changed from ")(display contents)(display " to ")(display value)
+					   (newline)))
+				 (set! contents value)))
+			((eq? message 'trace)
+			 (lambda (flag)
+			   (set! trace flag)))
+			((eq? message 'history) history)
+            (else
+             (error "Unknown request -- REGISTER" message))))
+	dispatch))
+
+(define (make-new-machine-ex-5-18)
+  (let ((pc (make-register 'pc))
+		(flag (make-register 'flag))
+		(stack (make-stack))
+		(the-instruction-sequence '()))
+	(let ((the-ops
+		   (list (list 'initialize-stack
+					   (lambda () (stack 'initialize)))))
+		  (register-table
+		   (list (list 'pc pc)
+				 (list 'flag flag))))
+	  (define (allocate-register name)
+		(if (assoc name register-table)
+			(error "Multiply defined register: " name)
+			(set! register-table
+				  (cons (list name (make-register name))
+						register-table)))
+		'register-allocated)
+	  (define (lookup-register name)
+		(let ((val (assoc name register-table)))
+		  (if val
+			  (cadr val)
+			  (error "Unknown register:" name))))
+	  (define (execute)
+		(let ((insts (get-contents pc)))
+		  (if (null? insts)
+			  'done
+			  (begin
+				((instruction-execution-proc (car insts)))
+				(execute)))))
+	  (define (dispatch message)
+		(cond ((eq? message 'start)
+			   (set-contents! pc the-instruction-sequence)
+			   (execute))
+			  ((eq? message 'install-instruction-sequence)
+			   (lambda (seq) (set! the-instruction-sequence seq)))
+			  ((eq? message 'allocate-register) allocate-register)
+			  ((eq? message 'get-register) lookup-register)
+			  ((eq? message 'install-operations)
+			   (lambda (ops)
+				 (set! the-ops (append the-ops ops))))
+			  ((eq? message 'stack) stack)
+			  ((eq? message 'operations) the-ops)
+			  ((eq? message 'trace-reg)
+			   (lambda (reg-name flag)
+				 (let ((reg (lookup-register reg-name)))
+				   ((reg 'trace) flag))))
+			  ((eq? message 'history-reg)
+			   (lambda (reg-name)
+				 (let ((reg (lookup-register reg-name)))
+				   (reg 'history))))
+			  (else (error "Unknown request -- MACHINE" message))))
+	  dispatch)))
+
+
+
+(define factorial-machine
+  (make-machine
+   '(n val continue)
+   (list (list '= =)
+		 (list '- -)
+		 (list '* *))
+   '(controller
+	 (assign continue (label fact-done))
+	 fact-loop
+	 (test (op =) (reg n) (const 1)) 
+	 (branch (label base-case))
+	 (save continue)
+	 (save n)
+	 (assign n (op -) (reg n) (const 1))
+	 (assign continue (label after-fact))
+	 (goto (label fact-loop))
+	 after-fact
+	 (restore n)
+	 (restore continue)
+	 (assign val (op *) (reg n) (reg val))
+	 (goto (reg continue))
+	 base-case
+	 (assign val (const 1))
+	 (goto (reg continue))
+	 fact-done)))
+
+(set-register-contents! factorial-machine 'n 5)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+
+((factorial-machine 'trace-reg) 'n #t)
+((factorial-machine 'history-reg) 'n)
+
+
+;; ex 5.19
+
+
+
+(define (extract-labels-ex-5-19 text receive)
+  (if (null? text)
+	  (receive '() '())
+	  (extract-labels (cdr text)
+					  (lambda (insts labels)
+						(let ((next-inst (car text)))
+						  (if (symbol? next-inst)
+							  (begin
+								(mark-label! insts next-inst)
+								(receive insts
+										 (cons (make-label-entry next-inst
+																 insts)
+											   labels)))
+							  (receive (cons (make-instruction next-inst)
+											 insts)
+									   labels)))))))
+
+(define (make-instruction-ex-5-19 text)
+  (cons text '()))
+
+(define (instruction-text-ex-5-19 inst)
+  (car (car inst)))
+
+(define (is-unlabeled-instruction? inst)
+  (not (list? (car (car inst)))))
+
+(define (mark-label! insts label)
+  (for-each (lambda (inst)
+			  (if (is-unlabeled-instruction? inst)
+				  (set-car! inst (cons (car inst) label))))
+			  insts)))
+
+(define (make-branch-ex-5-19 inst machine labels flag pc)
+  (let ((dest (branch-dest inst)))
+	(if (label-exp? dest)
+		(let ((insts
+			   (lookup-label labels (label-exp-label dest))))
+		  (lambda ()
+			(if (get-contents flag)
+				((machine 'jump!) insts)
+				(advance-pc pc))))
+		(error "Bad BRANCH instruction -- ASSEMBLE" inst))))
+		
+(define (make-goto-ex-5-19 inst machine labels pc)
+  (let ((dest (goto-dest inst)))
+	(cond ((label-exp? dest)
+		   (let ((insts
+				  (lookup-label labels
+								(label-exp-label dest))))
+			 (lambda () ((machine 'jump!) insts))))
+		  ((register-exp? dest)
+		   (let ((reg
+				  (get-register machine
+								(register-exp-reg dest))))
+			 (lambda ()
+				((machine 'jump!) (get-contents reg)))))			   
+		  (else
+		   (error "Bad GOTO instruction -- ASSEMBLE" inst)))))
+
+
+(define (make-new-machine-ex-5-19)
+  (let ((pc (make-register 'pc))
+		(flag (make-register 'flag))
+		(stack (make-stack))
+		(the-instruction-sequence '())
+		(break-points '())
+		(current-label #f)
+		(current-n 0))
+	(let ((the-ops
+		   (list (list 'initialize-stack
+					   (lambda () (stack 'initialize)))))
+		  (register-table
+		   (list (list 'pc pc)
+				 (list 'flag flag))))
+	  (define (allocate-register name)
+		(if (assoc name register-table)
+			(error "Multiply defined register: " name)
+			(set! register-table
+				  (cons (list name (make-register name))
+						register-table)))
+		'register-allocated)
+	  (define (lookup-register name)
+		(let ((val (assoc name register-table)))
+		  (if val
+			  (cadr val)
+			  (error "Unknown register:" name))))
+	  (define (execute)
+		(let ((insts (get-contents pc)))
+		  (newline)
+		  (if (null? insts)
+			  'done
+			  (begin
+				(let ((label (cdr (car (car insts)))))
+				  (if (not (eq? current-label label))
+					  (begin
+						(set! current-label label)
+						(set! current-n 0))))
+				(set! current-n (+ 1 current-n))
+				(let ((key (cons current-label current-n)))
+				  (let ((bt (assoc key break-points)))
+					(if (or (not bt)
+							(not (cdr bt)))
+						(begin
+						  ((instruction-execution-proc (car insts)))
+						  (execute))
+						(begin
+						  (display "stopped at ")(display key)
+						  'suspended))))))))
+
+	  (define (dispatch message)
+		(cond ((eq? message 'start)
+			   (set-contents! pc the-instruction-sequence)
+			   (execute))
+			  ((eq? message 'install-instruction-sequence)
+			   (lambda (seq) (set! the-instruction-sequence seq)))
+			  ((eq? message 'allocate-register) allocate-register)
+			  ((eq? message 'get-register) lookup-register)
+			  ((eq? message 'install-operations)
+			   (lambda (ops)
+				 (set! the-ops (append the-ops ops))))
+			  ((eq? message 'stack) stack)
+			  ((eq? message 'operations) the-ops)
+			  ((eq? message 'set-breakpoint)
+			   (lambda (label n)
+				 (let ((key (cons label n)))
+				   (let ((bt (assoc key break-points)))
+					 (if bt
+						 (set-cdr! bt #t)
+						 (set! break-points (cons (cons key #t) break-points)))))))
+			  ((eq? message 'cancel-breakpoint)
+			   (lambda (label n)
+				 (let ((key (cons label n)))
+				   (let ((bt (assoc key break-points)))
+					 (if bt
+						 (set-cdr! bt #f)
+						 (error "there is no break-points on" key))))))
+			  ((eq? message 'cancel-all-breakpoints)
+			   (lambda ()
+				 (for-each (lambda (bt)
+							 (set-cdr! bt #f))
+						   break-points)))
+			  ((eq? message 'jump!)
+			   (lambda (dest)
+				 (set! current-n 0)
+				 (set-contents! pc dest)))
+			  ((eq? message 'proceed)
+			   execute)
+			  (else (error "Unknown request -- MACHINE" message))))
+	  dispatch)))
+
+(define (set-breakpoint machine label n)
+  ((machine 'set-breakpoint) label n))
+
+(define (proceed-machine machine)
+  ((machine 'proceed)))
+
+(define (cancel-breakpoint machine label n)
+  ((machine 'cancel-breakpoint) label n))
+
+(define (cancel-all-break-points machine)
+  ((machine 'cancel-all-breakpoints)))
+
+
+(define factorial-machine
+  (make-machine
+   '(n val continue)
+   (list (list '= =)
+		 (list '- -)
+		 (list '* *))
+   '(controller
+	 (assign continue (label fact-done))
+	 fact-loop
+	 (test (op =) (reg n) (const 1)) 
+	 (branch (label base-case))
+	 (save continue)
+	 (save n)
+	 (assign n (op -) (reg n) (const 1))
+	 (assign continue (label after-fact))
+	 (goto (label fact-loop))
+	 after-fact
+	 (restore n)
+	 (restore continue)
+	 (assign val (op *) (reg n) (reg val))
+	 (goto (reg continue))
+	 base-case
+	 (assign val (const 1))
+	 (goto (reg continue))
+	 fact-done)))
+
+(set-register-contents! factorial-machine 'n 5)
+(set-breakpoint factorial-machine 'controller 1)
+(start factorial-machine)
+(get-register-contents factorial-machine 'pc)
+(proceed-machine factorial-machine)
+(get-register-contents factorial-machine 'val)
