@@ -489,8 +489,8 @@
 		   exp machine labels operations)
 		  (make-primitive-exp
 		   (car exp) machine labels)))
-	(let ((v1-proc (exp-to-proc v1)
-		  (v2-proc (exp-to-proc v2))))
+	(let ((v1-proc (exp-to-proc v1))
+		  (v2-proc (exp-to-proc v2)))
 	  (lambda ()
 		(set-contents! t1 (v1-proc))
 		(set-contents! t2 (v2-proc))
@@ -517,7 +517,7 @@
 	(let ((reg (get-register machine reg-name)))
 	  (lambda ()
 		(push stack (cons reg-name (get-contents reg)))
-		(advance-pc pc))))
+		(advance-pc pc)))))
 
 (define (make-restore-5-11-b inst machine stack pc)
   (let ((reg-name (stack-inst-reg-name inst)))
@@ -836,4 +836,469 @@
 			  ((eq? message 'operations) the-ops)
 			  (else (error "Unknown request -- MACHINE" message))))
 	  dispatch)))
+
+
+;; 5.2.4 Monitoring Machine Performance
+
+
+;; (list (list 'initialize-stack
+;;             (lambda () (stack 'initialize)))
+;;       (list 'print-stack-statistics
+;;             (lambda () (stack 'print-statistics))))
+
+(define (make-stack)
+  (let ((s '())
+        (number-pushes 0)
+        (max-depth 0)
+        (current-depth 0))
+    (define (push x)
+      (set! s (cons x s))
+      (set! number-pushes (+ 1 number-pushes))
+      (set! current-depth (+ 1 current-depth))
+      (set! max-depth (max current-depth max-depth)))
+    (define (pop)
+      (if (null? s)
+          (error "Empty stack -- POP")
+          (let ((top (car s)))
+            (set! s (cdr s))
+            (set! current-depth (- current-depth 1))
+            top)))
+    (define (initialize)
+      (set! s '())
+      (set! number-pushes 0)
+      (set! max-depth 0)
+      (set! current-depth 0)
+      'done)
+	(define (reset-statistics)
+	  (set! number-pushes 0)
+	  (set! current-depth 0)
+	  (set! max-depth 0))
+    (define (print-statistics)
+	  (newline)
+	  (display (list 'total-pushes  '= number-pushes
+					 'maximum-depth '= max-depth)))
+    (define (dispatch message)
+      (cond ((eq? message 'push) push)
+            ((eq? message 'pop) (pop))
+            ((eq? message 'initialize) (initialize))
+            ((eq? message 'print-statistics)
+             (print-statistics))
+			((eq? message 'reset-statistics)
+			 (reset-statistics))
+            (else
+             (error "Unknown request -- STACK" message))))
+    dispatch))
+
+
+;; ex 5.14
+
+(define (make-new-machine-ex-5-14)
+  (let ((pc (make-register 'pc))
+		(flag (make-register 'flag))
+		(stack (make-stack))
+		(the-instruction-sequence '()))
+	(let ((the-ops
+		   (list (list 'initialize-stack
+					   (lambda () (stack 'initialize)))))
+		  (register-table
+		   (list (list 'pc pc)
+				 (list 'flag flag))))
+	  (define (allocate-register name)
+		(if (assoc name register-table)
+			(error "Multiply defined register: " name)
+			(set! register-table
+				  (cons (list name (make-register name))
+						register-table)))
+		'register-allocated)
+	  (define (lookup-register name)
+		(let ((val (assoc name register-table)))
+		  (if val
+			  (cadr val)
+			  (error "Unknown register:" name))))
+	  (define (execute)
+		(let ((insts (get-contents pc)))
+		  (if (null? insts)
+			  'done
+			  (begin
+				((instruction-execution-proc (car insts)))
+				(execute)))))
+	  (define (print-stack-statistics)
+		(stack 'print-statistics))
+	  (define (reset-stack-statistics)
+		(stack 'reset-statistics))
+	  (define (dispatch message)
+		(cond ((eq? message 'start)
+			   (set-contents! pc the-instruction-sequence)
+			   (execute))
+			  ((eq? message 'install-instruction-sequence)
+			   (lambda (seq) (set! the-instruction-sequence seq)))
+			  ((eq? message 'allocate-register) allocate-register)
+			  ((eq? message 'get-register) lookup-register)
+			  ((eq? message 'install-operations)
+			   (lambda (ops)
+				 (set! the-ops (append the-ops ops))))
+			  ((eq? message 'stack) stack)
+			  ((eq? message 'operations) the-ops)
+			  ((eq? message 'print-stack-statistics)
+			   print-stack-statistics)
+			  ((eq? message 'reset-stack-statistics)
+			   reset-stack-statistics)
+			  (else (error "Unknown request -- MACHINE" message))))
+	  dispatch)))
+
+(define factorial-machine
+  (make-machine
+   '(n val continue)
+   (list (list '= =)
+		 (list '- -)
+		 (list '* *))
+   '(controller
+	 (assign continue (label fact-done))
+	 fact-loop
+	 (test (op =) (reg n) (const 1)) 
+	 (branch (label base-case))
+	 (save continue)
+	 (save n)
+	 (assign n (op -) (reg n) (const 1))
+	 (assign continue (label after-fact))
+	 (goto (label fact-loop))
+	 after-fact
+	 (restore n)
+	 (restore continue)
+	 (assign val (op *) (reg n) (reg val))
+	 (goto (reg continue))
+	 base-case
+	 (assign val (const 1))
+	 (goto (reg continue))
+	 fact-done)))
+
+(set-register-contents! factorial-machine 'n 5)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+((factorial-machine 'print-stack-statistics))
+((factorial-machine 'reset-stack-statistics))
+
+
+(set-register-contents! factorial-machine 'n 6)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+((factorial-machine 'print-stack-statistics))
+((factorial-machine 'reset-stack-statistics))
+
+(set-register-contents! factorial-machine 'n 7)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+((factorial-machine 'print-stack-statistics))
+((factorial-machine 'reset-stack-statistics))
+
+;; depth = (n-1) * 2
+;; total-pushes = (n -1) * 4
+
+
+
+(define factorial-loop-machine
+  (make-machine
+   '(n val continue)
+   (list (list '= =)
+		 (list '- -)
+		 (list '* *)
+		 (list 'read read)
+		 (list 'print (lambda (s) (display s) (newline))))
+   '(controller
+	 fact-run-loop
+	 (assign n (op read))
+	 (assign continue (label fact-done))
+	 
+	 fact-loop
+	 (test (op =) (reg n) (const 1)) 
+	 (branch (label base-case))
+	 (save continue)
+	 (save n)
+	 (assign n (op -) (reg n) (const 1))
+	 (assign continue (label after-fact))
+	 (goto (label fact-loop))
+	 
+	 after-fact
+	 (restore n)
+	 (restore continue)
+	 (assign val (op *) (reg n) (reg val))
+	 (goto (reg continue))
+	 
+	 base-case
+	 (assign val (const 1))
+	 (goto (reg continue))
+	 fact-done
+	 (perform (op print) (reg val))
+	 (goto (label fact-run-loop)))))
+
+(start factorial-loop-machine)
+
+
+;; ex 5.15
+
+(define (make-new-machine-ex-5-15)
+  (let ((pc (make-register 'pc))
+		(flag (make-register 'flag))
+		(stack (make-stack))
+		(the-instruction-sequence '())
+		(instruction-count 0))
+	(let ((the-ops
+		   (list (list 'initialize-stack
+					   (lambda () (stack 'initialize)))))
+		  (register-table
+		   (list (list 'pc pc)
+				 (list 'flag flag))))
+	  (define (allocate-register name)
+		(if (assoc name register-table)
+			(error "Multiply defined register: " name)
+			(set! register-table
+				  (cons (list name (make-register name))
+						register-table)))
+		'register-allocated)
+	  (define (lookup-register name)
+		(let ((val (assoc name register-table)))
+		  (if val
+			  (cadr val)
+			  (error "Unknown register:" name))))
+	  (define (execute)
+		(let ((insts (get-contents pc)))
+		  (if (null? insts)
+			  'done
+			  (begin
+				(set! instruction-count (+ 1 instruction-count))
+				((instruction-execution-proc (car insts)))
+				(execute)))))
+	  (define (print-instruction-count)
+		(display instruction-count)
+		(newline))
+	  (define (reset-instruction-count)
+		(set! instruction-count 0))
+	  (define (dispatch message)
+		(cond ((eq? message 'start)
+			   (set-contents! pc the-instruction-sequence)
+			   (execute))
+			  ((eq? message 'install-instruction-sequence)
+			   (lambda (seq) (set! the-instruction-sequence seq)))
+			  ((eq? message 'allocate-register) allocate-register)
+			  ((eq? message 'get-register) lookup-register)
+			  ((eq? message 'install-operations)
+			   (lambda (ops)
+				 (set! the-ops (append the-ops ops))))
+			  ((eq? message 'stack) stack)
+			  ((eq? message 'operations) the-ops)
+			  ((eq? message 'print-instruction-count) (print-instruction-count))
+			  ((eq? message 'reset-instruction-count) (reset-instruction-count))
+			  (else (error "Unknown request -- MACHINE" message))))
+	  dispatch)))
+
+
+(define factorial-machine
+  (make-machine
+   '(n val continue)
+   (list (list '= =)
+		 (list '- -)
+		 (list '* *))
+   '(controller
+	 (assign continue (label fact-done))
+	 fact-loop
+	 (test (op =) (reg n) (const 1)) 
+	 (branch (label base-case))
+	 (save continue)
+	 (save n)
+	 (assign n (op -) (reg n) (const 1))
+	 (assign continue (label after-fact))
+	 (goto (label fact-loop))
+	 after-fact
+	 (restore n)
+	 (restore continue)
+	 (assign val (op *) (reg n) (reg val))
+	 (goto (reg continue))
+	 base-case
+	 (assign val (const 1))
+	 (goto (reg continue))
+	 fact-done)))
+
+(set-register-contents! factorial-machine 'n 5)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+(factorial-machine 'print-instruction-count)
+(factorial-machine 'reset-instruction-count)
+
+
+(set-register-contents! factorial-machine 'n 6)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+(factorial-machine 'print-instruction-count)
+(factorial-machine 'reset-instruction-count)
+
+
+
+
+;; ex 5.16
+
+(define (make-new-machine)
+  (let ((pc (make-register 'pc))
+		(flag (make-register 'flag))
+		(stack (make-stack))
+		(the-instruction-sequence '())
+		(instruction-count 0)
+		(trace #f))
+	(let ((the-ops
+		   (list (list 'initialize-stack
+					   (lambda () (stack 'initialize)))))
+		  (register-table
+		   (list (list 'pc pc)
+				 (list 'flag flag))))
+	  (define (allocate-register name)
+		(if (assoc name register-table)
+			(error "Multiply defined register: " name)
+			(set! register-table
+				  (cons (list name (make-register name))
+						register-table)))
+		'register-allocated)
+	  (define (lookup-register name)
+		(let ((val (assoc name register-table)))
+		  (if val
+			  (cadr val)
+			  (error "Unknown register:" name))))
+	  (define (execute)
+		(let ((insts (get-contents pc)))
+		  (if (null? insts)
+			  'done
+			  (begin
+				(set! instruction-count (+ 1 instruction-count))
+				(if trace
+					(begin
+					  (display (car insts))
+					  (newline)))
+				((instruction-execution-proc (car insts)))
+				(execute)))))
+	  (define (print-instruction-count)
+		(display instruction-count)
+		(newline))
+	  (define (reset-instruction-count)
+		(set! instruction-count 0))
+	  (define (dispatch message)
+		(cond ((eq? message 'start)
+			   (set-contents! pc the-instruction-sequence)
+			   (execute))
+			  ((eq? message 'install-instruction-sequence)
+			   (lambda (seq) (set! the-instruction-sequence seq)))
+			  ((eq? message 'allocate-register) allocate-register)
+			  ((eq? message 'get-register) lookup-register)
+			  ((eq? message 'install-operations)
+			   (lambda (ops)
+				 (set! the-ops (append the-ops ops))))
+			  ((eq? message 'stack) stack)
+			  ((eq? message 'operations) the-ops)
+			  ((eq? message 'print-instruction-count) (print-instruction-count))
+			  ((eq? message 'reset-instruction-count) (reset-instruction-count))
+			  ((eq? message 'trace-on) (lambda () (set! trace #t)))
+			  ((eq? message 'trace-off) (lambda () (set! trace #f)))
+			  (else (error "Unknown request -- MACHINE" message))))
+	  dispatch)))
+
+
+(define factorial-machine
+  (make-machine
+   '(n val continue)
+   (list (list '= =)
+		 (list '- -)
+		 (list '* *))
+   '(controller
+	 (assign continue (label fact-done))
+	 fact-loop
+	 (test (op =) (reg n) (const 1)) 
+	 (branch (label base-case))
+	 (save continue)
+	 (save n)
+	 (assign n (op -) (reg n) (const 1))
+	 (assign continue (label after-fact))
+	 (goto (label fact-loop))
+	 after-fact
+	 (restore n)
+	 (restore continue)
+	 (assign val (op *) (reg n) (reg val))
+	 (goto (reg continue))
+	 base-case
+	 (assign val (const 1))
+	 (goto (reg continue))
+	 fact-done)))
+
+(set-register-contents! factorial-machine 'n 5)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+(factorial-machine 'print-instruction-count)
+
+((factorial-machine 'trace-on))
+(start factorial-machine)
+
+
+;; ex 5.17
+
+(define (extract-labels-ex-5-17 text receive)
+  (if (null? text)
+	  (receive '() '())
+	  (extract-labels (cdr text)
+					  (lambda (insts labels)
+						(let ((next-inst (car text)))
+						  (if (symbol? next-inst)
+							  (begin
+								(mark-label! insts next-inst)
+								(receive insts
+										 (cons (make-label-entry next-inst
+																 insts)
+											   labels)))
+							  (receive (cons (make-instruction next-inst)
+											 insts)
+									   labels)))))))
+
+(define (make-instruction-ex-5-17 text)
+  (cons text '()))
+
+(define (instruction-text-ex-5-17 inst)
+  (car (car inst)))
+
+(define (is-unlabeled-instruction? inst)
+  (not (list? (car (car inst)))))
+
+(define (mark-label! insts label)
+  (for-each (lambda (inst)
+			  (if (is-unlabeled-instruction? inst)
+				  (set-car! inst (cons (car inst) label))))
+			insts))
+
+(define factorial-machine
+  (make-machine
+   '(n val continue)
+   (list (list '= =)
+		 (list '- -)
+		 (list '* *))
+   '(controller
+	 (assign continue (label fact-done))
+	 fact-loop
+	 (test (op =) (reg n) (const 1)) 
+	 (branch (label base-case))
+	 (save continue)
+	 (save n)
+	 (assign n (op -) (reg n) (const 1))
+	 (assign continue (label after-fact))
+	 (goto (label fact-loop))
+	 after-fact
+	 (restore n)
+	 (restore continue)
+	 (assign val (op *) (reg n) (reg val))
+	 (goto (reg continue))
+	 base-case
+	 (assign val (const 1))
+	 (goto (reg continue))
+	 fact-done)))
+
+(set-register-contents! factorial-machine 'n 5)
+(start factorial-machine)
+(get-register-contents factorial-machine 'val)
+(factorial-machine 'print-instruction-count)
+
+((factorial-machine 'trace-on))
+(start factorial-machine)
 
