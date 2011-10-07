@@ -617,7 +617,7 @@
 		(instruction-log '())
 		(entry-point-log '())
 		(register-stack-log '())
-		(register-source-log '())
+		(register-source-log '()))
 	(let ((the-ops
 		   (list (list 'initialize-stack
 					   (lambda () (stack 'initialize)))))
